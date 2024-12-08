@@ -40,7 +40,7 @@ if [ "$THISRUN" = "minarch" ]; then
     mkdir -p "$SAVES_PATH/$EMU_TAG"
     HOME="$USERDATA_PATH"
     cd "$HOME"
-    nice -20 minarch.elf "$CORES_PATH/${EMU_EXE}_libretro.so" "$ROM" $2 &> "$LOGS_PATH/$EMU_TAG.txt"
+    nice -20 minarch.elf "$CORES_PATH/${EMU_EXE}_libretro.so" "$ROM" $2 > "$LOGS_PATH/$EMU_TAG.txt"
 fi
 
 if [ "$THISRUN" = "retroarch" ]; then 
@@ -86,7 +86,7 @@ if [ "$THISRUN" = "retroarch" ]; then
     cd "$RA_HOME"
 
     overclock.elf ${9}
-    nice -20 retroarch.elf -v --config "${BIOS_PATH}/RETROARCH/${PLATFORM}/retroarch.cfg" --appendconfig "${THIS_CORE_PATH}/specialcfg.cfg" -L "${CORES_PATH}/${EMU_EXE}_libretro.so" "$ROM" $LOADSLOT &> "$LOGS_PATH/$EMU_TAG.txt"
+    nice -20 retroarch.elf -v --config "${BIOS_PATH}/RETROARCH/${PLATFORM}/retroarch.cfg" --appendconfig "${THIS_CORE_PATH}/specialcfg.cfg" -L "${CORES_PATH}/${EMU_EXE}_libretro.so" "$ROM" $LOADSLOT > "$LOGS_PATH/$EMU_TAG.txt"
     if [ $2 != "-1" ]; then
         rm -f "${3}.entry"
     fi
