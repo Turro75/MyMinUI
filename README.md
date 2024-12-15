@@ -18,15 +18,20 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 All: Regarding the support for non US chars (ZH, JP, etc...), it is enough replacing the system ttf font with one that includes the required charset. Added some notes in the readme.txt file as a quick howto.
 
-Added support for the r36s running ArkOS:
+SJGAM M21: I broke mine. No more releases on this. End of the story.
+
+Closed one door opened another one: added support for the r36s running ArkOS.
 
 This is an experimental release that provide a release file for the new part of the MyMinUI family, the GameConsole R36S.
 This device is a reworked clone of the OdroidGoAdvance, which is also the base of the RG351 family.
 Even though I always used Amberelec on my rg351p, I chose ArkOS as base system as ArkOS is much more flexible and don't need to build anything.
+
 So in fact MyMinUI is an alternative launcher used in place of EmulationStation, everything under the hood is maintained so everyting that runs in ArkOS can potentially runs also in MyMinUI.
-It is requested to have a genuine r36s running the latest r36s ArkOS image available here: https://aeolusux.github.io/ArkOS-R3XS/ probably it would be run also on other releases. not tested I only have a v4 panel here.
-Please carefully read the install.md in this repo or the Readme.txt file provided in the relase file as the installaiton process is not so clean.
-I created a tool to enableMyMinUI (available in ArkOS) and a tool to DisableMyMinUI (available in MyMinUI/Tools) to switch to/from ArkOS/MyMinUI.
+
+It is requested to have a genuine r36s running the latest r36s ArkOS image available here: https://aeolusux.github.io/ArkOS-R3XS/ probably it would be run also on other releases. I can't test others as I only have a v4 panel here.
+Please carefully read the install.md in this repo or the Readme.txt file provided in the release file as the installation process requires specific steps to follow.
+I created a tool named EnableMyMinUI (available in ArkOS Options/Tools) and a tool to DisableMyMinUI (available in MyMinUI/Tools) to switch to/from ArkOS/MyMinUI.
+Maybe in a future release I'll edit BaRT mode to include MyMinUI but not for now.
 
 Some additional notes:
 Native Pico8 need pico8_64 and pico8.dat to run, copy them to the Bios/P8 folder.
@@ -34,6 +39,10 @@ I wanted to keep the ability to share the second sdcard across the other MyMinUi
 retroarch is ignored for now.
 I've added a specific pak for NDS, PSP, N64 and Dreamcast that run the standalone emulator available in ArkOS. Those are also a good example for everyone who want extending the running systems, as said above everything running in ArkOS run in MyMinUI.
 The PWR button is monitored by ArkOS so I decided to ignore it, to shutdown the handheld hold the menu button for at least 2 seconds, at release it will shutdown. 
+For this I had to create a new (not accelerated) video driver, as the SDL2 rendering engine used in MinUI does not perform very well on many arcades and in some demanding PS1 games.
+
+Taking profit of the experience done during the port to the SJGAM M21 I applied a similar solution that allows full speed in most systems/games tested (i.e. PS1 BR2 runs easily at 60fps).
+
 
 ## Release 01/12/2024
 ALL: Added DosBox-pure, TyrQuake, Atari 2600 cores
