@@ -39,8 +39,8 @@ I wanted to keep the ability to share the second sdcard across the other MyMinUi
 retroarch is ignored for now.
 I've added a specific pak for NDS, PSP, N64 and Dreamcast that run the standalone emulator available in ArkOS. Those are also a good example for everyone who want extending the running systems, as said above everything running in ArkOS run in MyMinUI.
 The PWR button is monitored by ArkOS so I decided to ignore it, to shutdown the handheld hold the menu button for at least 2 seconds, at release it will shutdown. 
-For this I had to create a new (not accelerated) video driver, as the SDL2 rendering engine used in MinUI does not perform very well on many arcades and in some demanding PS1 games.
 
+For this I had to create a new (not accelerated) video driver, as the SDL2 rendering engine used in MinUI does not perform very well on many arcades and in some demanding PS1 games.
 Taking profit of the experience done during the port to the SJGAM M21 I applied a similar solution that allows full speed in most systems/games tested (i.e. PS1 BR2 runs easily at 60fps).
 
 
