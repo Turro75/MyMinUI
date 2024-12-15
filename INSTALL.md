@@ -71,6 +71,44 @@ Once installation process is completed press the PWR button to shutdown the devi
 
 The TF1 sdcard is used to boot MinUI while the second is used to store minui, all files are in TF2.
 
+
+# R36S Single SDCard method:
+
+MyMinUI is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
+
+At first You must install ArkOS, follow installation instructions provided by ArkOS support page. If You have a wifi dongle configure now the network to get is working even in MyMinUI.
+
+Once ArkOS successfully installed create the folder <EASYROMS>/roms/MyMinUI in the sdcard, all Roms/Bios must be saved here. You don't have to use the rom/bios folder structure of ArkOS.
+
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the <EASYROMS>/roms/MyMinUI/ created the step above.
+Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder <EASYROMS>/roms/tools/
+Copy also the whole release zip file (leave it zipped) in the <EASYROMS>/roms/MyMinUI.
+Insert the sdcard in the TF1 slot and boot the device
+While in EmulationStation go to options->Tools then run the tool EnableMyMinUI.sh and wait for the device to reboot
+at reboot the installation process will start showing the screen "installing MyMinUI..."
+Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
+
+
+# R36S Two SDCard method:
+
+MyMinUI is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
+
+On the FIRST sdcard You must install ArkOS, follow installation instructions provided by ArkOS support page. If You have a wifi dongle configure now the network to get is working even in MyMinUI.
+
+Once ArkOS is successfully installed create the folder <EASYROMS>/roms/MyMinUI in the FIRST sdcard
+
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the <EASYROMS>/roms/MyMinUI/ created the step above.
+Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder <EASYROMS>/roms/tools/
+
+Format the SECOND sdcard as FAT32, it is also supported exFAT if You like.
+Copy the whole release zip file (leave it zipped) to the partition of the SECOND sdcard.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the partition of the SECOND sdcard (Yes You must copy that folder to both sdcards)
+
+While in EmulationStation go to options->Tools then run the tool EnableMyMinUI.sh 
+at reboot the installation process will start showing the screen "installing MyMinUI..."
+Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
+
+
 # Share sdcard across other devices:
 
 Well You can setup a single sdcard that can run on all 4 supported devices.

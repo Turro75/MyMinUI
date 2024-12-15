@@ -5,7 +5,7 @@ sleep 2
 if [ -f /roms/MyMinUI/r36s/_r36s.sh ]; then
     mv /roms/MyMinUI/r36s/_r36s.sh /roms/MyMinUI/r36s/r36s.sh
 fi
-if [ ! -e /roms/MyMinUI/bak ]; then
+if [ ! -e /roms/MyMinUI/r36s/bak ]; then
     mkdir -p /roms/MyMinUI/r36s/bak
     echo "Back up original launcher files"
     cp /usr/bin/emulationstation/emulationstation.sh /roms/MyMinUI/r36s/bak/

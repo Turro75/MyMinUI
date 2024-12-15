@@ -5,7 +5,7 @@
 
 ifeq (,$(PLATFORMS))
 #PLATFORMS = tg5040 rgb30 miyoomini trimuismart m17 rg35xx rg35xxplus gkdpixel m21
-PLATFORMS = m21 rg35xx miyoomini r36s
+PLATFORMS = rg35xx miyoomini r36s
 endif
 
 ###########################################################

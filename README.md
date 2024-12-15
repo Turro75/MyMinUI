@@ -14,6 +14,23 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+## Release 15/12/2024
+Added support for the r36s running ArkOS.
+This is an experimental release that provide installaiton file for the new part of the MyMinUI family, the GameConsole R36S.
+This device is a reworked clone of the OdroidGoAdvance, which is also the base of the RG351 family.
+Even though I always used Amberelec on my rg351p, I chose ArkOS as base system as ArkOS is much more flexible and don't need to build anything.
+So in fact MyMinUI is an alternative launcher used in place of EmulationStation, everything under the hood is maintained so everyting that runs in ArkOs can potentially runs also in MyMinUI.
+It is requested to have a genuine r36s running the latest r36s arokos image available here: https://aeolusux.github.io/ArkOS-R3XS/ probably it would be run also on other releases. not tested I only have a v4 panel here.
+Please carefully read the install.md in this repo or the Readme.txt file provided in the relase file as the installaiton process is not so clean.
+I created a tool to enableMyMinUI (available in ArkOS) and a tool to DisableMyMinUI (available in MyMinUI/Tools) to switch to/from ArkOS/MyMinUI.
+
+Some additional notes:
+Native Pico8 need pico8_64 and pico8.dat to run, copy them to the Bios/P8 folder.
+I wanted to keep the ability to share the second sdcard across the other MyMinUi devices so I built the cores (32bits).
+retroarch is ignored for now.
+I've added a specific pak for NDS, PSP, N64 and Dreamcast that run the standalone emulator available in ArkOS. Those are also a good example for everyone who want extending the running systems, as said above everything running in ArkOS run in MyMinUI.
+The PWR button is monitored by ArkOS so I decided to ignore it, to shutdown the handheld hold the menu button for at least 2 seconds, at release it will shutdown. 
+
 ## Release 01/12/2024
 ALL: Added DosBox-pure, TyrQuake, Atari 2600 cores
 
