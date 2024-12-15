@@ -18,12 +18,13 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 All: Regarding the support for non US chars (ZH, JP, etc...), it is enough replacing the system ttf font with one that includes the required charset. Added some notes in the readme.txt file as a quick howto.
 
-Added support for the r36s running ArkOS.
-This is an experimental release that provide installaiton file for the new part of the MyMinUI family, the GameConsole R36S.
+Added support for the r36s running ArkOS:
+
+This is an experimental release that provide a release file for the new part of the MyMinUI family, the GameConsole R36S.
 This device is a reworked clone of the OdroidGoAdvance, which is also the base of the RG351 family.
 Even though I always used Amberelec on my rg351p, I chose ArkOS as base system as ArkOS is much more flexible and don't need to build anything.
-So in fact MyMinUI is an alternative launcher used in place of EmulationStation, everything under the hood is maintained so everyting that runs in ArkOs can potentially runs also in MyMinUI.
-It is requested to have a genuine r36s running the latest r36s arokos image available here: https://aeolusux.github.io/ArkOS-R3XS/ probably it would be run also on other releases. not tested I only have a v4 panel here.
+So in fact MyMinUI is an alternative launcher used in place of EmulationStation, everything under the hood is maintained so everyting that runs in ArkOS can potentially runs also in MyMinUI.
+It is requested to have a genuine r36s running the latest r36s ArkOS image available here: https://aeolusux.github.io/ArkOS-R3XS/ probably it would be run also on other releases. not tested I only have a v4 panel here.
 Please carefully read the install.md in this repo or the Readme.txt file provided in the relase file as the installaiton process is not so clean.
 I created a tool to enableMyMinUI (available in ArkOS) and a tool to DisableMyMinUI (available in MyMinUI/Tools) to switch to/from ArkOS/MyMinUI.
 
