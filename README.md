@@ -15,6 +15,9 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 # New features of MyMinUI:
 
 ## Release 15/12/2024
+
+All: Regarding the support for non US chars (ZH, JP, etc...), it is enough replacing the system ttf font with one that includes the required charset. Added some notes in the readme.txt file as a quick howto.
+
 Added support for the r36s running ArkOS.
 This is an experimental release that provide installaiton file for the new part of the MyMinUI family, the GameConsole R36S.
 This device is a reworked clone of the OdroidGoAdvance, which is also the base of the RG351 family.
