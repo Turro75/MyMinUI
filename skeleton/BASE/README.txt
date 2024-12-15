@@ -1,4 +1,4 @@
-MyMinUI is a minimal launcher for the Miyoo Mini (and Plus), RG35XX Original and the SJGAM M21 based on MinUI ()
+MyMinUI is a minimal launcher for the Miyoo Mini (and Plus), RG35XX Original, SJGAM M21 and GameConsole R36s based on MinUI ()
 
 Source:
 https://github.com/Turro75/MyMinUI
@@ -77,6 +77,43 @@ Once installation process is completed press the PWR button to shutdown the devi
 
 The TF1 sdcard is used to boot MinUI while the second is used to store minui, all files are in TF2.
 
+# R36S Single SDCard method:
+
+MyMinUI is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
+
+At first You must install ArkOS, follow installation instructions provided by ArkOS support page. If You have a wifi dongle configure now the network to get is working even in MyMinUI.
+
+Once ArkOS successfully installed create the folder <EASYROMS>/roms/MyMinUI in the sdcard, all Roms/Bios must be saved here. You don't have to use the rom/bios folder structure of ArkOS.
+
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the <EASYROMS>/roms/MyMinUI/ created the step above.
+Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder <EASYROMS>/roms/tools/
+Copy also the whole release zip file (leave it zipped) in the <EASYROMS>/roms/MyMinUI.
+Insert the sdcard in the TF1 slot and boot the device
+While in EmulationStation go to options->Tools then run the tool EnableMyMinUI.sh and wait for the device to reboot
+at reboot the installation process will start showing the screen "installing MyMinUI..."
+Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
+
+
+# R36S Two SDCard method:
+
+MyMinUI is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
+
+On the FIRST sdcard You must install ArkOS, follow installation instructions provided by ArkOS support page. If You have a wifi dongle configure now the network to get is working even in MyMinUI.
+
+Once ArkOS is successfully installed create the folder <EASYROMS>/roms/MyMinUI in the FIRST sdcard
+
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the <EASYROMS>/roms/MyMinUI/ created the step above.
+Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder <EASYROMS>/roms/tools/
+
+Format the SECOND sdcard as FAT32, it is also supported exFAT if You like.
+Copy the whole release zip file (leave it zipped) to the partition of the SECOND sdcard.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the partition of the SECOND sdcard (Yes You must copy that folder to both sdcards)
+
+While in EmulationStation go to options->Tools then run the tool EnableMyMinUI.sh 
+at reboot the installation process will start showing the screen "installing MyMinUI..."
+Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
+
+
 # Share sdcard across other devices:
 
 Well You can setup a single sdcard that can run on all 4 supported devices.
@@ -119,7 +156,7 @@ MIYOO MINI (PLUS) / RG35XX
   Sleep: POWER
   Wake: POWER
   
-M21
+M21 / R36S
   
   Sleep: 2 mins timeout
   Wake: MENU
@@ -229,10 +266,6 @@ Simple mode
 
 Not simple enough for you (or maybe your kids)? MinUI has a simple mode that hides the Tools folder and replaces Options in the in-game menu with Reset. Perfect for handing off to littles (and olds too I guess). Just create an empty file named "enable-simple-mode" (no extension) in "/.userdata/shared/".
 
-----------------------------------------
-Advanced
-
-MinUI can automatically run a user-authored shell script on boot. Just place a file named "auto.sh" in "/.userdata/<DEVICE>/".
 
 ----------------------------------------
 Tools
@@ -249,8 +282,19 @@ ToggleHideState -> Hide saved state preview (Default OFF)
 ToggleHideBOXARTifState -> If state is present the BOXART below is not shown (Default OFF) 
 Convert BoxArt -> Utility to convert images in the format You like, refer to BOXART.md for details
 Retroarch -> launch retroarch (not on M21) without any games
-----------------------------------------
 
+----------------------------------------
+Support for non US fonts:
+
+It is not intended to support non US characters, in case You need there is an easy workaround as the system actually support utf8.
+Take any otf/ttf font (the one You like) that supports the charset You need then overwrite the system font which are
+- .system/<PLATFORM>/res/BPreplayBold-unhinted.otf (for minui, minarch and other tools)
+- Tools/<PLATFORM>/Files/Res/FreeSans.ttf (specific for the tool Files DinguxCommander)
+It is important to rename the new font as the system is looking for fonts called as the files provided in the releases.
+Of course the look&feel will change.
+
+Be aware that the font files will be overwritten at any update.
+----------------------------------------
 Thanks
 
 BIG BIG Thank to ShaunInman for sharing his amazing work on MinUI from which I based MyMinUI.

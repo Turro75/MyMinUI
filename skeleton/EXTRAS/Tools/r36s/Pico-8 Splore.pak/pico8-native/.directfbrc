@@ -1,0 +1,12 @@
+system=fbdev
+module-dir=/usr/lib/directfb-1.7-7
+mode=640x480
+depth=32
+pixelformat=RGB32
+buffer-mode=backvideo
+wm-fullscreen-updates
+vsync-after
+bg-color=FF000000
+no-banner
+no-cursor
+sync

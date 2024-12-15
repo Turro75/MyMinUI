@@ -1,0 +1,107 @@
+ev.code for buttons
+
+/dev/input/event1 only for onboard controls
+
+27 = MENU
+12 = VOLUME UP
+11 = VOLUME DOWN
+103 = DPAD_UP
+108 = DPAD_DOWN
+105 = DPAD_LEFT
+106 = DPAD_RIGHT
+296 = SELECT
+297 = START
+290 = A
+289 = B
+291 = X
+288 = Y
+292 = L1
+294 = L2
+293 = R1
+295 = R2
+
+custom read inputs code:
+A = 34
+B = 33
+X = 35
+Y = 32
+SELECT = 40  
+START = 41
+L1 = 36
+L2 = 38
+R1 = 37
+R2 = 39
+
+
+libSDL1-2
+
+
+/* SJGAM M21 ADDITIONS */
+#define SCANCODE_M21_DPAD_UP		103
+#define SCANCODE_M21_DPAD_DOWN		108
+#define SCANCODE_M21_DPAD_LEFT		105
+#define SCANCODE_M21_DPAD_RIGHT		106
+
+#define SCANCODE_M21_BTN_A		290
+#define SCANCODE_M21_BTN_B		289
+#define SCANCODE_M21_BTN_X		291
+#define SCANCODE_M21_BTN_Y		288
+
+#define SCANCODE_M21_BTN_L1		292
+#define SCANCODE_M21_BTN_L2		294
+#define SCANCODE_M21_BTN_R1		293
+#define SCANCODE_M21_BTN_R2		295
+
+#define SCANCODE_M21_BTN_MENU		27
+#define SCANCODE_M21_BTN_SELECT		296
+#define SCANCODE_M21_BTN_START		297
+
+#define SCANCODE_M21_BTN_VOLUMEUP	12
+#define SCANCODE_M21_BTN_VOLUMEDOWN	11
+/* END SJGAM M21 ADDITIONS */
+
+
+	/** SJGAM M21 SPECIAL CODES 
+SDLK_UP			#DPAD_UP		SCANCODE_M21_DPAD_UP
+SDLK_RIGHT		#DPAD_RIGHT	    SCANCODE_M21_DPAD_RIGHT
+SDLK_DOWN		#DPAD_DOWN		SCANCODE_M21_DPAD_DOWN
+SDLK_LEFT		#DPAD_LEFT		SCANCODE_M21_DPAD_LEFT
+SDLK_LCTRL		# A				SCANCODE_M21_BTN_A
+SDLK_LALT		# B				SCANCODE_M21_BTN_B
+SDLK_SPACE		# X				SCANCODE_M21_BTN_X
+SDLK_LSHIFT		# Y				SCANCODE_M21_BTN_Y
+SDLK_PAGEUP		# L1			SCANCODE_M21_BTN_L1
+SDLK_TAB		# L2			SCANCODE_M21_BTN_L2
+SDLK_PAGEDOWN	# R1			SCANCODE_M21_BTN_R1
+SDLK_BACKSPACE	# R2			SCANCODE_M21_BTN_R2
+SDLK_ESCAPE		# SELECT		SCANCODE_M21_BTN_SELECT
+SDLK_RETURN		# START			SCANCODE_M21_BTN_START
+SDLK_HOME		# MENU (added)	SCANCODE_M21_BTN_MENU
+SDLK_VOLUP		# VOLUMEUP		SCANCODE_M21_BTN_VOLUMEUP
+SDLK_VOLDOWN	# VOLUMEDOWN	SCANCODE_M21_BTN_VOLUMEDOWN
+	
+	/** END OF SJGAM M21 SPECIAL CODES
+
+Sticks are digital and are mapped to reflect buttons
+LeftUP DPAD_UP
+LeftDOWN DPAD_DOWN
+LeftLEFT DPAD_LEFT
+LeftRIGHT DPAD_RIGHT
+RightUP Y
+RightDOWN B
+RightLEFT X
+RightRIGHT A
+
+
+BATTERY info:
+/sys/class/gpadc/charge -> 0 not charging
+                        -> 1 charger connected
+
+battery level info:
+/sys/class/gpadc/data  min value 1030 (it is checked systemwise, whne below 1030 the /usr/bin/lowpower is launched)
+need some work to get the maximum (full charge) value
+
+next mandatory step is running dingux commander to inspect fylesystem while running.
+First I need to map controls to SDL1.
+
+

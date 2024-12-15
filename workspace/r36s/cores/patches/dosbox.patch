@@ -1,0 +1,19 @@
+diff --git a/Makefile b/Makefile
+index c576d1f..fe76000 100644
+--- a/Makefile
++++ b/Makefile
+@@ -97,6 +97,14 @@ else ifeq ($(platform),vita)
+   COMMONFLAGS += -mword-relocations
+   COMMONFLAGS += -fno-optimize-sibling-calls
+   STATIC_LINKING = 1
++  else ifeq ($(platform),r36s)
++  OUTNAME := dosbox_libretro.so
++  CXX     := $(CROSS_COMPILE)g++
++  AR      := $(CROSS_COMPILE)ar
++  COMMONFLAGS += -mthumb $(MYARCH) -ftree-vectorize -ffast-math -fsingle-precision-constant -funroll-loops
++  COMMONFLAGS += -mword-relocations
++  COMMONFLAGS += -fno-optimize-sibling-calls
++  STATIC_LINKING = 0
+ else ifeq ($(platform),ctr)
+   OUTNAME := dosbox_pure_libretro_ctr.a
+   CXX     := $(DEVKITARM)/bin/arm-none-eabi-g++

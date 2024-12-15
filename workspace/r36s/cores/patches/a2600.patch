@@ -1,0 +1,23 @@
+diff --git a/Makefile b/Makefile
+index 18885d8..078fa13 100644
+--- a/Makefile
++++ b/Makefile
+@@ -377,6 +377,18 @@ else ifeq ($(platform), miyoo)
+ 	FLAGS += -fomit-frame-pointer -ffast-math -march=armv5te -mtune=arm926ej-s
+ 	fpic := -fPIC
+ 
++# r36s
++else ifeq ($(platform), r36s)
++	TARGET := $(TARGET_NAME)_libretro.so
++   CC = $(CROSS_COMPILE)gcc
++   CXX = $(CROSS_COMPILE)g++
++   AR = $(CROSS_COMPILE)ar
++	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
++	LDFLAGS += $(PTHREAD_FLAGS) -lrt
++	FLAGS += $(PTHREAD_FLAGS) -DHAVE_MKDIR
++	FLAGS += -fomit-frame-pointer -ffast-math $(MYARCH)
++	fpic := -fPIC
++
+ # Windows MSVC 2003 Xbox 1
+ else ifeq ($(platform), xbox1_msvc2003)
+ TARGET := $(TARGET_NAME)_libretro_xdk1.lib

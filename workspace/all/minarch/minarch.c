@@ -1834,10 +1834,10 @@ static void input_poll_callback(void) {
 	// TODO: the shortcuts loop above should also contribute to the array
 	
 	buttons = 0;
-	analogs[0] = 0;
-	analogs[1] = 0;
-	analogs[2] = 0;
-	analogs[3] = 0;
+	analogs[0] = pad.laxis.x;
+	analogs[1] = pad.laxis.y; //pad.laxis.y;
+	analogs[2] = pad.raxis.x; //pad.raxis.x;
+	analogs[3] = pad.raxis.y; //pad.raxis.y;
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
 		int btn = 1 << mapping->local;
@@ -1867,7 +1867,7 @@ static int16_t input_state_callback(unsigned port, unsigned device, unsigned ind
 		if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return buttons;
 		return (buttons >> id) & 1;
 	}
-	if (port == 0 && device == RETRO_DEVICE_ANALOG && config.controller_map_abxy_to_rstick == 1){
+	if (port == 0 && device == RETRO_DEVICE_ANALOG){
 		return analogs[index*2+id];
 	}	
 	return 0;
@@ -2858,6 +2858,10 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 	renderer.dst_h = dst_h;
 	renderer.dst_p = dst_p;
 	renderer.scale = scale;
+//	if (renderer.rotate % 2 == 1) {
+//		renderer.dst_x = dst_y;
+//		renderer.dst_y = dst_x;
+//	} 
 	
 	LOG_info("%s %s aspect: %f\n", scaler_type, scaler_name, renderer.aspect);
 	renderer.blit = GFX_getScaler(&renderer);
@@ -2920,6 +2924,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		selectScaler(width, height, pitch);
 		GFX_clearAll();	
 	}
+
 	// debug
 	if (show_debug) {
 		char debug_text[128];
@@ -2940,6 +2945,8 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	}
 	
 	renderer.dst = screen->pixels;
+	
+	//LOG_info("video_refresh_callback width:%i height:%i pitch:%i\n", width, height, pitch);
 	GFX_blitRenderer(&renderer);
 	//GFX_flip(screen);
 	last_flip_time = SDL_GetTicks();
@@ -4975,9 +4982,9 @@ static void Menu_loop(void) {
 			pthread_mutex_lock(&core_mx);
 			should_run_core = 1;
 			pthread_mutex_unlock(&core_mx);
-			//pthread_mutex_lock(&flip_mx);
-			//should_run_flip = 1;
-			//pthread_mutex_unlock(&flip_mx);			
+			pthread_mutex_lock(&flip_mx);
+			should_run_flip = 1;
+			pthread_mutex_unlock(&flip_mx);			
 		} else {
 			video_refresh_callback(renderer.src, renderer.true_w, renderer.true_h, renderer.src_p);
 		}

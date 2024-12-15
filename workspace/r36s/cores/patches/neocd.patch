@@ -1,0 +1,21 @@
+diff --git a/Makefile b/Makefile
+index 8f2907c..237af98 100644
+--- a/Makefile
++++ b/Makefile
+@@ -181,6 +181,16 @@ else ifeq ($(platform), vita)
+    CFLAGS += -DVITA -march=armv7-a -mfpu=neon -mfloat-abi=hard -DSYNC_CDROM=1
+    CXXFLAGS += -DVITA -Wl,-q -Wall  -march=armv7-a -mfpu=neon -mfloat-abi=hard -mword-relocations -DSYNC_CDROM=1
+ 	STATIC_LINKING = 1
++else ifeq ($(platform), r36s)
++	TARGET := $(TARGET_NAME)_libretro.so
++   CC = $(CROSS_COMPILE)gcc
++   CXX = $(CROSS_COMPILE)g++
++   AR = $(CROSS_COMPILE)ar
++   SHARED := -s -shared -Wl,--version-script=link.T -Wl,-no-undefined
++	fpic := -fPIC
++   CFLAGS +=  -s -Ofast $(MYARCH) -fomit-frame-pointer -flto -DSYNC_CDROM=1
++   CXXFLAGS += -s -Ofast $(MYARCH) -fomit-frame-pointer -flto -mword-relocations -DSYNC_CDROM=1
++
+ # Nintendo WiiU
+ else ifeq ($(platform), wiiu)
+    TARGET := $(TARGET_NAME)_libretro_$(platform).a

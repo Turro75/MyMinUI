@@ -1,0 +1,32 @@
+diff --git a/Makefile.libretro b/Makefile.libretro
+index 4b466e5..48d1db4 100644
+--- a/Makefile.libretro
++++ b/Makefile.libretro
+@@ -559,6 +559,27 @@ else ifeq ($(platform), miyoo)
+ 	DYNAREC = ari64
+ 	HAVE_NEON = 0
+ 
++# sjgam r36s
++else ifeq ($(platform), r36s)
++   TARGET := $(TARGET_NAME)_libretro.so
++   CC = $(CROSS_COMPILE)gcc
++   CXX = $(CROSS_COMPILE)g++
++   AR = $(CROSS_COMPILE)ar
++   
++   CFLAGS += $(MYARCH) -fomit-frame-pointer
++   CFLAGS += -ffast-math -fdata-sections -ffunction-sections -fsingle-precision-constant -flto -fPIC
++   LDFLAGS += -flto -fPIC
++   LDFLAGS += -flto
++   CPU_ARCH := arm
++   OPTIMIZE += -Ofast -DNDEBUG=1
++   HAVE_NEON = 1
++   HAVE_NEON_ASM = 1
++   BUILTIN_GPU = neon
++   ARCH = arm
++   DYNAREC = ari64
++
++
++
+ # Emscripten
+ else ifeq ($(platform), emscripten)
+    TARGET  := $(TARGET_NAME)_libretro_$(platform).bc

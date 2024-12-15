@@ -1,0 +1,22 @@
+diff -ru a/package/sdl2/sdl2.hash b/package/sdl2/sdl2.hash
+--- a/package/sdl2/sdl2.hash	2017-11-30 16:35:17.000000000 -0500
++++ b/package/sdl2/sdl2.hash	2024-01-01 21:25:37.000000000 -0500
+@@ -1,4 +1,2 @@
+-# Locally calculated after checking http://www.libsdl.org/release/SDL2-2.0.7.tar.gz.sig
+-sha256 ee35c74c4313e2eda104b14b1b86f7db84a04eeab9430d56e001cea268bf4d5e  SDL2-2.0.7.tar.gz
+-# Locally calculated
+-sha256 bbd2edb1789c33de29bb9f8d1dbe2774584a9ce8c4e3162944b7a3a447f5e85d  COPYING.txt
++# Locally calculated after checking http://www.libsdl.org/release/SDL2-2.26.1.tar.gz.sig
++sha256 02537cc7ebd74071631038b237ec4bfbb3f4830ba019e569434da33f42373e04  SDL2-2.26.1.tar.gz
+diff -ru a/package/sdl2/sdl2.mk b/package/sdl2/sdl2.mk
+--- a/package/sdl2/sdl2.mk	2017-11-30 16:35:17.000000000 -0500
++++ b/package/sdl2/sdl2.mk	2024-01-01 21:18:12.000000000 -0500
+@@ -4,7 +4,7 @@
+ #
+ ################################################################################
+ 
+-SDL2_VERSION = 2.0.7
++SDL2_VERSION = 2.26.1
+ SDL2_SOURCE = SDL2-$(SDL2_VERSION).tar.gz
+ SDL2_SITE = http://www.libsdl.org/release
+ SDL2_LICENSE = Zlib

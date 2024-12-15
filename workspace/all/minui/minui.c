@@ -1743,8 +1743,9 @@ int main (int argc, char *argv[]) {
 	while (!quit) {
 		GFX_startFrame();
 		unsigned long now = SDL_GetTicks();
-		
+	//	LOG_info("START PAD_poll\n");
 		PAD_poll();
+	//	LOG_info("END PAD_poll\n");
 			
 		int selected = top->selected;
 		int total = top->entries->count;

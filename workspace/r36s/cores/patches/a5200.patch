@@ -1,0 +1,21 @@
+diff --git a/Makefile b/Makefile
+index 502a75b..a5bda46 100644
+--- a/Makefile
++++ b/Makefile
+@@ -324,6 +324,16 @@ else ifeq ($(platform), miyoo)
+ 	FLAGS += -fomit-frame-pointer -ffast-math -mcpu=arm926ej-s
+ 	fpic := -fPIC
+ 
++# r36s
++else ifeq ($(platform), r36s)
++	TARGET := $(TARGET_NAME)_libretro.so
++	CC = $(CROSS_COMPILE)gcc
++	AR = $(CROSS_COMPILE)ar
++	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
++	FLAGS += -fomit-frame-pointer -ffast-math $(MYARCH)
++	fpic := -fPIC
++
++
+ # Raspberry Pi 1
+ else ifeq ($(platform), rpi1)
+ 	TARGET := $(TARGET_NAME)_libretro.so

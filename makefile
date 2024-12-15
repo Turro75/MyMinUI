@@ -4,8 +4,8 @@
 # it has to, otherwise we'd be running a docker in a docker and oof
 
 ifeq (,$(PLATFORMS))
-#PLATFORMS = tg5040 rgb30 miyoomini trimuismart m17 rg35xx rg35xxplus gkdpixel
-PLATFORMS = rg35xx miyoomini m21
+#PLATFORMS = tg5040 rgb30 miyoomini trimuismart m17 rg35xx rg35xxplus gkdpixel m21
+PLATFORMS = m21 rg35xx miyoomini r36s
 endif
 
 ###########################################################
@@ -91,7 +91,7 @@ setup:
 	# copy readmes to workspace so we can use Linux fmt instead of host's
 	mkdir -p ./workspace/readmes
 	cp ./skeleton/BASE/README.txt ./workspace/readmes/BASE-in.txt
-	cp ./skeleton/EXTRAS/README.txt ./workspace/readmes/EXTRAS-in.txt
+#	cp ./skeleton/EXTRAS/README.txt ./workspace/readmes/EXTRAS-in.txt
 	
 done:
 	command -v say >/dev/null 2>&1 && say "done" || echo "done"
@@ -113,7 +113,7 @@ specialpackage: tidy
 		
 	# move formatted readmes from workspace to build
 	cp ./workspace/readmes/BASE-out.txt ./build/BASE/README.txt
-	cp ./workspace/readmes/EXTRAS-out.txt ./build/EXTRAS/README_EXTRAS.txt
+	# cp ./workspace/readmes/EXTRAS-out.txt ./build/EXTRAS/README_EXTRAS.txt
 	rm -rf ./workspace/readmes
 	
 	cd ./build/SYSTEM && echo "$(RELEASE_NAME)\n$(BUILD_HASH)" > version.txt
@@ -141,7 +141,7 @@ specialpackage: tidy
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
 	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
-	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 trimui rg35xxplus gkdpixel em_ui.sh MinUI.zip README.txt
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 trimui rg35xxplus r36s m21 gkdpixel em_ui.sh MinUI.zip README.txt
 	
 	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt
@@ -162,7 +162,7 @@ package: tidy
 		
 	# move formatted readmes from workspace to build
 	cp ./workspace/readmes/BASE-out.txt ./build/BASE/README.txt
-	cp ./workspace/readmes/EXTRAS-out.txt ./build/EXTRAS/README_EXTRAS.txt
+	# cp ./workspace/readmes/EXTRAS-out.txt ./build/EXTRAS/README_EXTRAS.txt
 	rm -rf ./workspace/readmes
 	
 	cd ./build/SYSTEM && echo "$(RELEASE_NAME)\n$(BUILD_HASH)" > version.txt
@@ -189,7 +189,7 @@ package: tidy
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
 	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
-	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 m21 rg35xx MinUI.zip README.txt
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 m21 r36s rg35xx MinUI.zip README.txt
 	
 	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt
@@ -226,6 +226,11 @@ m21:
 	make clean setup common package PLATFORM=$@
 	# ----------------------------------------------------
 
+
+r36s:
+	# ----------------------------------------------------
+	make clean setup build system cores  package PLATFORM=$@
+	# ----------------------------------------------------
 
 trimuismart:
 	# ----------------------------------------------------

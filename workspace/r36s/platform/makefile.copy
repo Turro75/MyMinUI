@@ -1,0 +1,20 @@
+$(PLATFORM):
+	# $@
+	cp ./workspace/$@/show/show.elf ./build/SYSTEM/$@/bin
+	cp ./workspace/$@/overclock/overclock.elf ./build/SYSTEM/$@/bin
+	# installer
+	mkdir -p ./build/BASE/$@
+	cp ./workspace/$@/boot/boot.sh ./build/BASE/$@/r36s.sh
+	cp ./workspace/$@/boot/EnableMyMinUI.sh ./build/BASE/$@/
+	cp ./workspace/$@/boot/emulationstation.sh ./build/BASE/$@/
+	cp ./workspace/$@/boot/emulationstation.sh.es ./build/BASE/$@/
+	cp ./workspace/$@/boot/emulationstation.sh.ra ./build/BASE/$@/
+	cp ./workspace/$@/boot/*.png ./build/BASE/$@/
+	cp ./workspace/$@/show/show.elf ./build/BASE/$@/
+	cp ./workspace/$@/other/unzip60/unzip ./build/BASE/$@/
+	cp ./workspace/$@/boot/update.sh ./build/SYSTEM/$@/bin/install.sh
+	cp ./workspace/$@/overclock/overclock.elf ./build/SYSTEM/$@
+#	mkdir -p ./build/BOOT/common/$@/
+#	# extras
+#	cp ./workspace/$@/other/DinguxCommander/output/DinguxCommander ./build/EXTRAS/Tools/$@/Files.pak/
+#	cp -r ./workspace/$@/other/DinguxCommander/res ./build/EXTRAS/Tools/$@/Files.pak/
