@@ -13,9 +13,9 @@ if [ ! -e /roms/MyMinUI/r36s/bak ]; then
     cp /usr/bin/emulationstation/emulationstation.sh.es /roms/MyMinUI/r36s/bak/
 fi
 echo "Copy new launcher files"
-sudo cp /roms/MyMinUI/r36s/emulationstation/emulationstation.sh /usr/bin/emulationstation/
-sudo cp /roms/MyMinUI/r36s/emulationstation.sh.ra /usr/bin/emulationstation/
-sudo cp /roms/MyMinUI/r36s/emulationstation.sh.es /usr/bin/emulationstation/
+sudo cp -vf /roms/MyMinUI/r36s/emulationstation.sh /usr/bin/emulationstation/
+sudo cp -vf /roms/MyMinUI/r36s/emulationstation.sh.ra /usr/bin/emulationstation/
+sudo cp -vf /roms/MyMinUI/r36s/emulationstation.sh.es /usr/bin/emulationstation/
 echo "Rebooting now..."
 sleep 3
 systemctl reboot
