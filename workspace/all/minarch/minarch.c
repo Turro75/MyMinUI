@@ -1712,8 +1712,8 @@ static int setFastForward(int enable) {
 	return enable;
 }
 
-static uint32_t buttons = 0; // RETRO_DEVICE_ID_JOYPAD_* buttons
-static uint16_t analogs[4] = {0};
+uint32_t buttons = 0; // RETRO_DEVICE_ID_JOYPAD_* buttons
+int16_t analogs[16] = {0};
 static int ignore_menu = 0;
 static void input_poll_callback(void) {
 	PAD_poll();
@@ -1838,14 +1838,22 @@ static void input_poll_callback(void) {
 	analogs[1] = pad.laxis.y; //pad.laxis.y;
 	analogs[2] = pad.raxis.x; //pad.raxis.x;
 	analogs[3] = pad.raxis.y; //pad.raxis.y;
+	analogs[12] =  0;
+	analogs[13] =  0;
+	analogs[14] =  0;
+	analogs[15] =  0;
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
 		int btn = 1 << mapping->local;
+		int btn_retro = 1 << mapping->retro;
 		if (btn==BTN_NONE) continue; // present buttons can still be unbound
 		if (PAD_isPressed(btn) && (!mapping->mod || PAD_isPressed(BTN_MENU))) {
 			buttons |= 1 << mapping->retro;
 			if (mapping->mod) ignore_menu = 1;
-
+			analogs[12] = btn_retro==BTN_L2 ? 0x7fff : 0;
+			analogs[13] = btn_retro==BTN_R2 ? 0x7fff : 0;
+			analogs[14] = btn_retro==BTN_L3 ? 0x7fff : 0;
+			analogs[15] = btn_retro==BTN_R3 ? 0x7fff : 0;
 			if (config.controller_map_abxy_to_rstick == 1) {
 				//	 if (btn==BTN_LEFT) 	analogs[0]= 0x7fff; 
 				//else if (btn==BTN_RIGHT) 	analogs[0]= -0x7fff;
@@ -1867,8 +1875,13 @@ static int16_t input_state_callback(unsigned port, unsigned device, unsigned ind
 		if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return buttons;
 		return (buttons >> id) & 1;
 	}
-	if (port == 0 && device == RETRO_DEVICE_ANALOG){
+	if (port == 0 && device == RETRO_DEVICE_ANALOG && index<2){
+	//	LOG_info("Returned analog <2 %d\n", analogs[index*2+id]);
 		return analogs[index*2+id];
+	}	
+	if (port == 0 && device == RETRO_DEVICE_ANALOG && index>1){
+	//	LOG_info("Returned analog %d=%d\n", id, analogs[id]);
+		return analogs[id];
 	}	
 	return 0;
 }
