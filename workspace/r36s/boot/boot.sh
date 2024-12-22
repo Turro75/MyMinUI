@@ -7,10 +7,10 @@ SDCARD_PATH="/MyMinUI"
 UPDATE_PATH="${SDCARD_PATH}/MinUI.zip"
 SYSTEM_PATH="${SDCARD_PATH}/.system"
 LOGFILE="/roms/MyMinUI/log.txt"
-echo "Start" > $LOGFILE
-export LD_LIBRARY_PATH=${SDCARD_PATH}/${PLATFORM}/libmusl:$LD_LIBRARY_PATH
+echo "Start MyMinUI" > $LOGFILE
 export SDL_NOMOUSE=1
 echo 0 | sudo  tee /sys/class/graphics/fbcon/cursor_blink
+sudo systemctl stop oga_events
 
 if [ -e $SDCARD_PATH ]; then
 	sudo rm -rf $SDCARD_PATH
@@ -19,11 +19,15 @@ fi
 #check if a second SDCARD is inserted
 if [ -e /dev/mmcblk1p1 ]; then
 	 sudo mkdir -p $SDCARD_PATH
-	 sudo mount /dev/mmcblk1p1 $SDCARD_PATH	
+	 sudo chmod 777 $SDCARD_PATH
+	 sudo chown  ark:ark $SDCARD_PATH 
+	 sudo mount /dev/mmcblk1p1 $SDCARD_PATH -o rw,defaults,noatime,uid=1002,gid=1002,fmask=0000,dmask=0000,errors=remount-ro
 else
 	 ln -s /roms/MyMinUI $SDCARD_PATH
 fi
 sudo mount >> $LOGFILE
+
+dd if=/dev/zero of=/dev/fb0 bs=1228800 count=1
 #ps ax >> $LOGFILE
 #ls $SDCARD_PATH/ >> $LOGFILE
 # chmod 777 $SDCARD_PATH
@@ -108,18 +112,18 @@ fi
     export HOME=$SDCARD_PATH
 
 # add custom extra folders for advanced systems not present in standard MyMinUI
-	if [ ! -d "${SDCARD_PATH}/Roms/PSP (PSP)" ]; then 
+#	if [ ! -d "${SDCARD_PATH}/Roms/PSP (PSP)" ]; then 
 		sudo mkdir -p "${SDCARD_PATH}/Roms/PSP (PSP)"; 
-		sudo mkdir -p "${SDCARD_PATH}/Bios/PSP";	
-		fi
-	if [ ! -d "${SDCARD_PATH}/Roms/Nintendo 64 (N64)" ]; then 
+		sudo mkdir -p "${SDCARD_PATH}/Bios/PSP";
+#		fi
+#	if [ ! -d "${SDCARD_PATH}/Roms/Nintendo 64 (N64)" ]; then 
 		sudo mkdir -p "${SDCARD_PATH}/Roms/Nintendo 64 (N64)"; 
 		sudo mkdir -p "${SDCARD_PATH}/Bios/N64";
-	fi
-	if [ ! -d "${SDCARD_PATH}/Roms/Dreamcast (DC)" ]; then 
+#	fi
+#	if [ ! -d "${SDCARD_PATH}/Roms/Dreamcast (DC)" ]; then 
 		sudo mkdir -p "${SDCARD_PATH}/Roms/Dreamcast (DC)"; 
 		sudo mkdir -p "${SDCARD_PATH}/Bios/DC";
-	fi
+#	fi
 
 	dd if=/dev/zero of=/dev/fb0 bs=1228800 count=1
 #evaluate if adding swap file or not
