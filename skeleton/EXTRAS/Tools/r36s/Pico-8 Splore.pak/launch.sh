@@ -11,7 +11,7 @@ overclock.elf $CPU_SPEED_GAME
 progdir=$(dirname "$0")/pico8-native
 thisdir=$(dirname "$0")
 
-export SDL_VIDEODRIVER=directfb
+
 export SDL_AUDIODRIVER=alsa
 
 HOME="${progdir}" "${BIOS_PATH}/P8/pico8_dyn" -v -splore -root_path "${romdir}" > $LOGS_PATH/pico8_splore.txt
