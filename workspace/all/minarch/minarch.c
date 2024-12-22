@@ -1734,6 +1734,24 @@ static void input_poll_callback(void) {
 			// LOG_info("pressed power with threaded core...\n");
 			was_threaded = 1;
 			toggle_thread = 1;
+			pthread_mutex_lock(&core_mx);
+			should_run_core = 0;
+			pthread_mutex_unlock(&core_mx);
+			usleep(50000);
+			//rendering = 1;
+			pthread_mutex_lock(&core_mx);
+			pthread_cond_signal(&core_rq);
+			pthread_mutex_unlock(&core_mx);
+		//	pthread_mutex_lock(&flip_mx);
+		//	pthread_cond_signal(&flip_rq);
+		//	pthread_mutex_unlock(&flip_mx);
+			usleep(50000);
+			int rendering2 = 1500;
+			while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
+				//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);system("sync");
+				usleep(1000);
+				rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
+			}
 		}
 	}
 	else if (PAD_justReleased(BTN_POWER)) {

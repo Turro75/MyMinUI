@@ -72,6 +72,7 @@ touch "$EXEC_PATH" && sync
 while [ -f "$EXEC_PATH" ]; do
 		echo 0 | sudo tee /sys/class/graphics/fbcon/cursor_blink
         sudo sh -c "echo $CPU_SPEED_GAME > ${GOVERNOR_CPUSPEED_PATH}"
+		sudo systemctl stop oga_events
         minui.elf > $LOGS_PATH/minui.txt 2>&1
 	#echo `date +'%F %T'` > "$DATETIME_PATH"
 	sync

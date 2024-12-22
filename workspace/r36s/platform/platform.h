@@ -60,7 +60,7 @@
 #define CODE_R3			310
 
 #define CODE_MENU		708
-#define CODE_POWER		CODE_NA
+#define CODE_POWER		116
 
 #define CODE_PLUS		115
 #define CODE_MINUS		114
@@ -95,8 +95,8 @@
 ///////////////////////////////
 
 #define BTN_RESUME 			BTN_X
-#define BTN_SLEEP 			BTN_NONE
-#define BTN_WAKE 			BTN_MENU
+#define BTN_SLEEP 			BTN_POWER
+#define BTN_WAKE 			BTN_POWER
 #define BTN_MOD_VOLUME 		BTN_NONE
 #define BTN_MOD_BRIGHTNESS 	BTN_MENU
 #define BTN_MOD_PLUS 		BTN_PLUS

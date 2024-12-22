@@ -141,7 +141,7 @@ void PLAT_pollInput(void) {
 				else if (code==RAW_MENU)	{ 
 							btn = BTN_MENU; 		id = BTN_ID_MENU; 
 							// hack to generate a pwr button
-							if (pressed){
+				/* 			if (pressed){
 								PWR_Pressed = 1;
 								PWR_Tick = SDL_GetTicks();
 								PWR_Actions = 0;		
@@ -153,11 +153,11 @@ void PLAT_pollInput(void) {
 									PWR_Pressed = 0;	
 									//printf("pwr released and pwr button event generated\n");			
 								} 
-							}					
+							}					 */
 					}
 				else if (code==RAW_PLUS)	{ btn = BTN_PLUS; 		id = BTN_ID_PLUS; }
 				else if (code==RAW_MINUS)	{ btn = BTN_MINUS; 		id = BTN_ID_MINUS; }
-				//else if (code==RAW_POWER)	{ btn = BTN_POWER; 		id = BTN_ID_POWER; }
+				else if (code==RAW_POWER)	{ btn = BTN_POWEROFF; 		id = BTN_ID_POWEROFF; }
 			}
 			if (type==EV_ABS) {  // (range -1800 0 +1800)
 
@@ -198,8 +198,8 @@ int PLAT_shouldWake(void) {
 	static struct input_event event;
 //	for (int i=0; i<INPUT_COUNT; i++) {
 		//input = inputs[i];
-		while (read(inputs[1], &event, sizeof(event))==sizeof(event)) {
-			if (event.type==EV_KEY && event.code==RAW_MENU && event.value==0) {
+		while (read(inputs[0], &event, sizeof(event))==sizeof(event)) {
+			if (event.type==EV_KEY && event.code==RAW_POWER && event.value==0) {
 				return 1;
 			}
 		}
@@ -631,11 +631,6 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	((scaler_t)renderer->blit)(renderer->src,dst,renderer->src_w,renderer->src_h,renderer->src_p,renderer->dst_w,renderer->dst_h,renderer->dst_p);
 	Main_Flip();
 }
-/*
-SDL_ScaleModeNearest, /**< nearest pixel sampling 
-    SDL_ScaleModeLinear,  /**< linear filtering 
-    SDL_ScaleModeBest     /**< anisotropic filtering 
-*/
 
 
 void Main_Flip(void) { //this rotates only the game frames
