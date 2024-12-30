@@ -45,6 +45,7 @@ int main(int argc , char* argv[]) {
 	LOG_info("Minput\n");
 	InitSettings();
 	SDL_Surface* screen = GFX_init(MODE_MAIN);
+	char analog[50];
 	PAD_init();
 	PWR_init();
 	PWR_setCPUSpeed(CPU_SPEED_MENU);
@@ -216,7 +217,7 @@ int main(int argc , char* argv[]) {
 					x += w + SCALE1(BUTTON_MARGIN);
 				}
 				if (has_power) {
-					blitButton("POWER", screen, PAD_isPressed(BTN_POWER), x, y, w);
+					blitButton("POWER", screen, PAD_isPressed(BTN_POWEROFF) || PAD_isPressed(BTN_POWER), x, y, w);
 					x += w + SCALE1(BUTTON_MARGIN);
 				}
 			}
@@ -243,7 +244,7 @@ int main(int argc , char* argv[]) {
 			// L3
 			if (has_L3) {
 				int x = SCALE1(PADDING + PILL_SIZE);
-				int y = oy + SCALE1(PILL_SIZE*6);
+				int y = oy + SCALE1(PILL_SIZE*6)-10;
 				int o = SCALE1(BUTTON_MARGIN);
 				
 				GFX_blitPill(ASSET_DARK_GRAY_PILL, screen, &(SDL_Rect){x,y,0});
@@ -253,13 +254,17 @@ int main(int argc , char* argv[]) {
 			// R3
 			if (has_R3) {
 				int x = FIXED_WIDTH - SCALE1(PADDING + PILL_SIZE * 3) + SCALE1(PILL_SIZE);
-				int y = oy + SCALE1(PILL_SIZE*6);
+				int y = oy + SCALE1(PILL_SIZE*6)-10;
 				int o = SCALE1(BUTTON_MARGIN);
 				
 				GFX_blitPill(ASSET_DARK_GRAY_PILL, screen, &(SDL_Rect){x,y,0});
 				blitButton("R3", screen, PAD_isPressed(BTN_R3), x+o, y+o,0);
 			}
-
+			// analog sticks
+			{
+				sprintf(analog, "Lx:%06i Ly:%06i   Rx:%06i Ry:%06i", pad.laxis.x, pad.laxis.y, pad.raxis.x, pad.raxis.y);
+				GFX_blitMessage(font.small, analog, screen, &(SDL_Rect){120,450,400,25});
+			}
 			GFX_flip(screen);
 			dirty = 0;
 		}

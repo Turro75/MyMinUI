@@ -939,6 +939,7 @@ static struct Config {
 	int loaded;
 	int initialized;
 	int controller_map_abxy_to_rstick;
+	int controller_map_lstick_to_dpad;
 } config = {
 	.frontend = { // (OptionList)
 		.count = FE_OPT_COUNT,
@@ -1069,6 +1070,7 @@ static struct Config {
 		{NULL}
 	},
 	.controller_map_abxy_to_rstick = 0,
+	.controller_map_lstick_to_dpad = 0,
 };
 static int Config_getValue(char* cfg, const char* key, char* out_value, int* lock) {
 	char* tmp = cfg;
@@ -1267,6 +1269,15 @@ static void Config_readOptionsString(char* cfg) {
 			}
 	}
 
+	if (Config_getValue(cfg,"MapLeftSticktoDPad",value,NULL)) {
+		if (strstr(value, "On")){
+				config.controller_map_lstick_to_dpad = 1;
+			} else {
+				config.controller_map_lstick_to_dpad = 0;
+			}
+		pad.map_leftstick_to_dpad = config.controller_map_lstick_to_dpad;
+	}
+	 
 	for (int i=0; config.core.options[i].key; i++) {
 		Option* option = &config.core.options[i];
 		if (!Config_getValue(cfg, option->key, value, &option->lock)) continue;
@@ -1404,6 +1415,7 @@ static void Config_write(int override) {
 	if (has_custom_controllers) fprintf(file, "%s = %i\n", "minarch_gamepad_type", gamepad_type);
 
 	fprintf(file,"%s = %s\n", "MapABXYtoRightStick", config.controller_map_abxy_to_rstick ? "On" : "Off");
+	fprintf(file,"%s = %s\n", "MapLeftSticktoDPad", config.controller_map_lstick_to_dpad ? "On" : "Off");
 
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
@@ -1450,6 +1462,8 @@ static void Config_restore(void) {
 	}
 
 	config.controller_map_abxy_to_rstick = 0;
+	config.controller_map_lstick_to_dpad = 0;
+	pad.map_leftstick_to_dpad = config.controller_map_lstick_to_dpad;
 
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
@@ -2016,11 +2030,11 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 		if (out)
 			renderer.rotate = *out;
 			LOG_info("RETRO_ENVIRONMENT_SET_ROTATION set to %i\n", renderer.rotate);
-#ifdef M21
+//#ifdef M21
 		return true;
-#else
-		return false;
-#endif
+//#else
+//		return false;
+//#endif
 		break;
 	}
 	case RETRO_ENVIRONMENT_GET_OVERSCAN: { /* 2 */
@@ -2412,6 +2426,7 @@ static void MSG_quit(void) {
 
 ///////////////////////////////
 
+/*
 static const char* bitmap_font[] = {
 	['0'] = 
 		" 111 "
@@ -2609,6 +2624,340 @@ static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int strid
 	#define CHAR_WIDTH 5
 	#define CHAR_HEIGHT 9
 	#define LETTERSPACING 1
+*/
+///////////////////////////////
+
+static const char* bitmap_font[] = {
+	['0'] = 
+		"  111111  "
+		" 11111111 "
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		" 11111111 "
+		"  111111  ",
+	['1'] =
+		"      11  "
+		"    1111  "
+		"  111111  "
+		" 1111111  "
+		"      11  "
+		"      11  "
+		"      11  "
+		"      11  "
+		"      11  "
+		"      11  "
+		"      11  "
+		"      11  "
+		"      11  "
+		"      11  "
+		"      11  "
+		"      11  ",		
+	['2'] =
+		"  111111  "
+		" 11111111 "
+		"11      11"
+		"11      11"
+		"       11 "
+		"      11  "
+		"     11   "
+		"    11    "
+		"   11     "
+		"  11      "
+		" 11       "
+		"11        "
+		"11        "
+		"11        "
+		"1111111111"
+		"1111111111",
+	['3'] =
+		"  111111  "
+		" 11111111 "
+		"11      11"
+		"        11"
+		"        11"
+		"        11"
+		"        11"
+		" 11111111 "
+		" 11111111 "
+		"        11"
+		"        11"
+		"        11"
+		"        11"
+		"11      11"
+		" 11111111 "
+		"  111111  ",
+	['4'] =
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"1111111111"
+		" 111111111"
+		"        11"
+		"        11"
+		"        11"
+		"        11"
+		"        11"
+		"        11",
+	['5'] =
+		"1111111111"
+		"1111111111"
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"111111111 "
+		"1111111111"
+		"        11"
+		"        11"
+		"        11"
+		"        11"
+		"        11"
+		"11      11"
+		"1111111111"
+		" 11111111 ",
+	['6'] =
+		" 11111111 "
+		"1111111111"
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"111111111 "
+		"1111111111"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"1111111111"
+		" 11111111 ",
+	['7'] =
+		"1111111111"
+		"1111111111"
+		"        11"
+		"        11"
+		"        11"
+		"        11"
+		"       11 "
+		"      11  "
+		"     11   "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    ",
+	['8'] =
+		"  111111  "
+		" 11111111 "
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		" 11111111 "
+		" 11111111 "
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		" 11111111 "
+		"  111111  ",
+	['9'] =
+		"  111111  "
+		" 11111111 "
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		" 11111111 "
+		"  1111111 "
+		"        11"
+		"        11"
+		"        11"
+		"        11"
+		"        11"
+		" 11111111 "
+		"  111111  ",
+	['.'] = 
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"  1111	   "
+		"  1111    "
+		"  1111    ",
+	[','] = 
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"    111   "
+		"   111	   "
+		"  111     "
+		" 111      ",
+	[' '] = 
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          ",
+	['('] = 
+		"       11 "
+		"      11  "
+		"     11   "
+		"    11    "
+		"   11     "
+		"  11      "
+		" 11       "
+		" 11       "
+		" 11       "
+		" 11       "
+		"  11      "
+		"   11     "
+		"    11    "
+		"     11   "
+		"      11  "
+		"       11 ",
+	[')'] = 
+		" 11       "
+		"  11      "
+		"   11     "
+		"    11    "
+		"     11   "
+		"      11  "
+		"       11 "
+		"       11 "
+		"       11 "
+		"       11 "
+		"      11  "
+		"     11   "
+		"    11    "
+		"   11     "
+		"  11      "
+		" 11       ",
+	['/'] = 
+		"       11 "
+		"       11 "
+		"      11  "
+		"      11  "
+		"     11   "
+		"     11   "
+		"    11    "
+		"    11    "
+		"   11     "
+		"   11     "
+		"  11      "
+		"  11      "
+		" 11       "
+		" 11       "
+		"11        "
+		"11        ",
+	['x'] = 
+		"          "
+		"          "
+		"          "
+		"          "
+		"11      11"
+		"11      11"
+		" 11    11 "
+		"  11  11  "
+		"   1111   "
+		"    11    "
+		"    11    "
+		"   1111   "
+		"  11  11  "
+		" 11    11 "
+		"11      11"
+		"11      11",
+	['%'] = 
+	    "          "
+		"  11      "
+		" 1111     "
+		"11  11 11 "
+		" 1111  11 "
+		"  11   11 "
+		"      11  "
+		"     11   "
+		"    11    "
+		"    11    "
+		"   11     "
+		"  11  11  "
+		" 11  1111 "
+		" 11 11  11"
+		"     1111 "
+		"      11  ",
+	['T'] = 
+		"1111111111"
+		"1111111111"
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    "
+		"    11    ",	
+};
+
+static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
+	#define CHAR_WIDTH 10
+	#define CHAR_HEIGHT 16
+	#define LETTERSPACING 2
+
 
 	int len = strlen(text);
 	int w = ((CHAR_WIDTH+LETTERSPACING)*len)-1;
@@ -2917,7 +3266,155 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 	// }
 	
 }
+void video_refresh_callback_rotate(int rotation, void *data, unsigned width, unsigned height, size_t pitch) {
+	int x, y, thispitch;
+	int now = SDL_GetTicks();
+	if (renderer.true_w != width || renderer.true_h != height || renderer.true_p != pitch){
+		LOG_info("Game Rotation of %ddeg calls RESIZE %ix%i_%i\n", rotation*90, width, height, pitch);fflush(stdout);
+		renderer.resize = 1;
+		renderer.true_w = width;
+		renderer.true_h = height;
+		renderer.true_p = pitch;		
+	} 
+	SDL_FreeSurface(renderer.src_surface);
+	thispitch = pitch/2;
+	if (rotation == 0) {	
+		renderer.src_surface = SDL_CreateRGBSurface(SDL_SWSURFACE,width, height, 16, RGBA_MASK_565);		
+		for (y = 0; y < height; y++) {
+			for (x = 0; x < width; x++) {	
+				*((uint16_t *)renderer.src_surface->pixels + x + y * width) = *((uint16_t *)data + x + y * thispitch);
+			}
+		}
+	}
+	if (rotation == 1) {
+				renderer.src_surface = SDL_CreateRGBSurface(SDL_SWSURFACE,height, width, 16, RGBA_MASK_565);
+		for (y = 0; y < height; y++) {
+			for (x = 0; x < width; x++) {
+				*((uint16_t *)renderer.src_surface->pixels + y + (width - x - 1) * height) = *((uint16_t *)data + x + y * thispitch);
+			}
+		}
+	}
+	if (rotation == 2) {
+		renderer.src_surface = SDL_CreateRGBSurface(SDL_SWSURFACE,width, height, 16, RGBA_MASK_565);		
+		for (y = 0; y < height; y++) {
+			for (x = 0; x < width; x++) {
+				*((uint16_t *)renderer.src_surface->pixels + (width - x - 1) + ((height - y - 1) * width)) = *((uint16_t *)data + x + y * thispitch);
+			}
+		}		
+	}
+	if (rotation == 3) {
+		renderer.src_surface = SDL_CreateRGBSurface(SDL_SWSURFACE,height, width, 16, RGBA_MASK_565);
+		for (y = 0; y < height; y++) {
+			for (x = 0; x < width; x++) {
+				*((uint16_t *)renderer.src_surface->pixels + (height - y - 1) + (x  * height)) = *((uint16_t *)data + x + y * thispitch);
+			}
+		}
+	}		
+//	LOG_info("Game Rotation of %d callback TOOK %dmsec\n", rotation*90, SDL_GetTicks() - now);
+}
+
+
+SDL_Rect video_refresh_callback_resize_native(void) {
+	LOG_info("RESIZE NATIVE\n");fflush(stdout);
+	//integer scaling
+	SDL_Rect retvalue;
+	int scale = 6;
+	int max_xscale = 6;
+	while (max_xscale * renderer.src_surface->w > FIXED_WIDTH) max_xscale--;
+	int max_yscale = 6;
+	while (max_yscale * renderer.src_surface->h > FIXED_HEIGHT) max_yscale--;
+	scale = MIN(max_xscale, max_yscale);
+	scale = MIN(scale, screen_max_scale+1);
+	LOG_info("MAX xscaler = %d ** MAX yscaler = %d ** MAX scaler = %d\n", max_xscale, max_yscale, scale);fflush(stdout);
+	//calculate offsets
+	
+	int dst_w = renderer.src_surface->w * scale;
+	int dst_h = renderer.src_surface->h * scale;
+	int dst_x = (FIXED_WIDTH - dst_w) / 2;
+	int dst_y = (FIXED_HEIGHT - dst_h) / 2;
+	retvalue.x = dst_x;
+	retvalue.y = dst_y;
+	retvalue.w = dst_w;
+	retvalue.h = dst_h;
+	LOG_info("Dst_w %d dst_h %d dst_x %d dst_y %d\n", dst_w, dst_h, dst_x, dst_y);fflush(stdout);
+	return retvalue;
+}
+
+SDL_Rect video_refresh_callback_resize_aspect(void) {
+	LOG_info("RESIZE ASPECT\n");fflush(stdout);
+	//maximum scaling keeping original aspect ratio 
+	SDL_Rect retvalue;
+	int dst_x,dst_y,dst_w,dst_h;
+	double sysaspect = 1.0 * FIXED_WIDTH / FIXED_HEIGHT;
+	double aspect = renderer.src_surface->w / (double)renderer.src_surface->h;
+	if (aspect >= sysaspect) {
+		//landscape or 1:1 -> width limited
+		dst_w = FIXED_WIDTH;
+		double _dst_h = 1.0 * dst_w / aspect;
+		dst_h = (int)_dst_h;
+		dst_x = 0;
+		dst_y = (FIXED_HEIGHT - dst_h) / 2;
+	} else {
+		//portrait -> height limited		
+		dst_h = FIXED_HEIGHT;
+		double _dst_w = 1.0 * dst_h * aspect;
+		dst_w = (int)_dst_w;
+		dst_x = (FIXED_WIDTH - dst_w) / 2;
+		dst_y = 0;		
+	}
+	retvalue.x = dst_x;
+	retvalue.y = dst_y;
+	retvalue.w = dst_w;
+	retvalue.h = dst_h;
+	LOG_info("Sysaspect %f aspect %f dst_w %d dst_h %d dst_x %d dst_y %d\n", sysaspect, aspect,dst_w, dst_h, dst_x, dst_y);fflush(stdout);
+	return retvalue;
+	//calculate offsets
+}
+
+void video_refresh_callback_resize(void) {
+	LOG_info("RESIZE IN\n");fflush(stdout);
+	uint32_t now = SDL_GetTicks();
+	//LOG_info(" VideoResize IN %d %d %d ABS:%d\n", renderer.src_surface->w, renderer.src_surface->h, renderer.src_surface->pitch, now);fflush(stdout);
+	SDL_Rect targetarea = {0,0,FIXED_WIDTH,FIXED_HEIGHT};
+	switch(screen_scaling) {
+		case SCALE_ASPECT: { 
+							targetarea = video_refresh_callback_resize_aspect();
+							break;
+							};
+		case SCALE_NATIVE: { 
+							targetarea = video_refresh_callback_resize_native();
+							break;
+							};
+		case SCALE_FULLSCREEN: { 
+								LOG_info("RESIZE FULLSCREEN\n");fflush(stdout);
+								//targetarea = video_refresh_callback_resize_fullscreen(data);
+								break;
+							};
+		default: { 
+					LOG_info("RESIZE FULLSCREEN UNDEF\n");fflush(stdout);
+								//targetarea = video_refresh_callback_resize_fullscreen(data);
+					break;
+				}	
+	}
+	renderer.scale=1.0 * targetarea.w / (double)renderer.src_surface->w;
+	renderer.aspect=1.0 * targetarea.w / (double)targetarea.h;
+	renderer.src_w = renderer.src_surface->w;
+	renderer.src_h = renderer.src_surface->h;
+	renderer.src_p = renderer.src_surface->pitch;
+	renderer.dst_w = targetarea.w;
+	renderer.dst_h = targetarea.h;
+	renderer.dst_x = targetarea.x;
+	renderer.dst_y = targetarea.y;	
+	renderer.dst_p = renderer.dst_w * FIXED_PITCH;	
+	renderer.resize = 0;
+	LOG_info("VideoResize OUT %d %d %d %d TOOK %dms ABS:%d\n", renderer.dst_w , renderer.dst_h, renderer.dst_x , renderer.dst_y ,  SDL_GetTicks()-now, SDL_GetTicks());fflush(stdout);
+}
+
+
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
+//	uint32_t now = SDL_GetTicks();
+ 	if (!thread_video) rendering = 0;
+
 	if (!data) return;
 	static uint32_t last_flip_time = 0;
 	fps_ticks += 1;
@@ -2950,86 +3447,80 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	else {
 		renderer.src = (void*)data;
 	}
-
-	if (renderer.dst_p==0 || width!=renderer.true_w || height!=renderer.true_h || pitch!=renderer.src_p) {
-		selectScaler(width, height, pitch);
+	//ok here I have renderer.src that points to the frame data to display, it is in RGB565 format
+	//quite sure it is the right moment to rotate it, before calling the select scaler.
+	//start testing from a SDL_Surface
+	video_refresh_callback_rotate(renderer.rotate, renderer.src, width, height, pitch);
+//	uint32_t now2 = SDL_GetTicks(); 
+	
+	if (renderer.dst_p==0 || renderer.resize ==1) {
+//		selectScaler(width, height, pitch);
+//		GFX_clearAll();	
+		video_refresh_callback_resize();
+		
 		GFX_clearAll();	
 	}
-
+//	LOG_info("video_refresh_callback_main dst_p=%iwidth:%i-%i height:%i-%i pitch:%i-%i\n", renderer.dst_p,width, renderer.true_w ,height, renderer.true_h,pitch,renderer.true_p);
+//	uint32_t now4 = SDL_GetTicks();
+	GFX_blitRenderer(&renderer);
+//	uint32_t now5 = SDL_GetTicks();
 	// debug
 	if (show_debug) {
 		char debug_text[128];
-		sprintf(debug_text, "%ix%i %ix %d", renderer.src_w,renderer.src_h, renderer.scale, downsample?32:16);
-		blitBitmapText(debug_text,2,2,(uint16_t*)renderer.src,pitch/2, width,height);
+		sprintf(debug_text, "%ix%i %.1fx %d", renderer.src_w,renderer.src_h, renderer.scale, downsample?32:16);
+		blitBitmapText(debug_text,2,2,screen->pixels,screen->pitch/2, screen->w,screen->h);
 
-		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.src_w*renderer.scale,renderer.src_h*renderer.scale);
-		blitBitmapText(debug_text,-2,2,(uint16_t*)renderer.src,pitch/2, width,height);
+		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.dst_w,renderer.dst_h);
+		blitBitmapText(debug_text,-2,2,screen->pixels,screen->pitch/2, screen->w,screen->h);
 
 		sprintf(debug_text, "%.1f/%.1f", fps_double,fps2_double);
-		blitBitmapText(debug_text,2,-13,(uint16_t*)renderer.src,pitch/2, width, height);
+		blitBitmapText(debug_text,2,-21,screen->pixels,screen->pitch/2, screen->w,screen->h);
 
 		sprintf(debug_text, "%d %s", processors, cpuload);
-		blitBitmapText(debug_text,2,-1,(uint16_t*)renderer.src,pitch/2, width,height);
+		blitBitmapText(debug_text,2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
 
-		sprintf(debug_text, "%ix%i", renderer.dst_w,renderer.dst_h);
-		blitBitmapText(debug_text,-2,-1,(uint16_t*)renderer.src,pitch/2, width,height);
+		sprintf(debug_text, "%i", renderer.rotate*90);
+		blitBitmapText(debug_text,-2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
 	}
-	
-	renderer.dst = screen->pixels;
-	
-	//LOG_info("video_refresh_callback width:%i height:%i pitch:%i\n", width, height, pitch);
-	GFX_blitRenderer(&renderer);
-	//GFX_flip(screen);
+//	uint32_t now6 = SDL_GetTicks();
+	GFX_flip(screen);
 	last_flip_time = SDL_GetTicks();
+	if (!thread_video) render = 0;
+//	LOG_info("videorefreshcallbackmain took %dmsec - softstrech took %dmsec - rotate took %dmsec - flip took %dmsec\n", last_flip_time - now, now5 - now4, now4 - now2, last_flip_time-now6 );
+//	LOG_info("FRAME:%d video_refresh_callback_main OUT  ABS:%i\n", counterframe, last_flip_time);fflush(stdout);
 }
 
-//static uint32_t last_callback_time = 0;
+static uint32_t last_callback_time = 0;
 static void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
-//	LOG_info("video_refresh_callback width:%i height:%i pitch:%i\n",width,height,pitch);system("sync");
-	if (!data) return; //frameskip activated?
-	//if ((!thread_video)&&(wait_for_thread)) return; //prboom sends frames before thread_video started....
-	//while (coreloaded==0) usleep(1000);
-//	LOG_info("2video_refresh_callback width:%i height:%i pitch:%i\n",width,height,pitch);system("sync");
+	int callback_time = SDL_GetTicks();
+//	LOG_info("\nFRAME:%d video_refresh_callback IN elapsed %lums width:%i height:%i pitch:%i ABS:%i\n",framecounter, callback_time-last_callback_time ,width,height,pitch, callback_time);fflush(stdout);
+	if (!data || show_menu) {
+//		LOG_info("FRAME:%d Empty Frame\n");fflush(stdout);
+		return; //frameskip activated?
+	}
 	fps2_ticks++;
-//	uint32_t callback_time = SDL_GetTicks();
 	if (thread_video) {		
 		pthread_mutex_lock(&flip_mx);
-	/*	if (backbuffer && (backbuffer->w!=width || backbuffer->h!=height || backbuffer->pitch!=pitch)) {
-			
-			free(backbuffer->pixels);
-			SDL_FreeSurface(backbuffer);
-			backbuffer = NULL;
-			LOG_info("Deleted Backbuffer!\n");system("sync");
-			//pthread_mutex_unlock(&flip_mx);
-		}
-		if (!backbuffer) {
-			//pthread_mutex_lock(&flip_mx);
-			//uint16_t* pixels = malloc(height*pitch);
-			uint16_t* pixels = malloc(height*pitch);
-			backbuffer = SDL_CreateRGBSurfaceFrom(pixels, width, height, FIXED_DEPTH, pitch, RGBA_MASK_565);
-			LOG_info("Created Backbuffer %ix%i-%i-%i!\n",width,height,FIXED_DEPTH,pitch);system("sync");
-			//pthread_mutex_unlock(&flip_mx);
-		}*/
-		//pthread_mutex_lock(&flip_mx);
 		backbuffer.w = width;
 		backbuffer.h = height;
 		backbuffer.pitch = pitch;
 		memcpy(backbuffer.pixels, data, backbuffer.h*backbuffer.pitch);
 		pthread_mutex_unlock(&flip_mx);
-		//LOG_info("%05d:Backbuffer Copied!\n",fps_ticks);system("sync");
-		//pthread_mutex_lock(&core_mx);
+		
 		pthread_mutex_lock(&core_mx);
 		rendering = 1;
 		pthread_cond_signal(&core_rq);		
 		pthread_mutex_unlock(&core_mx);
-		//pthread_cond_signal(&flip_rq);
-		//pthread_mutex_unlock(&core_mx);
+
 	}
 	else {
+		rendering = 1;
 		video_refresh_callback_main(data,width,height,pitch);	
 	}
-//	LOG_info("video_refresh_callback     : wait_for_thread:%i thread_video:%i config_done = %i %ix%i_%i elapsed %lums took:%lums abs %lu\n",wait_for_thread,thread_video,config_load_done,width,height,pitch,width,height,pitch, callback_time-last_callback_time, SDL_GetTicks()-callback_time, callback_time);
-//	last_callback_time = callback_time;
+//	LOG_info("FRAME:%d video_refresh_callback OUT: wait_for_thread:%i thread_video:%i config_done = %i %ix%i_%i took:%lums ABS %lu\n",framecounter,wait_for_thread,thread_video,config_load_done,width,height,pitch, SDL_GetTicks()-callback_time, callback_time);fflush(stdout);
+
+//	LOG_info("videorefreshcallback took %dmsec elapsed %dmsec\n", SDL_GetTicks() - callback_time, callback_time - last_callback_time);
+	last_callback_time = callback_time;
 }
 ///////////////////////////////
 
@@ -3693,6 +4184,17 @@ static int OptionControls_mapABXYChanged(MenuList* list, int i) {
 	return MENU_CALLBACK_NOP;
 }
  
+ static int OptionControls_mapLStickChanged(MenuList* list, int i) {
+	MenuItem* item = &list->items[i];
+	if (item->values!=onoff_labels) return MENU_CALLBACK_NOP;
+	config.controller_map_lstick_to_dpad = item->value;
+	pad.map_leftstick_to_dpad = config.controller_map_lstick_to_dpad;
+
+	return MENU_CALLBACK_NOP;
+}
+
+
+
 static MenuList OptionControls_menu = {
 	.type = MENU_INPUT,
 	.desc = "Press A to set and X to clear."
@@ -3719,7 +4221,13 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 		item2->values = onoff_labels;
 		item2->on_change = OptionControls_mapABXYChanged;
 
-
+		MenuItem* item3 = &OptionControls_menu.items[k++];
+		item3->name = "MapLeftSticktoDPad";
+		item3->desc = "Map left stick to DPad buttons.";
+		item3->value = config.controller_map_lstick_to_dpad;
+		item3->values = onoff_labels;
+		item3->on_change = OptionControls_mapLStickChanged;
+	
 		if (has_custom_controllers) {
 			MenuItem* item = &OptionControls_menu.items[k++];
 			item->name = "Controller";
@@ -3750,6 +4258,11 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 		
 		MenuItem* item2 = &OptionControls_menu.items[k++];
 		item2->value = config.controller_map_abxy_to_rstick;
+
+		MenuItem* item3 = &OptionControls_menu.items[k++];
+		item3->value = config.controller_map_lstick_to_dpad;
+		pad.map_leftstick_to_dpad = config.controller_map_lstick_to_dpad;
+		
 
 		if (has_custom_controllers) {
 			MenuItem* item = &OptionControls_menu.items[k++];
@@ -4592,22 +5105,20 @@ static char* getAlias(char* path, char* alias) {
 
 static void Menu_loop(void) {
 
-	if (thread_video) {
-		int rendering2 = 1500;
-		while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
-			//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);system("sync");
-			usleep(1000);
-			rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
-		}
-		rendering = 0;
-		render = 0;
+	LOG_info("Entering Menu render= %i - rendering= %i\n",render,rendering);fflush(stdout);
+	int rendering2 = 1500;
+	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
+		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);system("sync");
+		usleep(1000);
+		rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
 	}
-//#ifdef M21
+	rendering = 0;
+	render = 0;
 	if (firstmenu) PLAT_clearAll();
 	firstmenu = 0;
-//#endif	
-	//LOG_info("ENTRATO NEL MENU render = %i - rendering = %i\n",render,rendering) ;system("sync");
-	menu.bitmap = SDL_CreateRGBSurfaceFrom(renderer.src, renderer.true_w, renderer.true_h, FIXED_DEPTH, renderer.src_p, RGBA_MASK_565);
+
+	menu.bitmap = SDL_CreateRGBSurfaceFrom(renderer.src_surface->pixels, renderer.src_surface->w, renderer.src_surface->h, FIXED_DEPTH, renderer.src_surface->pitch, RGBA_MASK_565);
+	
 	// LOG_info("Menu_loop:menu.bitmap %ix%i\n", menu.bitmap->w,menu.bitmap->h);
 	
 	SDL_Surface* backing = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH,DEVICE_HEIGHT,FIXED_DEPTH,RGBA_MASK_565); 
@@ -4617,7 +5128,8 @@ static void Menu_loop(void) {
 	int restore_h = screen->h;
 	int restore_p = screen->pitch;
 	//if (restore_w!=DEVICE_WIDTH || restore_h!=DEVICE_HEIGHT || restore_p!=DEVICE_PITCH) {
-	LOG_info("Menu_loop begin call GFX_resize %i %i %i\n",DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
+	
+	LOG_info("Menu_loop begin call GFX_resize %i %i %i\n",DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);fflush(stdout);
 	screen = GFX_resize(DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
 	//}
 	
@@ -4770,7 +5282,7 @@ static void Menu_loop(void) {
 						int old_scaling = screen_scaling;
 						Menu_options(&options_menu);
 						if (screen_scaling!=old_scaling) {
-							selectScaler(renderer.true_w,renderer.true_h,renderer.src_p);
+						//	selectScaler(renderer.true_w,renderer.true_h,renderer.src_p);
 						
 							restore_w = renderer.dst_w;
 							restore_h = renderer.dst_h;
@@ -4828,9 +5340,12 @@ static void Menu_loop(void) {
 				SCALE1((PADDING - (PADDING*fancy_mode))+4)
 			});
 			SDL_FreeSurface(text);
+			if (show_setting && !GetHDMI()) {
+				 GFX_blitHardwareHints(screen, show_setting, fancy_mode);
+			} else {
+				GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU",pwractionstr, "Y","BOXART", NULL }, 0, screen, 0, fancy_mode);
+			}
 			
-			if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting, fancy_mode);
-			else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU",pwractionstr, "Y","BOXART", NULL }, 0, screen, 0, fancy_mode);
 			GFX_blitButtonGroup((char*[]){ "B","BACK", "A","OKAY", NULL }, 1, screen, 1, fancy_mode);
 			
 			// list
@@ -5012,10 +5527,7 @@ static void Menu_loop(void) {
 		if (thread_video) {
 			pthread_mutex_lock(&core_mx);
 			should_run_core = 1;
-			pthread_mutex_unlock(&core_mx);
-			pthread_mutex_lock(&flip_mx);
-			should_run_flip = 1;
-			pthread_mutex_unlock(&flip_mx);			
+			pthread_mutex_unlock(&core_mx);		
 		} else {
 			video_refresh_callback(renderer.src, renderer.true_w, renderer.true_h, renderer.src_p);
 		}
@@ -5147,12 +5659,15 @@ static void* flipThread(void *arg) {
 		//wait for backbuffer to be ready
 		pthread_mutex_lock(&flip_mx);
 		run = should_run_flip;
+		pthread_mutex_unlock(&flip_mx);
 		if  (run) {
+			pthread_mutex_lock(&flip_mx);
 			pthread_cond_wait(&flip_rq, &flip_mx);
 			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
 			render = 0;
+			pthread_mutex_unlock(&flip_mx);
 		} 
-		pthread_mutex_unlock(&flip_mx);
+		
 	}
 	pthread_exit(NULL);
 }

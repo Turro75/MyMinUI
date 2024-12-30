@@ -78,12 +78,6 @@ void PLAT_quitInput(void) {
 
 void PLAT_pollInput(void) {
 
-	if (inputs[1]<0) {
-		LOG_info("ERROR as inputs<0\n");
-		fflush(stdout);
-		return;
-	}
-
 	// reset transient state
 	pad.just_pressed = BTN_NONE;
 	pad.just_released = BTN_NONE;
@@ -163,9 +157,13 @@ void PLAT_pollInput(void) {
 
 				if (code==0) {  //left stick horizontal analog (-1800 left / +1800 right)
 					pad.laxis.x =  map(value ,-1800,1800,-0x7fff,0x7fff);
+					if (pad.map_leftstick_to_dpad)
+						PAD_setAnalog(BTN_ID_DPAD_LEFT, BTN_ID_DPAD_RIGHT, pad.laxis.x, tick+PAD_REPEAT_DELAY);
 				}
 				if (code==1) {  //left stick vertical analog (-1800 up / +1800 down)
 					pad.laxis.y =  map(value ,-1800,1800,-0x7fff,0x7fff);
+					if (pad.map_leftstick_to_dpad)
+						PAD_setAnalog(BTN_ID_DPAD_UP,   BTN_ID_DPAD_DOWN,  pad.laxis.y, tick+PAD_REPEAT_DELAY);
 				}
 				if (code==3) {  //right stick horizontal analog (-1800 left / +1800 right)
 					pad.raxis.x =  map(value ,-1800,1800,-0x7fff,0x7fff);
@@ -174,7 +172,7 @@ void PLAT_pollInput(void) {
 					pad.raxis.y =  map(value ,-1800,1800,-0x7fff,0x7fff);
 				}
 			}
-			if ((btn!=BTN_NONE)&&(btn!=BTN_MENU)) PWR_Actions = 1;
+			//if ((btn!=BTN_NONE)&&(btn!=BTN_MENU)) PWR_Actions = 1;
 			if (btn==BTN_NONE) continue;
 
 			if (!pressed) {
@@ -194,16 +192,16 @@ void PLAT_pollInput(void) {
 		
 
 int PLAT_shouldWake(void) {
-	//int input;
+	int input;
 	static struct input_event event;
-//	for (int i=0; i<INPUT_COUNT; i++) {
-		//input = inputs[i];
-		while (read(inputs[0], &event, sizeof(event))==sizeof(event)) {
+	for (int i=0; i<INPUT_COUNT; i++) {
+		input = inputs[i];
+		while (read(input, &event, sizeof(event))==sizeof(event)) {
 			if (event.type==EV_KEY && event.code==RAW_POWER && event.value==0) {
 				return 1;
 			}
 		}
-//	}
+	}
 	return 0;
 }
 
@@ -476,7 +474,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	//if (vid.pixels) {free(vid.pixels);vid.pixels=NULL;}
 	vid.pixels = malloc(h*p);
 	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, w, h, FIXED_DEPTH, p, RGBA_MASK_565);
-	vid.screen2 = SDL_CreateRGBSurfaceWithFormat(0, w, h, p, vid.screen->format->format); 
+	//vid.screen2 = SDL_CreateRGBSurfaceWithFormat(0, w, h, p, vid.screen->format->format); 
 	//vid.screen	= SDL_CreateRGBSurfaceFrom(pixels, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	//vid.screen	= SDL_CreateRGBSurface(SDL_HWSURFACE, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	vid.width	= w;
@@ -490,7 +488,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	//vid.screen_size = vid.finfo.line_length * vid.vinfo.yres_virtual;
 
 	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
-	vid.screen_size = vid.finfo.line_length * w;
+	vid.screen_size = vid.finfo.line_length * h;
     //vid.fbmmap = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 	vid.fbmmap = malloc(vid.screen_size *(sizeof(uint8_t)));
 	vid.sharpness = SHARPNESS_SOFT;
@@ -563,12 +561,12 @@ static int next_effect = EFFECT_NONE;
 static int effect_type = EFFECT_NONE;
 
 SDL_Surface* PLAT_resizeVideo(int w, int h, int p) {
-	resizeVideo(w,h,p,0);
+//	resizeVideo(w,h,p,0);
 	return vid.screen;
 }
 
 SDL_Surface* PLAT_resizeVideoGame(int w, int h, int p) {
-	resizeVideo(w,h,p,1);
+//	resizeVideo(w,h,p,1);
 	return vid.screen;
 }
 void PLAT_setVideoScaleClip(int x, int y, int width, int height) {
@@ -592,7 +590,7 @@ void PLAT_vsync(int remaining) {
 }
 
 scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
-	if (effect_type==EFFECT_LINE) {
+/*	if (effect_type==EFFECT_LINE) {
 		switch (renderer->scale) {
 			case 4:  return scale4x_line;
 			case 3:  return scale3x_line;
@@ -615,12 +613,13 @@ scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
 		case 2:  return scale2x2_n16;
 		default: return scale1x1_n16;
 	}
+	*/
 }
 
 void Main_Flip(void);
 
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
-	if (effect_type!=next_effect) {
+/*	if (effect_type!=next_effect) {
 		effect_type = next_effect;
 		renderer->blit = PLAT_getScaler(renderer); // refresh the scaler
 	}
@@ -629,31 +628,33 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	void* dst = renderer->dst + (renderer->dst_y * renderer->dst_p) + (renderer->dst_x * FIXED_BPP);
 	
 	((scaler_t)renderer->blit)(renderer->src,dst,renderer->src_w,renderer->src_h,renderer->src_p,renderer->dst_w,renderer->dst_h,renderer->dst_p);
-	Main_Flip();
+	//Main_Flip();
+*/
+	SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
 }
 
 
 void Main_Flip(void) { //this rotates only the game frames
-	SDL_SoftStretch(vid.screen, NULL, vid.screen2, &(SDL_Rect){0,0,FIXED_WIDTH,FIXED_HEIGHT});
+//	SDL_SoftStretch(vid.screen, NULL, vid.screen2, &(SDL_Rect){0,0,FIXED_WIDTH,FIXED_HEIGHT});
 	if (finalrotate == 0) 
 		{
 			// No Rotation
-			M21_SDLFB_Flip(vid.screen2, vid.fbmmap,vid.linewidth);
+			M21_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
 		}
 	if (finalrotate== 1)
 		{
 			// 90 Rotation
-			M21_SDLFB_FlipRotate90(vid.screen2, vid.fbmmap,vid.linewidth);
+			M21_SDLFB_FlipRotate90(vid.screen, vid.fbmmap,vid.linewidth);
 		}
 	if (finalrotate == 2)
 		{
 			// 180 Rotation
-			M21_SDLFB_FlipRotate180(vid.screen2, vid.fbmmap,vid.linewidth);
+			M21_SDLFB_FlipRotate180(vid.screen, vid.fbmmap,vid.linewidth);
 		}
 	if (finalrotate == 3)
 		{
 			// 270 Rotation
-			M21_SDLFB_FlipRotate270(vid.screen2, vid.fbmmap,vid.linewidth);
+			M21_SDLFB_FlipRotate270(vid.screen, vid.fbmmap,vid.linewidth);
 		}
 	write(vid.fdfb, vid.fbmmap, vid.screen_size);
 	lseek(vid.fdfb,0,0);
@@ -661,29 +662,35 @@ void Main_Flip(void) { //this rotates only the game frames
 
 
 void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu + minui + tools
-	SDL_SoftStretch(vid.screen, NULL, vid.screen2, &(SDL_Rect){0,0,FIXED_WIDTH,FIXED_HEIGHT});	
+	//SDL_SoftStretch(vid.screen, NULL, vid.screen2, &(SDL_Rect){0,0,FIXED_WIDTH,FIXED_HEIGHT});
+
+	//M21_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
+//	int now = SDL_GetTicks();
+
 	if (vid.rotate == 0) 
 	{
 		// No Rotation
-		M21_SDLFB_Flip(vid.screen2, vid.fbmmap,vid.linewidth);
+		M21_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
 	}
 	if (vid.rotate == 1)
 	{
 		// 90 Rotation
-		M21_SDLFB_FlipRotate90(vid.screen2, vid.fbmmap,vid.linewidth);
+		M21_SDLFB_FlipRotate90(vid.screen, vid.fbmmap,vid.linewidth);
 	}
 	if (vid.rotate == 2)
 	{
 		// 180 Rotation
-		M21_SDLFB_FlipRotate180(vid.screen2, vid.fbmmap,vid.linewidth);
+		M21_SDLFB_FlipRotate180(vid.screen, vid.fbmmap,vid.linewidth);
 	}
 	if (vid.rotate == 3)
 	{
 		// 270 Rotation
-		M21_SDLFB_FlipRotate270(vid.screen2, vid.fbmmap,vid.linewidth);
+		M21_SDLFB_FlipRotate270(vid.screen, vid.fbmmap,vid.linewidth);
 	}
+//	int now2 = SDL_GetTicks();
 	write(vid.fdfb, vid.fbmmap, vid.screen_size);
 	lseek(vid.fdfb,0,0);
+//	LOG_info("Total Flip TOOK: %imsec, Draw TOOK: %imsec\n", SDL_GetTicks()-now, now2-now);
 }
 
 
@@ -831,7 +838,7 @@ int PLAT_getNumProcessors(void) {
 }
 
 uint32_t PLAT_screenMemSize(void) {
-	return 0;
+	return vid.screen_size;
 }
 
 void PLAT_getAudioOutput(void){

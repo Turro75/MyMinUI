@@ -110,15 +110,17 @@ enum {
 
 typedef struct GFX_Renderer {
 	void* src;
+	SDL_Surface* src_surface;
 	void* dst;
 	void* blit;
 	double aspect; // 0 for integer, -1 for fullscreen, otherwise aspect ratio, used for SDL2 accelerated scaling
-	int scale;
+	double scale;
 	int rotate; // 0=0, 1=90, 2=180, 3=270
-	
+	int resize;
 	// TODO: document this better
 	int true_w;
 	int true_h;
+	int true_p;
 
 	int src_x;
 	int src_y;
@@ -219,6 +221,7 @@ typedef struct PAD_Context {
 	uint32_t repeat_at[BTN_ID_COUNT];
 	PAD_Axis laxis;
 	PAD_Axis raxis;
+	int map_leftstick_to_dpad;
 } PAD_Context;
 extern PAD_Context pad;
 

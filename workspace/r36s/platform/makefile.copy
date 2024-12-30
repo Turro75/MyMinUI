@@ -13,7 +13,6 @@ $(PLATFORM):
 	cp ./workspace/$@/show/show.elf ./build/BASE/$@/
 	cp ./workspace/$@/other/unzip60/unzip ./build/BASE/$@/
 	cp ./workspace/$@/boot/update.sh ./build/SYSTEM/$@/bin/install.sh
-	cp ./workspace/$@/overclock/overclock.elf ./build/SYSTEM/$@
 #	mkdir -p ./build/BOOT/common/$@/
 #	# extras
 #	cp ./workspace/$@/other/DinguxCommander/output/DinguxCommander ./build/EXTRAS/Tools/$@/Files.pak/
