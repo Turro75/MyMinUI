@@ -1,3 +1,4 @@
+#define _GNU_SOURCE             /* See feature_test_macros(7) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -12,6 +13,7 @@
 #include <errno.h>
 #include <zlib.h>
 #include <pthread.h>
+#include <sched.h>
 
 #include "libretro.h"
 #include "defines.h"
@@ -2954,31 +2956,31 @@ static const char* bitmap_font[] = {
 };
 
 static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
-	#define CHAR_WIDTH 10
-	#define CHAR_HEIGHT 16
-	#define LETTERSPACING 2
+	#define _CHAR_WIDTH 10
+	#define _CHAR_HEIGHT 16
+	#define _LETTERSPACING 2
 
 
 	int len = strlen(text);
-	int w = ((CHAR_WIDTH+LETTERSPACING)*len)-1;
-	int h = CHAR_HEIGHT;
+	int w = ((_CHAR_WIDTH+_LETTERSPACING)*len)-1;
+	int h = _CHAR_HEIGHT;
 
 	if (ox<0) ox = width-w+ox;
 	if (oy<0) oy = height-h+oy;
 
 
 	data += oy * stride + ox;
-	for (int y=0; y<CHAR_HEIGHT; y++) {
+	for (int y=0; y<_CHAR_HEIGHT; y++) {
 		uint16_t* row = data + y * stride;
 		memset(row, 0, w*2);
 		for (int i=0; i<len; i++) {
 			const char* c = bitmap_font[text[i]];
-			for (int x=0; x<CHAR_WIDTH; x++) {
-				int j = y * CHAR_WIDTH + x;
+			for (int x=0; x<_CHAR_WIDTH; x++) {
+				int j = y * _CHAR_WIDTH + x;
 				if (c[j]=='1') *row = 0xffff;
 				row++;
 			}
-			row += LETTERSPACING;
+			row += _LETTERSPACING;
 		}
 	}
 }
@@ -5650,10 +5652,13 @@ static void limitFF(void) {
 	}
 	last_time = now;
 }
-
+cpu_set_t coret;
+cpu_set_t flipt;
 static void* flipThread(void *arg) {
 	int run = 0;
-	LOG_info("flipThread started now\n");system("sync");
+	LOG_info("flipThread started now on cpu %i\n", sched_getcpu());system("sync");
+	pthread_setaffinity_np(flip_pt, sizeof(cpu_set_t), &flipt);
+	LOG_info("flipThread moved to cpu %i\n", sched_getcpu());system("sync");
 	flipThreadStarted = 1;
 	while (!quit) {
 		//wait for backbuffer to be ready
@@ -5672,7 +5677,9 @@ static void* flipThread(void *arg) {
 	pthread_exit(NULL);
 }
 static void* coreThread(void *arg) {
-	LOG_info("coreThread started now\n");system("sync");
+	LOG_info("coreThread started now on cpu %i\n", sched_getcpu());system("sync");
+	pthread_setaffinity_np(core_pt, sizeof(cpu_set_t), &coret);
+	LOG_info("coreThread moved to cpu %i\n", sched_getcpu());system("sync");
 	coreThreadStarted = 1;
 	while (!quit) {
 		int run = 0;
@@ -5692,12 +5699,28 @@ static void* coreThread(void *arg) {
 
 int main(int argc , char* argv[]) {
 	LOG_info("MinArch\n");
+	cpu_set_t maint;
 
 	setOverclock(overclock); // default to normal
 	// force a stack overflow to ensure asan is linked and actually working
 	// char tmp[2];
 	// tmp[2] = 'a';
 	processors = PLAT_getNumProcessors();
+	CPU_ZERO(&maint);
+	CPU_ZERO(&flipt);
+	CPU_ZERO(&coret);
+	CPU_SET(0, &maint);
+	if (processors > 2){
+		//this is a quadcore cpu, set main thread to cpu 2, flip thread to cpu 3 and corethread to cpu 4
+		LOG_info("Quadcore CPU detected\n");
+		CPU_SET(1, &flipt);
+		CPU_SET(2, &coret);
+	} else {
+		//this is a dual core cpu, set main thread to cpu 0, flip thread to cpu 0 and corethread to cpu 1
+		LOG_info("Dualcore CPU detected\n");
+		CPU_SET(0, &flipt);
+		CPU_SET(1, &coret);
+	}
 	char core_path[MAX_PATH];
 	char rom_path[MAX_PATH]; 
 	char tag_name[MAX_PATH];
@@ -5804,6 +5827,12 @@ int main(int argc , char* argv[]) {
 		core.aspect_ratio = 1.0 / core.aspect_ratio;
 	}
 	quit = !loadgamesuccess;
+	int currentmaincpu = sched_getcpu();
+	LOG_info("DETECTED NUM %i CPUS\n", processors);
+	LOG_info("MAIN THREAD RUNNING ON CPU %i\n", currentmaincpu);
+	sched_setaffinity(0, sizeof(cpu_set_t), &maint);
+	currentmaincpu = sched_getcpu();
+	LOG_info("MAIN THREAD MOVED TO CPU %i\n", currentmaincpu);
 	while (!quit) {
 		GFX_startFrame();
 
