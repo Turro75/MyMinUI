@@ -37,8 +37,7 @@ gambatte_REPO = https://github.com/libretro/gambatte-libretro
 
 mednafen_supafaust_REPO = https://github.com/libretro/supafaust
 
-
-pcsx_rearmed_REPO = https://github.com/KMFDManic/pcsx_rearmed
+#pcsx_rearmed_REPO = https://github.com/KMFDManic/pcsx_rearmed
 pcsx_rearmed_MAKEFILE = Makefile.libretro
 #pcsx_rearmed_HASH = 1fec8a9
 

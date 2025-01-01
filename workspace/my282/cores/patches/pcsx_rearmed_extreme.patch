@@ -1,8 +1,17 @@
 diff --git a/Makefile.libretro b/Makefile.libretro
-index 18b4dee..0170193 100644
+index a1c8c7a..641a9a7 100644
 --- a/Makefile.libretro
 +++ b/Makefile.libretro
-@@ -609,6 +609,27 @@ else ifeq ($(platform), miyoo)
+@@ -27,7 +27,7 @@ AS ?= as
+ CC_AS ?= $(CC)
+ CFLAGS ?=
+ 
+-TARGET_NAME := km_pcsxtreme_hd
++TARGET_NAME := pcsx_rearmed
+ ARCH_DETECTED := $(shell $(CC) -dumpmachine | awk -F- '{print $$1}')
+ GIT_VERSION := " $(shell git rev-parse --short HEAD || echo unknown)"
+ ifneq ($(GIT_VERSION)," unknown")
+@@ -491,6 +491,25 @@ else ifeq ($(platform), miyoo)
  	DYNAREC = ari64
  	HAVE_NEON = 0
  
@@ -24,8 +33,6 @@ index 18b4dee..0170193 100644
 +   BUILTIN_GPU = neon
 +   ARCH = arm
 +   DYNAREC = ari64
-+
-+
 +
  # Emscripten
  else ifeq ($(platform), emscripten)
