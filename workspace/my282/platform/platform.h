@@ -120,6 +120,9 @@
 #define MUTE_VOLUME_RAW 0
 #define HAS_NEON
 
+#define MAX_WIDTH 640  
+#define MAX_HEIGHT 640
+#define MAX_DEPTH 32 
 ///////////////////////////////
 
 #endif
