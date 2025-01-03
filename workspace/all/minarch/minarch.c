@@ -47,8 +47,8 @@ static int show_menu = 0;
 static int simple_mode = 0;
 static int thread_video = 0;
 static int was_threaded = 0;
-static int should_run_core = 1; // used by threaded video
-static int should_run_flip = 1;
+static int should_run_core = 0; // used by threaded video
+static int should_run_flip = 0;
 static int flipThreadStarted = 0;
 static int coreThreadStarted = 0;
 static int flipThreadPaused = 0;
@@ -1378,7 +1378,7 @@ static void Config_free(void) {
 	if (config.system_cfg) free(config.system_cfg);
 	if (config.default_cfg) free(config.default_cfg);
 	if (config.user_cfg) free(config.user_cfg);	
-	LOG_info("Config_free: wait_for_thread=%d thread_video=%d, toggle_thread=%d\n", wait_for_thread, thread_video, toggle_thread);system("sync");
+	LOG_info("Config_free: wait_for_thread=%d thread_video=%d, toggle_thread=%d\n", wait_for_thread, thread_video, toggle_thread);fflush(stdout);
 }
 static void Config_readOptions(void) {
 	Config_readOptionsString(config.system_cfg);
@@ -1713,17 +1713,45 @@ static void Menu_saveState(void);
 static void Menu_loadState(void);
 static void Menu_makeboxart(void);
 
+static void wait_For_Thread(void) {
+	//at first stop running core.run
+	pthread_mutex_lock(&core_mx);
+	should_run_core = 0;
+	pthread_mutex_unlock(&core_mx);
+	//wait 50msecs to be sure the core has stopped 
+	usleep(50000);
+	//rendering = 1;
+	//signal the core thread to unlock the main thread and render the last frame
+	pthread_mutex_lock(&core_mx);
+	pthread_cond_signal(&core_rq);
+	pthread_mutex_unlock(&core_mx);
+
+	//wait 50msecs to be sure the flip thread has renderer the last frame
+	usleep(50000);
+	int rendering2 = 1000;
+	//check if render and renderer are both 0, wait at least 1000msecs the go forward
+	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
+		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);fflush(stdout);
+		usleep(1000);
+		rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
+	}
+	rendering = 0;
+	render = 0;
+}
+
+
 static int setFastForward(int enable) {
 	if (!fast_forward && enable && thread_video) {
 		// LOG_info("entered fast forward with threaded core...\n");
-		was_threaded = 1;
-		toggle_thread = 1;
+	//	was_threaded = 1;
+	//	toggle_thread = 1;
 	}
 	else if (fast_forward && !enable && !thread_video && was_threaded) {
 		// LOG_info("exited fast forward with previously threaded core...\n");
-		was_threaded = 0;
-		toggle_thread = 1;
+	//	was_threaded = 0;
+	//	toggle_thread = 1;
 	}
+
 	fast_forward = enable;
 	return enable;
 }
@@ -1748,26 +1776,9 @@ static void input_poll_callback(void) {
 	if (PAD_justPressed(BTN_POWER)) {
 		if (thread_video) {
 			// LOG_info("pressed power with threaded core...\n");
+			wait_For_Thread();
 			was_threaded = 1;
 			toggle_thread = 1;
-			pthread_mutex_lock(&core_mx);
-			should_run_core = 0;
-			pthread_mutex_unlock(&core_mx);
-			usleep(50000);
-			//rendering = 1;
-			pthread_mutex_lock(&core_mx);
-			pthread_cond_signal(&core_rq);
-			pthread_mutex_unlock(&core_mx);
-		//	pthread_mutex_lock(&flip_mx);
-		//	pthread_cond_signal(&flip_rq);
-		//	pthread_mutex_unlock(&flip_mx);
-			usleep(50000);
-			int rendering2 = 1500;
-			while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
-				//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);system("sync");
-				usleep(1000);
-				rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
-			}
 		}
 	}
 	else if (PAD_justReleased(BTN_POWER)) {
@@ -1843,18 +1854,7 @@ static void input_poll_callback(void) {
 		firstmenu = 1;
 
 		if (thread_video) {	
-			pthread_mutex_lock(&core_mx);
-			should_run_core = 0;
-			pthread_mutex_unlock(&core_mx);
-			usleep(50000);
-			//rendering = 1;
-			pthread_mutex_lock(&core_mx);
-			pthread_cond_signal(&core_rq);
-			pthread_mutex_unlock(&core_mx);
-		//	pthread_mutex_lock(&flip_mx);
-		//	pthread_cond_signal(&flip_rq);
-		//	pthread_mutex_unlock(&flip_mx);
-			usleep(50000);
+			wait_For_Thread();
 		}
 	}
 	
@@ -1999,11 +1999,11 @@ static void buffer_realloc(int w, int h, int p) {
 	buffer_dealloc();
 	buffer = malloc((w * FIXED_BPP) * h);
 	LOG_info("for 32bit: Buffer_realloc: %d %d %d\n", w, h, p);
-	system("sync");
+	fflush(stdout);
 }
 static void buffer_downsample(const void *data, unsigned width, unsigned height, size_t pitch) {
 	// from picoarch! https://git.crowdedwood.com/picoarch/tree/video.c#n51
-	//LOG_info("buffer_downsampleIN: %d %d %d\n", width, height, pitch);system("sync");
+	//LOG_info("buffer_downsampleIN: %d %d %d\n", width, height, pitch);fflush(stdout);
 	const uint32_t *input = data;
 	uint16_t *output = buffer;
 	size_t extra = pitch / sizeof(uint32_t) - width;
@@ -2020,7 +2020,7 @@ static void buffer_downsample(const void *data, unsigned width, unsigned height,
 		input += extra; // TODO: commenting this out fixes geolith when cropped, it appears to be lying about the pitch...
 	}
 
-	//LOG_info("buffer_downsampleOUT: %d %d %d\n", width, height, pitch);system("sync");
+	//LOG_info("buffer_downsampleOUT: %d %d %d\n", width, height, pitch);fflush(stdout);
 }
 
 static bool environment_callback(unsigned cmd, void *data) { // copied from picoarch initially
@@ -3263,7 +3263,7 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 	}
 	
 	// if (screen->w!=dst_w || screen->h!=dst_w || screen->pitch!=dst_p) {
-		LOG_info("SelectScaler call GFX_resize %ix%i_%i+%i-%i\n",dst_w,dst_h,dst_p,dst_x,dst_y);system("sync");
+		LOG_info("SelectScaler call GFX_resize %ix%i_%i+%i-%i\n",dst_w,dst_h,dst_p,dst_x,dst_y);fflush(stdout);
 		screen = GFX_resizeGame(dst_w,dst_h,dst_p);
 	// }
 	
@@ -3412,20 +3412,18 @@ void video_refresh_callback_resize(void) {
 	LOG_info("VideoResize OUT %d %d %d %d TOOK %dms ABS:%d\n", renderer.dst_w , renderer.dst_h, renderer.dst_x , renderer.dst_y ,  SDL_GetTicks()-now, SDL_GetTicks());fflush(stdout);
 }
 
-
+static uint32_t last_flip_time = 0;
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
 //	uint32_t now = SDL_GetTicks();
- 	if (!thread_video) rendering = 0;
-
-	if (!data) return;
-	static uint32_t last_flip_time = 0;
+ 	if (!data) return;
+	if (!thread_video) rendering = 0;
 	fps_ticks += 1;
 	
 	// 10 seems to be the sweet spot that allows 2x in NES and SNES and 8x in GB at 60fps
 	// 14 will let GB hit 10x but NES and SNES will drop to 1.5x at 30fps (not sure why)
 	// but 10 hurts PS...
 	// TODO: 10 was based on rg35xx, probably different results on other supported platforms
-	if (fast_forward && SDL_GetTicks()-last_flip_time<10) return;
+	if (fast_forward && SDL_GetTicks()-last_flip_time<15) return;
 	
 	// FFVII menus 
 	// 16: 30/200
@@ -3438,7 +3436,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	// eg. PS@10 60/240
 	
 	//fps_ticks += 1;
-	//LOG_info("%05d: fps_ticks incremented!\n", fps_ticks);system("sync");
+	//LOG_info("%05d: fps_ticks incremented!\n", fps_ticks);fflush(stdout);
 	//if (downsample) pitch /= 2; // everything expects 16 but we're downsampling from 32
 
 	if (downsample) {
@@ -3451,7 +3449,6 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	}
 	//ok here I have renderer.src that points to the frame data to display, it is in RGB565 format
 	//quite sure it is the right moment to rotate it, before calling the select scaler.
-	//start testing from a SDL_Surface
 	video_refresh_callback_rotate(renderer.rotate, renderer.src, width, height, pitch);
 //	uint32_t now2 = SDL_GetTicks(); 
 	
@@ -3489,7 +3486,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	last_flip_time = SDL_GetTicks();
 	if (!thread_video) render = 0;
 //	LOG_info("videorefreshcallbackmain took %dmsec - softstrech took %dmsec - rotate took %dmsec - flip took %dmsec\n", last_flip_time - now, now5 - now4, now4 - now2, last_flip_time-now6 );
-//	LOG_info("FRAME:%d video_refresh_callback_main OUT  ABS:%i\n", counterframe, last_flip_time);fflush(stdout);
+//	LOG_info("Video_refresh_callback_main OUT  ABS:%i\n", last_flip_time);fflush(stdout);
 }
 
 static uint32_t last_callback_time = 0;
@@ -3521,7 +3518,7 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 	}
 //	LOG_info("FRAME:%d video_refresh_callback OUT: wait_for_thread:%i thread_video:%i config_done = %i %ix%i_%i took:%lums ABS %lu\n",framecounter,wait_for_thread,thread_video,config_load_done,width,height,pitch, SDL_GetTicks()-callback_time, callback_time);fflush(stdout);
 
-//	LOG_info("videorefreshcallback took %dmsec elapsed %dmsec\n", SDL_GetTicks() - callback_time, callback_time - last_callback_time);
+//	LOG_info("videorefreshcallback took %dmsec elapsed %dmsec\n", SDL_GetTicks() - callback_time, callback_time - last_callback_time);fflush(stdout);
 	last_callback_time = callback_time;
 }
 ///////////////////////////////
@@ -3537,6 +3534,7 @@ static void audio_sample_callback(int16_t left, int16_t right) {
 #endif
 }
 static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) { 
+	//return frames;
 	if (fast_forward) return frames;
 #ifdef M21	
 	if (GetVolume()) return SND_batchSamples((const SND_Frame*)data, frames);
@@ -3661,7 +3659,7 @@ void Core_load(void) {
 		LOG_info("NumDisksDetected = %i\nMultidisk detected by core - switch to libretro disk control\n\n", NumDiscsDetected);
 	}
 
-	LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);system("sync");
+	LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);fflush(stdout);
 }
 void Core_reset(void) {
 	core.reset();
@@ -5110,7 +5108,7 @@ static void Menu_loop(void) {
 	LOG_info("Entering Menu render= %i - rendering= %i\n",render,rendering);fflush(stdout);
 	int rendering2 = 1500;
 	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
-		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);system("sync");
+		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 		usleep(1000);
 		rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
 	}
@@ -5289,7 +5287,7 @@ static void Menu_loop(void) {
 							restore_w = renderer.dst_w;
 							restore_h = renderer.dst_h;
 							restore_p = renderer.dst_p; // screen->pitch;
-							LOG_info("Menu_loop change aspect call GFX_resize %i %i %i\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH);system("sync");
+							LOG_info("Menu_loop change aspect call GFX_resize %i %i %i\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH);fflush(stdout);
 							screen = GFX_resize(DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
 						
 							SDL_FillRect(backing, NULL, 0);
@@ -5513,7 +5511,7 @@ static void Menu_loop(void) {
 	
 	if (!quit) {
 
-		LOG_info("Menu_loop exit from menu call GFX_resize %i %i %i\n", restore_w, restore_h, restore_p);system("sync");
+		LOG_info("Menu_loop exit from menu call GFX_resize %i %i %i\n", restore_w, restore_h, restore_p);fflush(stdout);
 		screen = GFX_resizeGame(restore_w,restore_h,restore_p);
 		GFX_setEffect(screen_effect);
 		GFX_clear(screen);
@@ -5578,18 +5576,19 @@ void getCPUusage(char * data) {
 	data[0] = '\0';
 	scrap=(char *)malloc(15);
     fp = fopen ("/proc/stat", "r");
-	for (counter = 1; counter <= processors; counter++)
+	for (counter = 0; counter <= processors; counter++)
     {
        up1[counter]=0;
        fscanf (fp, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld",scrap,&a[0],&a[1],&a[2],&a[3],&a[4],&a[5],&a[6],&a[7],&a[8],&a[9]);
        if (strncmp(scrap,"cpu",3) != 0) break;
+	   if (counter < 1) continue;
        for (i =0; i < 8; i++) up1[counter]+= a[i];
        idle1[counter] = a[3]+a[4];
        up[counter]=up1[counter]-up[counter];
        idle[counter]=idle1[counter]-idle[counter];
        load=((float)(up[counter]-idle[counter])/(float)up[counter])*100.0;
 // now you halve the load..
-        sprintf(data,"%s%02.0f%%", data,  counter, load, thread_video);
+        sprintf(data,"%s%02.0f%%", data, load);
         //if (counter == processors) printf("\n");
 // update staic variables for next loop
        up[counter]=up1[counter];
@@ -5601,26 +5600,16 @@ void getCPUusage(char * data) {
 
 static void trackFPS(void) {
 	if (!show_debug) return;
-	//cpu_ticks += 1;
-	//static int last_use_ticks = 0;
+
 	uint32_t now = SDL_GetTicks();
 	if (now - sec_start>=1000) {
 		double last_time = (double)(now - sec_start) / 1000;
 		fps_double = fps_ticks / last_time;
 		fps2_double = fps2_ticks / last_time;
-		//cpu_double = cpu_ticks / last_time;
-		//getCPUusage(cpuload);
-		//use_ticks = getUsage();
-		//if (use_ticks && last_use_ticks) {
-		//	use_double = (use_ticks - last_use_ticks) / last_time;
-		//}
 		getCPUusage(cpuload);
-		//last_use_ticks = use_ticks;
 		sec_start = now;
-		//cpu_ticks = 0;
 		fps_ticks = 0;
-		fps2_ticks = 0;
-		
+		fps2_ticks = 0;		
 		// LOG_info("fps: %f cpu: %f\n", fps_double, cpu_double);
 	}
 }
@@ -5656,41 +5645,42 @@ cpu_set_t coret;
 cpu_set_t flipt;
 static void* flipThread(void *arg) {
 	int run = 0;
-	LOG_info("flipThread started now on cpu %i\n", sched_getcpu());system("sync");
-	pthread_setaffinity_np(flip_pt, sizeof(cpu_set_t), &flipt);
-	LOG_info("flipThread moved to cpu %i\n", sched_getcpu());system("sync");
+	LOG_info("flipThread started now on cpu %i\n", sched_getcpu());fflush(stdout);
+	int moved = pthread_setaffinity_np(flip_pt, sizeof(cpu_set_t), &flipt);
+	LOG_info("flipThread moved to cpu %i with result %i\n", sched_getcpu(), moved);fflush(stdout);
 	flipThreadStarted = 1;
 	while (!quit) {
-		//wait for backbuffer to be ready
 		pthread_mutex_lock(&flip_mx);
 		run = should_run_flip;
 		pthread_mutex_unlock(&flip_mx);
-		if  (run) {
+		if (run) {
 			pthread_mutex_lock(&flip_mx);
 			pthread_cond_wait(&flip_rq, &flip_mx);
 			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
 			render = 0;
 			pthread_mutex_unlock(&flip_mx);
-		} 
-		
+		} else { //should never happen
+			sleep(0);
+		}	
 	}
 	pthread_exit(NULL);
 }
 static void* coreThread(void *arg) {
-	LOG_info("coreThread started now on cpu %i\n", sched_getcpu());system("sync");
-	pthread_setaffinity_np(core_pt, sizeof(cpu_set_t), &coret);
-	LOG_info("coreThread moved to cpu %i\n", sched_getcpu());system("sync");
+	LOG_info("coreThread started now on cpu %i\n", sched_getcpu());fflush(stdout);
+	int moved = pthread_setaffinity_np(core_pt, sizeof(cpu_set_t), &coret);
+	LOG_info("coreThread moved to cpu %i with result %i\n", sched_getcpu(),moved);fflush(stdout);
 	coreThreadStarted = 1;
 	while (!quit) {
 		int run = 0;
 		pthread_mutex_lock(&core_mx);
 		run = should_run_core;
 		pthread_mutex_unlock(&core_mx);
-
 		if (run) {
 			core.run();
 			limitFF();
 			trackFPS();
+		} else { //to keep cpu low while in the menu
+			sleep(0);
 		}
 	}
 	pthread_exit(NULL);
@@ -5805,14 +5795,14 @@ int main(int argc , char* argv[]) {
 	resume_slot=-1;
 	Menu_initState(); // make ready for state shortcuts
 	
-	if (thread_video) {
-		core_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-		core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-		pthread_create(&core_pt, NULL, &coreThread, NULL);
-		flip_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-		flip_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-		pthread_create(&flip_pt, NULL, &flipThread, NULL);	
-	}
+	
+	core_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+	core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+	pthread_create(&core_pt, NULL, &coreThread, NULL);
+	flip_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+	flip_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+	pthread_create(&flip_pt, NULL, &flipThread, NULL);	
+	
 	PWR_warn(1);
 	PWR_disableAutosleep();
 
@@ -5836,7 +5826,7 @@ int main(int argc , char* argv[]) {
 	while (!quit) {
 		GFX_startFrame();
 
-		if ((!thread_video)&&(config_load_done)&&(!wait_for_thread)) {
+		if ((!thread_video)&&(config_load_done)&&(!wait_for_thread || was_threaded)) {
 			core.run();
 			limitFF();
 			trackFPS();
@@ -5851,7 +5841,7 @@ int main(int argc , char* argv[]) {
 			//if (backbuffer) {
 			pthread_mutex_lock(&flip_mx);
 			render = 1;
-				//LOG_info("%05d: Start Rendering BackBuffer!\n", fps_ticks);system("sync");
+				//LOG_info("%05d: Start Rendering BackBuffer!\n", fps_ticks);fflush(stdout);
 			pthread_cond_signal(&flip_rq);
 			pthread_mutex_unlock(&flip_mx);						
 			//}
@@ -5874,23 +5864,23 @@ int main(int argc , char* argv[]) {
 			thread_video = !thread_video;
 			if (thread_video) {
 				// enable
-				core_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-				core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-				pthread_create(&core_pt, NULL, &coreThread, NULL);
-
-				flip_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-				flip_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-				pthread_create(&flip_pt, NULL, &flipThread, NULL);
-				LOG_info("Here I started the threads 1\n");system("sync");
+				pthread_mutex_lock(&flip_mx);
+				should_run_flip = 1;
+				pthread_mutex_unlock(&flip_mx);
+				pthread_mutex_lock(&core_mx);
+				should_run_core = 1;
+				pthread_mutex_unlock(&core_mx);
+				LOG_info("Here I started the threads 1\n");fflush(stdout);
 				config_load_done = 1;
 			}
 			else {
 				// disable
-				pthread_cancel(core_pt);
-				pthread_join(core_pt,NULL);
-
-				pthread_cancel(flip_pt);
-				pthread_join(flip_pt,NULL);
+				pthread_mutex_lock(&core_mx);
+				should_run_core = 0;
+				pthread_mutex_unlock(&core_mx);
+				pthread_mutex_lock(&flip_mx);
+				should_run_flip = 0;
+				pthread_mutex_unlock(&flip_mx);	
 
 				// force a vsync immediately before loop
 				// for better frame pacing?
