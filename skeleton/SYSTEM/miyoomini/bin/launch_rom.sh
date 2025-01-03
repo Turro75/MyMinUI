@@ -31,6 +31,16 @@ else
     THISRUN=${6}
 fi
 
+export SDL_AUDIODRIVER=mmiyoo
+
+#audioserver must be killed to let sdl2 taking control of audio 
+
+if $IS_PLUS; then
+    killall -9 audioserver
+else
+    killall -9 audioserver.mod
+fi
+
 EMU_EXE=${8}
 
 if [ "$THISRUN" = "minarch" ]; then
@@ -40,7 +50,7 @@ if [ "$THISRUN" = "minarch" ]; then
     mkdir -p "$SAVES_PATH/$EMU_TAG"
     HOME="$USERDATA_PATH"
     cd "$HOME"
-    nice -20 minarch.elf "$CORES_PATH/${EMU_EXE}_libretro.so" "$ROM" $2 > "$LOGS_PATH/$EMU_TAG.txt"
+    minarch.elf "$CORES_PATH/${EMU_EXE}_libretro.so" "$ROM" $2 > "$LOGS_PATH/$EMU_TAG.txt"
 fi
 
 if [ "$THISRUN" = "retroarch" ]; then 

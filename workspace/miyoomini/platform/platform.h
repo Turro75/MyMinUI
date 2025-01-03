@@ -7,6 +7,8 @@
 
 #include "sdl.h"
 
+#define PAD_poll PLAT_pollInput
+#define PAD_wake PLAT_shouldWake
 ///////////////////////////////
 
 #define BUTTON_UP 		SDLK_UP
@@ -31,8 +33,8 @@
 
 #define BUTTON_MENU	 	SDLK_ESCAPE
 #define BUTTON_POWER 	SDLK_POWER
-#define	BUTTON_PLUS		SDLK_RSUPER
-#define	BUTTON_MINUS	SDLK_LSUPER
+#define	BUTTON_PLUS		SDLK_VOLUMEUP
+#define	BUTTON_MINUS	SDLK_VOLUMEDOWN
 
 ///////////////////////////////
 
@@ -110,9 +112,9 @@ extern int is_plus;
 #define FIXED_PITCH		(FIXED_WIDTH * FIXED_BPP)
 #define FIXED_SIZE		(FIXED_PITCH * FIXED_HEIGHT)
 
-#define MAX_WIDTH 1280
-#define MAX_HEIGHT 1440
-#define MAX_DEPTH 16 
+#define MAX_WIDTH 640
+#define MAX_HEIGHT 480
+#define MAX_DEPTH 32 
 
 ///////////////////////////////
 

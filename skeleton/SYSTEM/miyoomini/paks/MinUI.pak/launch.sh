@@ -87,7 +87,7 @@ else
 fi
 
 #######################################
-
+#echo "STARTING!!!!!" > /mnt/SDCARD/out.txt
 lumon.elf & # adjust lcd luma and saturation //wait for command executed before continuing
 # I edited it to allow adjusting screen params and color temperature
 
@@ -103,7 +103,7 @@ else
 	fi
 fi
 
-keymon.elf & # &> /mnt/SDCARD/keymon.txt &
+keymon.elf & # &> /mnt/SDCARD/out1.txt &
 
 #######################################
 
