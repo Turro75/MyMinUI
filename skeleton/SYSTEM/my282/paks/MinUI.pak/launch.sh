@@ -27,7 +27,7 @@ export CPU_SPEED_MAX=1512
 
 
 echo 0 > /sys/class/leds/led1/brightness
-overclock.elf userspace 2 $CPU_SPEED_PERF 384 1080 0
+overclock.elf userspace 4 $CPU_SPEED_PERF 384 1080 0
 
 # TODO: this seems to be working
 killall -9 tee
@@ -59,8 +59,8 @@ EXEC_PATH="/tmp/minui_exec"
 NEXT_PATH="/tmp/next"
 touch "$EXEC_PATH" && sync
 while [ -f "$EXEC_PATH" ]; do
-	overclock.elf userspace 2 $CPU_SPEED_GAME 384 1080 0
-	taskset --cpu-list 0 minui.elf > $LOGS_PATH/minui.txt 2>&1
+	overclock.elf userspace 4 $CPU_SPEED_GAME 384 1080 0
+	minui.elf > $LOGS_PATH/minui.txt 2>&1
 	
 	echo `date +'%F %T'` > "$DATETIME_PATH"
 	sync
@@ -69,7 +69,7 @@ while [ -f "$EXEC_PATH" ]; do
 		CMD=`cat $NEXT_PATH`
 		eval $CMD
 		rm -f $NEXT_PATH
-		overclock.elf userspace 2 $CPU_SPEED_GAME 384 1080 0
+		overclock.elf userspace 4 $CPU_SPEED_GAME 384 1080 0
 		echo `date +'%F %T'` > "$DATETIME_PATH"
 		sync
 	fi

@@ -171,7 +171,6 @@ static struct VID_Context {
 	struct fb_var_screeninfo vinfo;  //adjustable fb info
 	void *fbmmap; //mmap address of the framebuffer
 	SDL_Surface* screen;  //swsurface to let sdl thinking it's the screen
-	SDL_Surface* screen2; //stretched SDL2 surface
 	GFX_Renderer* blit; // yeesh, let's see if useful
 	int linewidth;
 	int screen_size;
@@ -467,7 +466,7 @@ void PLAT_quitVideo(void) {
 	if (vid.pixels) free(vid.pixels);
 	SDL_FreeSurface(vid.screen);
 	vid.pixels=NULL;
-	//munmap(vid.fbmmap, 0);	
+	munmap(vid.fbmmap, 0);	
     close(vid.fdfb);
 	SDL_Quit();
 }
@@ -603,32 +602,6 @@ SDL_ScaleModeNearest, /**< nearest pixel sampling
     SDL_ScaleModeBest     /**< anisotropic filtering 
 */
 }
-
-void Main_Flip(void) { //this rotates only the game frames
-//	SDL_SoftStretch(vid.screen, NULL, vid.screen2, &(SDL_Rect){0,0,FIXED_WIDTH,FIXED_HEIGHT});
-	if (finalrotate == 0) 
-		{
-			// No Rotation
-			M21_SDLFB_Flip(vid.screen2, vid.fbmmap,vid.linewidth);
-		}
-	if (finalrotate== 1)
-		{
-			// 90 Rotation
-			M21_SDLFB_FlipRotate90(vid.screen2, vid.fbmmap,vid.linewidth);
-		}
-	if (finalrotate == 2)
-		{
-			// 180 Rotation
-			M21_SDLFB_FlipRotate180(vid.screen2, vid.fbmmap,vid.linewidth);
-		}
-	if (finalrotate == 3)
-		{
-			// 270 Rotation
-			M21_SDLFB_FlipRotate270(vid.screen2, vid.fbmmap,vid.linewidth);
-		}
-//	write(vid.fdfb, vid.fbmmap, vid.screen_size);
-//	lseek(vid.fdfb,0,0);
-}	
 
 
 void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu + minui + tools

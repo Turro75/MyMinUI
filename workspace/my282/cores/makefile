@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom puae
-CORES += neocd bmp2png retroarch a5200 a7800 a2600
+CORES += neocd bmp2png a5200 a7800 a2600 dosbox tyrquake
 #CORES = pcsx_rearmed bmp2png retroarch fbneo gambatte gpsp prboom fceumm fake-08 mednafen_supafaust mgba snes9x2005_plus beetle-vb beetle-pce-fast race pokemini neocd mame2003-plus picodrive
 
 ###############################
@@ -12,6 +12,12 @@ CORES += neocd bmp2png retroarch a5200 a7800 a2600
 # *_FLAGS=
 # *_MAKEFILE=
 # *_BUILD_PATH=
+
+tyrquake_REPO = https://github.com/libretro/tyrquake
+tyrquake_CORE = tyrquake_libretro.so
+
+dosbox_REPO = https://github.com/libretro/dosbox-pure.git
+dosbox_CORE = dosbox_libretro.so
 
 a2600_REPO = https://github.com/libretro/stella2014-libretro
 a2600_CORE = stella2014_libretro.so
