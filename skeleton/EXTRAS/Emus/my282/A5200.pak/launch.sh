@@ -3,7 +3,7 @@
 EMU_EXE=a5200
 
 RUN=minarch
-RUN2=retroarch
+RUN2=minarch
 
 #CPU_OC=${CPU_SPEED_MAX} # 1.512 GHz
 CPU_OC=${CPU_SPEED_PERF}  # 1.344 GHz

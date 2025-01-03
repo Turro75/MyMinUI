@@ -1,7 +1,7 @@
 #!/bin/sh
 
 EMU_EXE=prboom
-RUN2=retroarch
+RUN2=minarch
 RUN=minarch
 
 #CPU_OC=${CPU_SPEED_MAX} # 1.5 GHz

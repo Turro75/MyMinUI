@@ -3,7 +3,7 @@
 EMU_EXE=pokemini
 
 RUN=minarch
-RUN2=retroarch
+RUN2=minarch
 
 #CPU_OC=${CPU_SPEED_MAX} # 1.8 GHz MM+ / 1.7GHz MM
 #CPU_OC=${CPU_SPEED_PERF}  # 1.5 GHz

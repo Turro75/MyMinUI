@@ -3,7 +3,7 @@
 EMU_EXE=snes9x2005_plus
 
 RUN=minarch
-RUN2=retroarch
+RUN2=minarch
 
 
 #CPU_OC=${CPU_SPEED_MAX} # 1.512 GHz

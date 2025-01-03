@@ -3,7 +3,7 @@
 EMU_EXE=puae2021
 
 RUN=minarch
-RUN2=retroarch
+RUN2=minarch
 
 #set cpu clock, minarch will overwrite this value with the one stored in default.cfg
 CPU_OC=${CPU_SPEED_MAX} # 1.5 GHz
