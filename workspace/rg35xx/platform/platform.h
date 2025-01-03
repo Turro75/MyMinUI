@@ -7,6 +7,8 @@
 
 #include "sdl.h"
 
+#define PAD_poll PLAT_pollInput
+#define PAD_wake PLAT_shouldWake
 ///////////////////////////////
 
 #define	BUTTON_UP		SDLK_KATAKANA
@@ -109,9 +111,9 @@
 #define FIXED_PITCH		(FIXED_WIDTH * FIXED_BPP)
 #define FIXED_SIZE		(FIXED_PITCH * FIXED_HEIGHT)
 
-#define MAX_WIDTH 1280
-#define MAX_HEIGHT 1440
-#define MAX_DEPTH 16 
+#define MAX_WIDTH 640
+#define MAX_HEIGHT 480
+#define MAX_DEPTH 32
 
 ///////////////////////////////
 
