@@ -1,0 +1,28 @@
+diff --git a/Makefile b/Makefile
+index fa86aeb..1586ba7 100644
+--- a/Makefile
++++ b/Makefile
+@@ -101,6 +101,23 @@ else ifeq ($(platform), classic_armv8_a35)
+    LDFLAGS += -static-libgcc -static-libstdc++
+ #######################################
+ 
++# GameConsole r36s
++else ifeq ($(platform), r36s)
++   TARGET := $(TARGET_NAME)2021_libretro.so
++    CC = ${CROSS_COMPILE}gcc
++    CXX = ${CROSS_COMPILE}g++
++    AR = ${CROSS_COMPILE}ar
++   fpic := -fPIC
++   SHARED := -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
++   LDFLAGS += -lm -lrt -lpthread -ldl
++   CFLAGS += -Ofast -flto=4 \
++           -fmerge-all-constants -fno-math-errno \
++           $(MYARCH)
++   LDFLAGS += -static-libgcc -static-libstdc++ -s
++#######################################
++
++
++
+ # OSX
+ else ifeq ($(platform), osx)
+    TARGET := $(TARGET_NAME)_libretro.dylib
