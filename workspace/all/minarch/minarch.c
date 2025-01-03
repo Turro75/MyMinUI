@@ -787,7 +787,7 @@ enum {
 	SHORTCUT_RESET_GAME,
 	SHORTCUT_SAVE_QUIT,
 	SHORTCUT_CYCLE_SCALE,
-	SHORTCUT_CYCLE_EFFECT,
+/*	SHORTCUT_CYCLE_EFFECT,*/
 	SHORTCUT_TOGGLE_FF,
 	SHORTCUT_HOLD_FF,
 	SHORTCUT_COUNT,
@@ -1066,7 +1066,7 @@ static struct Config {
 		[SHORTCUT_RESET_GAME]			= {"Reset Game",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_SAVE_QUIT]			= {"Save & Quit",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_CYCLE_SCALE]			= {"Cycle Scaling",		-1, BTN_ID_NONE, 0},
-		[SHORTCUT_CYCLE_EFFECT]			= {"Cycle Effect",		-1, BTN_ID_NONE, 0},
+	/*	[SHORTCUT_CYCLE_EFFECT]			= {"Cycle Effect",		-1, BTN_ID_NONE, 0},*/
 		[SHORTCUT_TOGGLE_FF]			= {"Toggle FF",			-1, BTN_ID_NONE, 0},
 		[SHORTCUT_HOLD_FF]				= {"Hold FF",			-1, BTN_ID_NONE, 0},
 		{NULL}
@@ -1836,11 +1836,11 @@ static void input_poll_callback(void) {
 						if (screen_scaling>=SCALE_COUNT) screen_scaling -= SCALE_COUNT;
 						Config_syncFrontend(config.frontend.options[FE_OPT_SCALING].key, screen_scaling);
 						break;
-					case SHORTCUT_CYCLE_EFFECT:
+				/*	case SHORTCUT_CYCLE_EFFECT:
 						screen_effect += 1;
 						if (screen_effect>=EFFECT_COUNT) screen_effect -= EFFECT_COUNT;
 						Config_syncFrontend(config.frontend.options[FE_OPT_EFFECT].key, screen_effect);
-						break;
+						break;*/
 					default: break;
 				}
 				
@@ -5138,7 +5138,7 @@ static void Menu_loop(void) {
 	PWR_warn(0);
 	if (!HAS_POWER_BUTTON) PWR_enableSleep();
 	PWR_setCPUSpeed(CPU_SPEED_MENU); // set Hz directly
-	GFX_setVsync(VSYNC_STRICT);
+	//GFX_setVsync(VSYNC_STRICT);
 	GFX_setEffect(EFFECT_NONE);
 	
 	int rumble_strength = VIB_getStrength();
@@ -5520,7 +5520,7 @@ static void Menu_loop(void) {
 		setOverclock(overclock); // restore overclock value
 		if (rumble_strength) VIB_setStrength(rumble_strength);
 		
-		GFX_setVsync(prevent_tearing);
+		//GFX_setVsync(prevent_tearing);
 		if (!HAS_POWER_BUTTON) PWR_disableSleep();
 
 
@@ -5772,7 +5772,7 @@ int main(int argc , char* argv[]) {
 	Config_init();
 	Config_readOptions(); // cores with boot logo option (eg. gb) need to load options early
 	setOverclock(overclock);
-	GFX_setVsync(prevent_tearing);
+	//GFX_setVsync(prevent_tearing);
 	
 	Core_init();
 	
