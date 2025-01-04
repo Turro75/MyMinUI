@@ -401,6 +401,7 @@ int M21_SDLFB_FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 
 
 SDL_Surface* PLAT_initVideo(void) {
+	is_plus = exists("/customer/app/axp_test");
 	
 	vid.fdfb = open("/dev/fb0", O_RDWR);
 	int w = FIXED_WIDTH;
