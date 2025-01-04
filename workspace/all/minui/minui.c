@@ -999,8 +999,7 @@ static Array* getRoot(void) {
 	
 	char* tools_path = SDCARD_PATH "/Tools/" PLATFORM;
 	if (exists(tools_path) && !simple_mode) Array_push(root, Entry_new(tools_path, ENTRY_DIR));
-	if (hasHiddens()) Array_push(root, Entry_new(FAUX_HIDDEN_PATH, ENTRY_DIR));
-	
+	if (hasHiddens() && exists(SHOW_HIDDEN_FOLDER_PATH)) Array_push(root, Entry_new(FAUX_HIDDEN_PATH, ENTRY_DIR));	
 	return root;
 }
 static Array* getRecents(void) {

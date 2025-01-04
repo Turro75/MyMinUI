@@ -40,6 +40,7 @@
 
 #define HIDDEN_PATH SHARED_USERDATA_PATH "/.minui/hidden.txt"
 #define FAUX_HIDDEN_PATH SDCARD_PATH "/HiddenRoms"
+#define SHOW_HIDDEN_FOLDER_PATH SHARED_USERDATA_PATH "/enable-show-hidden-folder"
 
 #define LAST_PATH "/tmp/last.txt" // transient
 #define CHANGE_DISC_PATH "/tmp/change_disc.txt"
