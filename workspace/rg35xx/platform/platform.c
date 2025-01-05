@@ -330,10 +330,6 @@ SDL_Surface* PLAT_resizeVideo(int w, int h, int p) {
 	return vid.screen;
 }
 
-SDL_Surface* PLAT_resizeVideoGame(int w, int h, int p) {
-//	resizeVideo(w,h,p,1);
-	return vid.screen;
-}
 void PLAT_setVideoScaleClip(int x, int y, int width, int height) {
 	// buh
 }

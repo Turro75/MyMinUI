@@ -2992,269 +2992,6 @@ static uint32_t sec_start = 0;
 	static int fit = 0;
 #endif	
 
-static void selectScaler(int src_w, int src_h, int src_p) {
-	LOG_info("SelectScaler IN %d %d %d\n", src_w, src_h, src_p);
-	int max_scale = 6;
-	char scaler_type[20];
-	switch(screen_scaling) {
-		case SCALE_ASPECT: strcpy(scaler_type,"Scaler ASPECT"); break;
-		case SCALE_NATIVE: strcpy(scaler_type,"Scaler NATIVE"); break;
-		case SCALE_FULLSCREEN: strcpy(scaler_type,"Scaler FULLSCREEN"); break;
-		default: strcpy(scaler_type,"Scaler Unknown"); break;
-	}
-
-	int max_xscale = 6;
-	while (max_xscale * src_w > MAX_WIDTH) max_xscale--;
-	int max_yscale = 6;
-	while (max_yscale * src_h > MAX_HEIGHT) max_yscale--;
-	max_scale = MIN(max_xscale, max_yscale);
-	max_scale = MIN(max_scale, screen_max_scale+1);
-	LOG_info("MAX xscaler = %d - MAX yscaler = %d - MAX scaler = %d\n", max_xscale, max_yscale, max_scale);
-	int src_x,src_y,dst_x,dst_y,dst_w,dst_h,dst_p,scale;
-	double aspect;
-	if (core.aspect_ratio < 0.1) { //tmp fix to let prboom start on miyoomini/my282
-		core.aspect_ratio=1.333333;
-	}
-	int aspect_w = src_w;
-	int aspect_h = CEIL_DIV(aspect_w, core.aspect_ratio);
-	
-	// TODO: make sure this doesn't break fit==1 devices
-	if (aspect_h<src_h) {
-		aspect_h = src_h;
-		aspect_w = aspect_h * core.aspect_ratio;
-		aspect_w += aspect_w % 2;
-	}
-
-	char scaler_name[16];
-	
-	src_x = 0;
-	src_y = 0;
-	dst_x = 0;
-	dst_y = 0;
-
-	// unmodified by crop
-	renderer.true_w = src_w;
-	renderer.true_h = src_h;
-	
-	// TODO: this is saving non-rgb30 devices from themselves...or rather, me
-	int scaling = screen_scaling;
-	if (scaling==SCALE_CROPPED && DEVICE_WIDTH==HDMI_WIDTH) {
-		scaling = SCALE_NATIVE;
-	}
-	
-	if (scaling==SCALE_NATIVE || scaling==SCALE_CROPPED) {
-		// this is the same whether fit or oversized
-		scale = MIN(DEVICE_WIDTH/src_w, DEVICE_HEIGHT/src_h);
-		scale = MIN(scale, max_scale);
-		if (!scale) {
-			sprintf(scaler_name, "forced crop");
-			dst_w = DEVICE_WIDTH;
-			dst_h = DEVICE_HEIGHT;
-			dst_p = DEVICE_PITCH;
-			
-			int ox = (DEVICE_WIDTH  - src_w) / 2; // may be negative
-			int oy = (DEVICE_HEIGHT - src_h) / 2; // may be negative
-			
-			if (ox<0) src_x = -ox;
-			else dst_x = ox;
-			
-			if (oy<0) src_y = -oy;
-			else dst_y = oy;
-		}
-		// TODO: this is all kinds of messed up
-		// TODO: is this blowing up because the smart has to rotate before scaling?
-		// TODO: or is it just that I'm trying to cram 4 logical rects into 2 rect arguments
-		// TODO: eg. src.size + src.clip + dst.size + dst.clip
-		else if (scaling==SCALE_CROPPED) {
-			int scale_x = CEIL_DIV(DEVICE_WIDTH, src_w);
-			int scale_y = CEIL_DIV(DEVICE_HEIGHT, src_h);
-			scale = MIN(scale_x, scale_y);
-			scale = MIN(scale, max_scale);
-
-			sprintf(scaler_name, "cropped");
-			dst_w = DEVICE_WIDTH;
-			dst_h = DEVICE_HEIGHT;
-			dst_p = DEVICE_PITCH;
-
-			int scaled_w = src_w * scale;
-			int scaled_h = src_h * scale;
-
-			int ox = (DEVICE_WIDTH  - scaled_w) / 2; // may be negative
-			int oy = (DEVICE_HEIGHT - scaled_h) / 2; // may be negative
-
-			if (ox<0) {
-				src_x = -ox / scale;
-				src_w -= src_x * 2;
-			}
-			else {
-				dst_x = ox;
-				// dst_w -= ox * 2;
-			}
-
-			if (oy<0) {
-				src_y = -oy / scale;
-				src_h -= src_y * 2;
-			}
-			else {
-				dst_y = oy;
-				// dst_h -= oy * 2;
-			}
-		}
-		else {
-			sprintf(scaler_name, "integer");
-			int scaled_w = src_w * scale;
-			int scaled_h = src_h * scale;
-			dst_w = DEVICE_WIDTH;
-			dst_h = DEVICE_HEIGHT;
-			dst_p = DEVICE_PITCH;
-			dst_x = (DEVICE_WIDTH  - scaled_w) / 2; // should always be positive
-			dst_y = (DEVICE_HEIGHT - scaled_h) / 2; // should always be positive
-		}
-	}
-	else if (fit) {
-		// these both will use a generic nn scaler
-		if (scaling==SCALE_FULLSCREEN) {
-			sprintf(scaler_name, "full fit");
-			dst_w = DEVICE_WIDTH;
-			dst_h = DEVICE_HEIGHT;
-			dst_p = DEVICE_PITCH;
-			scale = -1; // nearest neighbor
-		}
-		else {
-			double scale_f = MIN(((double)DEVICE_WIDTH)/aspect_w, ((double)DEVICE_HEIGHT)/aspect_h);
-			LOG_info("scale_f:%f\n", scale_f);
-			
-			sprintf(scaler_name, "aspect fit");
-			dst_w = aspect_w * scale_f;
-			dst_h = aspect_h * scale_f;
-			dst_p = DEVICE_PITCH;
-			dst_x = (DEVICE_WIDTH  - dst_w) / 2;
-			dst_y = (DEVICE_HEIGHT - dst_h) / 2;
-			scale = (scale_f==1.0 && dst_w==src_w && dst_h==src_h) ? 1 : -1;
-		}
-	}
-	else {
-		int scale_x = CEIL_DIV(DEVICE_WIDTH, src_w);
-		int scale_y = CEIL_DIV(DEVICE_HEIGHT,src_h);
-		
-		// odd resolutions (eg. PS1 Rayman: 320x239) is throwing this off, need to snap to eights
-		int r = (DEVICE_HEIGHT-src_h)%8;
-		if (r && r<8) scale_y -= 1;
-		
-		scale = MAX(scale_x, scale_y);
-		scale = MIN(scale, max_scale);
-		//if (scale>max_scale) scale = max_scale;
-		// if (scale>4) scale = 4;
-		// if (scale>2) scale = 4; // TODO: restore, requires sanity checking
-		
-		int scaled_w = src_w * scale;
-		int scaled_h = src_h * scale;
-		
-		if (scaling==SCALE_FULLSCREEN) {
-			sprintf(scaler_name, "full%i", scale);
-			// type = 'full (oversized)';
-			dst_w = scaled_w;
-			dst_h = scaled_h;
-			dst_p = dst_w * FIXED_BPP;
-		}
-		else {
-			double src_aspect_ratio = ((double)src_w) / src_h;
-			// double core_aspect_ratio
-			double fixed_aspect_ratio = ((double)DEVICE_WIDTH) / DEVICE_HEIGHT;
-			int core_aspect = core.aspect_ratio * 1000;
-			int fixed_aspect = fixed_aspect_ratio * 1000;
-			
-			// still having trouble with FC's 1.306 (13/10? wtf) on 4:3 devices
-			// specifically I think it has trouble when src, core, and fixed 
-			// ratios don't match
-			
-			// it handles src and core matching but fixed not, eg. GB and GBA 
-			// or core and fixed matching but not src, eg. odd PS resolutions
-			
-			// we need to transform the src size to core aspect
-			// then to fixed aspect
-						
-			if (core_aspect>fixed_aspect) {
-				sprintf(scaler_name, "aspect%iL", scale);
-				// letterbox
-				// dst_w = scaled_w;
-				// dst_h = scaled_w / fixed_aspect_ratio;
-				// dst_h += dst_h%2;
-				int aspect_h = DEVICE_WIDTH / core.aspect_ratio;
-				double aspect_hr = ((double)aspect_h) / DEVICE_HEIGHT;
-				dst_w = scaled_w;
-				dst_h = scaled_h / aspect_hr;
-				//if (dst_h%8) dst_h -= dst_h%8;
-				dst_y = (dst_h - scaled_h) / 2;
-			}
-			else if (core_aspect<fixed_aspect) {
-				sprintf(scaler_name, "aspect%iP", scale);
-				// pillarbox
-				// dst_w = scaled_h * fixed_aspect_ratio;
-				// dst_w += dst_w%2;
-				// dst_h = scaled_h;
-				aspect_w = DEVICE_HEIGHT * core.aspect_ratio;
-				double aspect_wr = ((double)aspect_w) / DEVICE_WIDTH;
-				dst_w = scaled_w / aspect_wr;
-				dst_h = scaled_h;
-				
-				dst_w = (dst_w/8)*8;
-				dst_x = (dst_w - scaled_w) / 2;
-			}
-			else {
-				sprintf(scaler_name, "aspect%iM", scale);
-				// perfect match
-				dst_w = scaled_w;
-				dst_h = scaled_h;
-			}
-			dst_p = dst_w * FIXED_BPP;
-		}
-	}
-
-	renderer.aspect = (scaling==SCALE_NATIVE||scaling==SCALE_CROPPED)?0:(scaling==SCALE_FULLSCREEN?-1:core.aspect_ratio);
-	// TODO: need to sanity check scale and demands on the buffer
-	
-	// LOG_info("aspect: %ix%i (%f)\n", aspect_w,aspect_h,core.aspect_ratio);
-	
-	renderer.src_x = src_x;
-	renderer.src_y = src_y;
-	renderer.src_w = src_w;
-	renderer.src_h = src_h;
-	renderer.src_p = src_p;
-	renderer.dst_x = dst_x;
-	renderer.dst_y = dst_y;
-	renderer.dst_w = dst_w;
-	renderer.dst_h = dst_h;
-	renderer.dst_p = dst_p;
-	renderer.scale = scale;
-//	if (renderer.rotate % 2 == 1) {
-//		renderer.dst_x = dst_y;
-//		renderer.dst_y = dst_x;
-//	} 
-	
-	LOG_info("%s %s aspect: %f\n", scaler_type, scaler_name, renderer.aspect);
-	renderer.blit = GFX_getScaler(&renderer);
-		
-	// LOG_info("coreAR:%0.3f fixedAR:%0.3f srcAR: %0.3f\nname:%s\nfit:%i scale:%i\nsrc_x:%i src_y:%i src_w:%i src_h:%i src_p:%i\ndst_x:%i dst_y:%i dst_w:%i dst_h:%i dst_p:%i\naspect_w:%i aspect_h:%i\n",
-	// 	core.aspect_ratio, ((double)DEVICE_WIDTH) / DEVICE_HEIGHT, ((double)src_w) / src_h,
-	// 	scaler_name,
-	// 	fit,scale,
-	// 	src_x,src_y,src_w,src_h,src_p,
-	// 	dst_x,dst_y,dst_w,dst_h,dst_p,
-	// 	aspect_w,aspect_h
-	// );
-
-	if (fit) {
-		dst_w = DEVICE_WIDTH;
-		dst_h = DEVICE_HEIGHT;
-	}
-	
-	// if (screen->w!=dst_w || screen->h!=dst_w || screen->pitch!=dst_p) {
-		LOG_info("SelectScaler call GFX_resize %ix%i_%i+%i-%i\n",dst_w,dst_h,dst_p,dst_x,dst_y);fflush(stdout);
-		screen = GFX_resizeGame(dst_w,dst_h,dst_p);
-	// }
-	
-}
 void video_refresh_callback_rotate(int rotation, void *data, unsigned width, unsigned height, size_t pitch) {
 	int x, y, thispitch;
 	int now = SDL_GetTicks();
@@ -3440,10 +3177,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 //	uint32_t now2 = SDL_GetTicks(); 
 	
 	if (renderer.dst_p==0 || renderer.resize ==1) {
-//		selectScaler(width, height, pitch);
-//		GFX_clearAll();	
 		video_refresh_callback_resize();
-		
 		GFX_clearAll();	
 	}
 //	LOG_info("video_refresh_callback_main dst_p=%iwidth:%i-%i height:%i-%i pitch:%i-%i\n", renderer.dst_p,width, renderer.true_w ,height, renderer.true_h,pitch,renderer.true_p);
@@ -5272,8 +5006,6 @@ static void Menu_loop(void) {
 						int old_scaling = screen_scaling;
 						Menu_options(&options_menu);
 						if (screen_scaling!=old_scaling) {
-						//	selectScaler(renderer.true_w,renderer.true_h,renderer.src_p);
-						
 							restore_w = renderer.dst_w;
 							restore_h = renderer.dst_h;
 							restore_p = renderer.dst_p; // screen->pitch;
@@ -5502,7 +5234,7 @@ static void Menu_loop(void) {
 	if (!quit) {
 
 		LOG_info("Menu_loop exit from menu call GFX_resize %i %i %i\n", restore_w, restore_h, restore_p);fflush(stdout);
-		screen = GFX_resizeGame(restore_w,restore_h,restore_p);
+		screen = GFX_resize(restore_w,restore_h,restore_p);
 		GFX_setEffect(screen_effect);
 		GFX_clear(screen);
 		
