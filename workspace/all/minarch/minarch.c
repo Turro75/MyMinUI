@@ -46,7 +46,6 @@ static int quit = 0;
 static int show_menu = 0;
 static int simple_mode = 0;
 static int thread_video = 0;
-static int was_threaded = 0;
 static int should_run_core = 0; // used by threaded video
 static int should_run_flip = 0;
 static int flipThreadStarted = 0;
@@ -61,7 +60,7 @@ static int Founddiskcontrol = 0;
 static int NumDiscsDetected = 0;
 static int coreDiscManaged = 0;
 static int config_load_done = 0;
-static int wait_for_thread = 0;
+static int waitforthread = 0;
 static int loadgamesuccess = 0;
 uint32_t *mutedaudiodata;
 
@@ -590,6 +589,7 @@ static void State_getPath(char* filename) {
 }
 static void State_read(void) { // from picoarch
 	size_t state_size = core.serialize_size();
+	LOG_info("Begin state read - size(%u) on slot %d\n", state_size, state_slot);fflush(stdout);
 	if (!state_size) return;
 
 	int was_ff = fast_forward;
@@ -623,7 +623,7 @@ static void State_read(void) { // from picoarch
 		LOG_error("Error restoring save state: %s (%s)\n", filename, strerror(errno));
 		goto error;
 	}
-
+	LOG_info("Successfully state read - size(%u) on slot %d\n", state_size, state_slot);fflush(stdout);
 error:
 	if (state) free(state);
 	if (state_file) fclose(state_file);
@@ -632,11 +632,12 @@ error:
 }
 static void State_write(void) { // from picoarch
 	size_t state_size = core.serialize_size();
+	LOG_info("Begin state write - size(%u) on slot %d\n", state_size, state_slot);fflush(stdout);
 	if (!state_size) return;
 	
 	int was_ff = fast_forward;
 	fast_forward = 0;
-
+	
 	void *state = calloc(1, state_size);
 	if (!state) {
 		LOG_error("Couldn't allocate memory for state\n");
@@ -661,7 +662,7 @@ static void State_write(void) { // from picoarch
 		LOG_error("Error writing state data to file: %s (%s)\n", filename, strerror(errno));
 		goto error;
 	}
-
+	LOG_info("Successfully state write - size(%u) on slot %d\n", state_size, state_slot);fflush(stdout);
 error:
 	if (state) free(state);
 	if (state_file) fclose(state_file);
@@ -1142,9 +1143,9 @@ static void Config_syncFrontend(char* key, int value) {
 		i = FE_OPT_TEARING;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_THREAD].key)) {
-		int old_value = thread_video || was_threaded;
+		int old_value = thread_video;
 		toggle_thread = old_value!=value;
-		wait_for_thread = value;
+		waitforthread = value;
 		i = FE_OPT_THREAD;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_OVERCLOCK].key)) {
@@ -1378,7 +1379,7 @@ static void Config_free(void) {
 	if (config.system_cfg) free(config.system_cfg);
 	if (config.default_cfg) free(config.default_cfg);
 	if (config.user_cfg) free(config.user_cfg);	
-	LOG_info("Config_free: wait_for_thread=%d thread_video=%d, toggle_thread=%d\n", wait_for_thread, thread_video, toggle_thread);fflush(stdout);
+	LOG_info("Config_free: waitforthread=%d thread_video=%d, toggle_thread=%d\n", waitforthread, thread_video, toggle_thread);fflush(stdout);
 }
 static void Config_readOptions(void) {
 	Config_readOptionsString(config.system_cfg);
@@ -1718,16 +1719,16 @@ static void wait_For_Thread(void) {
 	pthread_mutex_lock(&core_mx);
 	should_run_core = 0;
 	pthread_mutex_unlock(&core_mx);
-	//wait 50msecs to be sure the core has stopped 
-	usleep(50000);
+	//wait 25msecs to be sure the core has stopped 
+	usleep(25000);
 	//rendering = 1;
 	//signal the core thread to unlock the main thread and render the last frame
 	pthread_mutex_lock(&core_mx);
 	pthread_cond_signal(&core_rq);
 	pthread_mutex_unlock(&core_mx);
 
-	//wait 50msecs to be sure the flip thread has renderer the last frame
-	usleep(50000);
+	//wait 25msecs to be sure the flip thread has renderer the last frame
+	usleep(25000);
 	int rendering2 = 1000;
 	//check if render and renderer are both 0, wait at least 1000msecs the go forward
 	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
@@ -1741,17 +1742,6 @@ static void wait_For_Thread(void) {
 
 
 static int setFastForward(int enable) {
-	if (!fast_forward && enable && thread_video) {
-		// LOG_info("entered fast forward with threaded core...\n");
-	//	was_threaded = 1;
-	//	toggle_thread = 1;
-	}
-	else if (fast_forward && !enable && !thread_video && was_threaded) {
-		// LOG_info("exited fast forward with previously threaded core...\n");
-	//	was_threaded = 0;
-	//	toggle_thread = 1;
-	}
-
 	fast_forward = enable;
 	return enable;
 }
@@ -1775,18 +1765,15 @@ static void input_poll_callback(void) {
 	
 	if (PAD_justPressed(BTN_POWER)) {
 		if (thread_video) {
-			// LOG_info("pressed power with threaded core...\n");
-			wait_For_Thread();
-			was_threaded = 1;
-			toggle_thread = 1;
+
 		}
 	}
 	else if (PAD_justReleased(BTN_POWER)) {
-		if (!thread_video && was_threaded) {
-			// LOG_info("released power with previously threaded core before power off...\n");
-			was_threaded = 0;
-			toggle_thread = 1;
+		if (thread_video) {
+			wait_For_Thread();
 		}
+		Menu_beforeSleep();
+		PWR_powerOff();
 	}
 
 	static int toggled_ff_on = 0; // this logic only works because TOGGLE_FF is before HOLD_FF in the menu...
@@ -3289,7 +3276,7 @@ void video_refresh_callback_rotate(int rotation, void *data, unsigned width, uns
 		}
 	}
 	if (rotation == 1) {
-				renderer.src_surface = SDL_CreateRGBSurface(SDL_SWSURFACE,height, width, 16, RGBA_MASK_565);
+		renderer.src_surface = SDL_CreateRGBSurface(SDL_SWSURFACE,height, width, 16, RGBA_MASK_565);
 		for (y = 0; y < height; y++) {
 			for (x = 0; x < width; x++) {
 				*((uint16_t *)renderer.src_surface->pixels + y + (width - x - 1) * height) = *((uint16_t *)data + x + y * thispitch);
@@ -3418,7 +3405,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
  	if (!data) return;
 	if (!thread_video) rendering = 0;
 	fps_ticks += 1;
-	
+//	LOG_info("Video_refresh_callback_main IN ABS:%d\n", SDL_GetTicks());fflush(stdout);
 	// 10 seems to be the sweet spot that allows 2x in NES and SNES and 8x in GB at 60fps
 	// 14 will let GB hit 10x but NES and SNES will drop to 1.5x at 30fps (not sure why)
 	// but 10 hurts PS...
@@ -3516,7 +3503,10 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 		rendering = 1;
 		video_refresh_callback_main(data,width,height,pitch);	
 	}
-//	LOG_info("FRAME:%d video_refresh_callback OUT: wait_for_thread:%i thread_video:%i config_done = %i %ix%i_%i took:%lums ABS %lu\n",framecounter,wait_for_thread,thread_video,config_load_done,width,height,pitch, SDL_GetTicks()-callback_time, callback_time);fflush(stdout);
+	//uint32_t cur = SDL_GetTicks() - last_callback_time;
+	//if ( cur < 16) SDL_Delay(16 - cur);
+	//LOG_info("Video_refresh_callback OUT: waitforthread:%i thread_video:%i config_done = %i %ix%i_%i took:%lums ABS %lu tmptime=%d\n",waitforthread,thread_video,config_load_done,width,height,pitch, SDL_GetTicks()-callback_time, callback_time,cur);fflush(stdout);
+	
 
 //	LOG_info("videorefreshcallback took %dmsec elapsed %dmsec\n", SDL_GetTicks() - callback_time, callback_time - last_callback_time);fflush(stdout);
 	last_callback_time = callback_time;
@@ -3534,7 +3524,6 @@ static void audio_sample_callback(int16_t left, int16_t right) {
 #endif
 }
 static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) { 
-	//return frames;
 	if (fast_forward) return frames;
 #ifdef M21	
 	if (GetVolume()) return SND_batchSamples((const SND_Frame*)data, frames);
@@ -5106,14 +5095,15 @@ static char* getAlias(char* path, char* alias) {
 static void Menu_loop(void) {
 
 	LOG_info("Entering Menu render= %i - rendering= %i\n",render,rendering);fflush(stdout);
-	int rendering2 = 1500;
+	wait_For_Thread();
+/*	int rendering2 = 1500;
 	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
 		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 		usleep(1000);
 		rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
 	}
 	rendering = 0;
-	render = 0;
+	render = 0;*/
 	if (firstmenu) PLAT_clearAll();
 	firstmenu = 0;
 
@@ -5525,6 +5515,7 @@ static void Menu_loop(void) {
 
 
 		if (thread_video) {
+			LOG_info("Exiting menu, returning to video_thread\n");fflush(stdout);
 			pthread_mutex_lock(&core_mx);
 			should_run_core = 1;
 			pthread_mutex_unlock(&core_mx);		
@@ -5826,7 +5817,7 @@ int main(int argc , char* argv[]) {
 	while (!quit) {
 		GFX_startFrame();
 
-		if ((!thread_video)&&(config_load_done)&&(!wait_for_thread || was_threaded)) {
+		if ((!thread_video)&&(config_load_done)&&(!waitforthread)) {
 			core.run();
 			limitFF();
 			trackFPS();
@@ -5854,12 +5845,6 @@ int main(int argc , char* argv[]) {
 		//trackFPS();
 		if (toggle_thread) {
 			toggle_thread = 0;
-			if (was_threaded && !thread_video) {
-				// LOG_info("was fast forwarding while previously threaded (%i) so re-enabling threading %i\n", thread_video, !thread_video);
-				// revert to pre-fast_forward state before toggling
-				was_threaded = 0;
-				thread_video = !thread_video;
-			}
 			// LOG_info("toggling thread from %i to %i\n", thread_video, !thread_video);
 			thread_video = !thread_video;
 			if (thread_video) {
@@ -5888,7 +5873,7 @@ int main(int argc , char* argv[]) {
 				GFX_flip(screen);
 			}
 		}
-		if ((!wait_for_thread)&&(!config_load_done)) {
+		if ((!waitforthread)&&(!config_load_done)) {
 			config_load_done = 1;
 		}
 	}

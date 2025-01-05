@@ -151,7 +151,7 @@ void PLAT_pollInput(void) {
 					}
 				else if (code==RAW_PLUS)	{ btn = BTN_PLUS; 		id = BTN_ID_PLUS; }
 				else if (code==RAW_MINUS)	{ btn = BTN_MINUS; 		id = BTN_ID_MINUS; }
-				else if (code==RAW_POWER)	{ btn = BTN_POWEROFF; 		id = BTN_ID_POWEROFF; }
+				else if (code==RAW_POWER)	{ btn = BTN_POWER; 		id = BTN_ID_POWER; }
 			}
 			if (type==EV_ABS) {  // (range -1800 0 +1800)
 
