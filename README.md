@@ -14,6 +14,52 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+## Release 06/01/2025
+
+# All: 
+
+- restored all currently supported devices Miyoo mini (plus), Miyoo A30, Rg35XX OG and GameConsole R36S. Since my SJGAM M21 is broken no more development on this device.
+
+- new non gpu accelerated rendering engine ported to all devices, this engine allows a manual control of the whole render process allowing me splitting it to different threads and force them running on specific cores maximizing the performances.
+  now the main thread (input + audio + menu) is always running on core 0, the core thread (frame generation at 60fps) is always running on core 1 and the rendering thread (game rotation, image scaling, apply effect, drawing to the display) is running on core 0 (if dualcore) or core 2 (if quadcore).  
+
+- every platform has now the line and grid effect available. Both have an impact of roughly 20% of cpu load on rendering thread when activated 
+
+- The aspect resize is now respectful of the native screen resolution, there are some devices wich would take benefit of the hardware scaling provided by the framebuffer kernel driver (such as the rg35xx) but the lost of performances due to the use of the old FullScreen1X scaler is compensated by the thread core engine. Native is integer scale, aspect expand the image to fit the screen preserving core provided aspect ratio, and fullscreen expand in both axes to fill the screen.
+The new resize approach make easy adding new scaling options for future releases.
+
+- Reviewed the thread video engine in minarch so all cores are now running in thread mode, non thread mode is hidden.
+
+- Removed retroarch, since minarch is now able to do all of the needed things there are no more reason to keep retroarch.
+
+- Fixed Fast forward which never worked in thread video mode, now it works with thread mode activated. I don't use it, during some test I got a steady 4x on doom, gba, nes and almost 2x in snes, neogeo.
+
+- Debug HUD has now the same font size regardless the current image scale, since all are screens are now 640x480 the bottom right corner shows the current effect (0=none, 1=line, 2=grid) and the current game rotation. 
+
+- All input handling are now manually and no more related to libsdl.
+
+- a couple of new options in controls menu, now the user can set the abxy buttons to act as analog rigth stick (some games request it) and also making left analog stick acting as dpad.
+
+- In the main menu it is now hidden the folder for hiddenroms, to make it visible create a file named .userdata/shared/enable-show-hidden-folder
+
+
+# Miyoomini: 
+
+- Ported to libSDL2, at the moment I'm using the libraries of pico8 provided by onionos, this is a temporarily solution while I understand how to make the toolchain generated libsdl2 working as expected (the audio forces everything running at half speed).
+
+- To run native pico8 no need to add anything (except lexaloffle binaries in the bios folder of course) in "Tools/pico8 splore.pak" as all needed libraries are already in the .system/miyoomini/lib folder.
+
+- the published toolchain does not reflect the one actually used for this release, once fixed the libSDL2 point I'll update the toolchain.
+
+- Changed ps1 core to have the same as other platforms
+
+
+# Miyoo A30: 
+
+- Changed the install/update process.
+
+- Changed ps1 core to have the same as other platforms.
+
 ## Release 15/12/2024
 
 All: Regarding the support for non US chars (ZH, JP, etc...), it is enough replacing the system ttf font with one that includes the required charset. Added some notes in the readme.txt file as a quick howto.
