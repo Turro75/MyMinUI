@@ -430,7 +430,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	//if (vid.pixels) {free(vid.pixels);vid.pixels=NULL;}
 	vid.pixels = malloc(h*p);
 	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, w, h, FIXED_DEPTH, p, RGBA_MASK_565);
-	vid.screen2 = SDL_CreateRGBSurfaceWithFormat(0, w, h, p, vid.screen->format->format); 
+	vid.screen2 = SDL_CreateRGBSurface(0, w, h, FIXED_DEPTH, RGBA_MASK_565); 
 	//vid.screen	= SDL_CreateRGBSurfaceFrom(pixels, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	//vid.screen	= SDL_CreateRGBSurface(SDL_HWSURFACE, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	vid.width	= w;
@@ -466,6 +466,7 @@ void PLAT_quitVideo(void) {
 
 static void clearVideo(void) {
 	SDL_FillRect(vid.screen, NULL, 0);
+	SDL_FillRect(vid.screen2, NULL, 0);
 	memset(vid.fbmmap, 0, vid.screen_size); //1228800);
 //	write(vid.fdfb, vid.fbmmap, vid.screen_size);
 //	lseek(vid.fdfb,0,0);
@@ -473,10 +474,12 @@ static void clearVideo(void) {
 
 void PLAT_clearVideo(SDL_Surface* screen) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
+	SDL_FillRect(vid.screen2, NULL, 0);
 }
 
 void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
+	SDL_FillRect(vid.screen2, NULL, 0);
 	memset(vid.fbmmap, 0, vid.screen_size);
 //	write(vid.fdfb, vid.fbmmap, vid.screen_size);
 //	lseek(vid.fdfb,0,0);

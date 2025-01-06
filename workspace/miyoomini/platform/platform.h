@@ -33,9 +33,13 @@
 
 #define BUTTON_MENU	 	SDLK_ESCAPE
 #define BUTTON_POWER 	SDLK_POWER
+#if defined(USE_SDL2)
 #define	BUTTON_PLUS		SDLK_VOLUMEUP
 #define	BUTTON_MINUS	SDLK_VOLUMEDOWN
-
+#else
+#define	BUTTON_PLUS		SDLK_RSUPER
+#define	BUTTON_MINUS	SDLK_LSUPER
+#endif
 ///////////////////////////////
 
 #define CODE_UP			103
