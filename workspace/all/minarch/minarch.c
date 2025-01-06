@@ -788,7 +788,7 @@ enum {
 	SHORTCUT_RESET_GAME,
 	SHORTCUT_SAVE_QUIT,
 	SHORTCUT_CYCLE_SCALE,
-/*	SHORTCUT_CYCLE_EFFECT,*/
+	SHORTCUT_CYCLE_EFFECT,
 	SHORTCUT_TOGGLE_FF,
 	SHORTCUT_HOLD_FF,
 	SHORTCUT_COUNT,
@@ -1067,7 +1067,7 @@ static struct Config {
 		[SHORTCUT_RESET_GAME]			= {"Reset Game",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_SAVE_QUIT]			= {"Save & Quit",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_CYCLE_SCALE]			= {"Cycle Scaling",		-1, BTN_ID_NONE, 0},
-	/*	[SHORTCUT_CYCLE_EFFECT]			= {"Cycle Effect",		-1, BTN_ID_NONE, 0},*/
+		[SHORTCUT_CYCLE_EFFECT]			= {"Cycle Effect",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_TOGGLE_FF]			= {"Toggle FF",			-1, BTN_ID_NONE, 0},
 		[SHORTCUT_HOLD_FF]				= {"Hold FF",			-1, BTN_ID_NONE, 0},
 		{NULL}
@@ -1106,6 +1106,7 @@ static void setOverclock(int i) {
 	processors = PLAT_getNumProcessors();
 }
 static int toggle_thread = 0;
+char effect_str[5];
 static void Config_syncFrontend(char* key, int value) {
 	int i = -1;
 	if (exactMatch(key,config.frontend.options[FE_OPT_SCALING].key)) {
@@ -1129,6 +1130,14 @@ static void Config_syncFrontend(char* key, int value) {
 	else if (exactMatch(key,config.frontend.options[FE_OPT_EFFECT].key)) {
 		screen_effect = value;
 		GFX_setEffect(value);
+		if (screen_effect==EFFECT_GRID) {
+			sprintf(effect_str, "2");
+		} else if (screen_effect==EFFECT_LINE) {
+			sprintf(effect_str, "1");
+		} else { 
+			sprintf(effect_str, "0"); 
+		}
+
 		renderer.dst_p = 0;
 		i = FE_OPT_EFFECT;
 	}
@@ -1823,11 +1832,11 @@ static void input_poll_callback(void) {
 						if (screen_scaling>=SCALE_COUNT) screen_scaling -= SCALE_COUNT;
 						Config_syncFrontend(config.frontend.options[FE_OPT_SCALING].key, screen_scaling);
 						break;
-				/*	case SHORTCUT_CYCLE_EFFECT:
+					case SHORTCUT_CYCLE_EFFECT:
 						screen_effect += 1;
 						if (screen_effect>=EFFECT_COUNT) screen_effect -= EFFECT_COUNT;
 						Config_syncFrontend(config.frontend.options[FE_OPT_EFFECT].key, screen_effect);
-						break;*/
+						break;
 					default: break;
 				}
 				
@@ -2995,13 +3004,7 @@ static uint32_t sec_start = 0;
 void video_refresh_callback_rotate(int rotation, void *data, unsigned width, unsigned height, size_t pitch) {
 	int x, y, thispitch;
 	int now = SDL_GetTicks();
-	if (renderer.true_w != width || renderer.true_h != height || renderer.true_p != pitch){
-		LOG_info("Game Rotation of %ddeg calls RESIZE %ix%i_%i\n", rotation*90, width, height, pitch);fflush(stdout);
-		renderer.resize = 1;
-		renderer.true_w = width;
-		renderer.true_h = height;
-		renderer.true_p = pitch;		
-	} 
+
 	SDL_FreeSurface(renderer.src_surface);
 	thispitch = pitch/2;
 	if (rotation == 0) {	
@@ -3035,7 +3038,14 @@ void video_refresh_callback_rotate(int rotation, void *data, unsigned width, uns
 				*((uint16_t *)renderer.src_surface->pixels + (height - y - 1) + (x  * height)) = *((uint16_t *)data + x + y * thispitch);
 			}
 		}
-	}		
+	}	
+	if (renderer.true_w != width || renderer.true_h != height || renderer.true_p != pitch){
+		LOG_info("Game Rotation of %ddeg calls RESIZE %ix%i_%i\n", rotation*90, width, height, pitch);fflush(stdout);
+		renderer.resize = 1;
+		renderer.true_w = width;
+		renderer.true_h = height;
+		renderer.true_p = pitch;		
+	} 	
 //	LOG_info("Game Rotation of %d callback TOOK %dmsec\n", rotation*90, SDL_GetTicks() - now);
 }
 
@@ -3199,7 +3209,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		sprintf(debug_text, "%d %s", processors, cpuload);
 		blitBitmapText(debug_text,2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
 
-		sprintf(debug_text, "%i", renderer.rotate*90);
+		sprintf(debug_text, "%s %i", effect_str,renderer.rotate*90);
 		blitBitmapText(debug_text,-2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
 	}
 //	uint32_t now6 = SDL_GetTicks();

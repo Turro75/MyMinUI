@@ -474,7 +474,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	//if (vid.pixels) {free(vid.pixels);vid.pixels=NULL;}
 	vid.pixels = malloc(h*p);
 	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, w, h, FIXED_DEPTH, p, RGBA_MASK_565);
-	//vid.screen2 = SDL_CreateRGBSurfaceWithFormat(0, w, h, p, vid.screen->format->format); 
+	vid.screen2 = SDL_CreateRGBSurfaceWithFormat(0, w, h, p, vid.screen->format->format); 
 	//vid.screen	= SDL_CreateRGBSurfaceFrom(pixels, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	//vid.screen	= SDL_CreateRGBSurface(SDL_HWSURFACE, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	vid.width	= w;
@@ -500,6 +500,7 @@ void PLAT_quitVideo(void) {
 	PLAT_clearAll();
 	if (vid.pixels) free(vid.pixels);
 	SDL_FreeSurface(vid.screen);
+	SDL_FreeSurface(vid.screen2);
 	vid.pixels=NULL;
 	//munmap(vid.fbmmap, 0);	
     close(vid.fdfb);
@@ -517,7 +518,7 @@ void PLAT_clearVideo(SDL_Surface* screen) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 }
 
-void PLAT_clearAll(void) {
+void  PLAT_clearAll (void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	memset(vid.fbmmap, 0, vid.screen_size);
 	write(vid.fdfb, vid.fbmmap, vid.screen_size);
@@ -612,49 +613,23 @@ scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
 	*/
 }
 
-void Main_Flip(void);
-
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
-/*	if (effect_type!=next_effect) {
+	if (effect_type!=next_effect) {
 		effect_type = next_effect;
-		renderer->blit = PLAT_getScaler(renderer); // refresh the scaler
 	}
-	finalrotate = (vid.rotate + renderer->rotate) % 4;
-	//vid.rotate = vid.rotate%4;
-	void* dst = renderer->dst + (renderer->dst_y * renderer->dst_p) + (renderer->dst_x * FIXED_BPP);
-	
-	((scaler_t)renderer->blit)(renderer->src,dst,renderer->src_w,renderer->src_h,renderer->src_p,renderer->dst_w,renderer->dst_h,renderer->dst_p);
-	//Main_Flip();
-*/
-	SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+//	scale1x_line(renderer->src_surface->pixels, vid.screen2->pixels, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch);
+	if (effect_type==EFFECT_LINE) {
+		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+		scale1x_line(vid.screen2->pixels, vid.screen->pixels, vid.screen2->w, vid.screen2->h, vid.screen2->pitch, vid.screen->w, vid.screen->h, vid.screen->pitch);
+	}
+	else if (effect_type==EFFECT_GRID) {
+		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+		scale1x_grid(vid.screen2->pixels, vid.screen->pixels, vid.screen2->w, vid.screen2->h, vid.screen2->pitch, vid.screen->w, vid.screen->h, vid.screen->pitch);
+	}
+	else {
+		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+	}
 }
-
-
-void Main_Flip(void) { //this rotates only the game frames
-//	SDL_SoftStretch(vid.screen, NULL, vid.screen2, &(SDL_Rect){0,0,FIXED_WIDTH,FIXED_HEIGHT});
-	if (finalrotate == 0) 
-		{
-			// No Rotation
-			M21_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
-		}
-	if (finalrotate== 1)
-		{
-			// 90 Rotation
-			M21_SDLFB_FlipRotate90(vid.screen, vid.fbmmap,vid.linewidth);
-		}
-	if (finalrotate == 2)
-		{
-			// 180 Rotation
-			M21_SDLFB_FlipRotate180(vid.screen, vid.fbmmap,vid.linewidth);
-		}
-	if (finalrotate == 3)
-		{
-			// 270 Rotation
-			M21_SDLFB_FlipRotate270(vid.screen, vid.fbmmap,vid.linewidth);
-		}
-	write(vid.fdfb, vid.fbmmap, vid.screen_size);
-	lseek(vid.fdfb,0,0);
-}	
 
 
 void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu + minui + tools

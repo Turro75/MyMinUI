@@ -171,6 +171,7 @@ static struct VID_Context {
 	struct fb_var_screeninfo vinfo;  //adjustable fb info
 	void *fbmmap; //mmap address of the framebuffer
 	SDL_Surface* screen;  //swsurface to let sdl thinking it's the screen
+	SDL_Surface* screen2;  //swsurface to let sdl thinking it's the screen
 	GFX_Renderer* blit; // yeesh, let's see if useful
 	int linewidth;
 	int screen_size;
@@ -439,6 +440,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	//if (vid.pixels) {free(vid.pixels);vid.pixels=NULL;}
 	vid.pixels = malloc(h*p);
 	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, w, h, FIXED_DEPTH, p, RGBA_MASK_565);
+	vid.screen2 = SDL_CreateRGBSurfaceWithFormat(0, w, h, p, vid.screen->format->format); 
 	//vid.screen	= SDL_CreateRGBSurfaceFrom(pixels, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	//vid.screen	= SDL_CreateRGBSurface(SDL_HWSURFACE, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	vid.width	= w;
@@ -465,6 +467,7 @@ void PLAT_quitVideo(void) {
 	PLAT_clearAll();
 	if (vid.pixels) free(vid.pixels);
 	SDL_FreeSurface(vid.screen);
+	SDL_FreeSurface(vid.screen2);
 	vid.pixels=NULL;
 	munmap(vid.fbmmap, 0);	
     close(vid.fdfb);
@@ -580,23 +583,21 @@ scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
 void Main_Flip(void);
 
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
-/*	if (effect_type!=next_effect) {
+	if (effect_type!=next_effect) {
 		effect_type = next_effect;
-		renderer->blit = PLAT_getScaler(renderer); // refresh the scaler
 	}
-	finalrotate = (vid.rotate + renderer->rotate) % 4;
-	//vid.rotate = vid.rotate%4;
-	void* dst = renderer->dst + (renderer->dst_y * renderer->dst_p) + (renderer->dst_x * FIXED_BPP);
-	((scaler_t)renderer->blit)(renderer->src,dst,renderer->src_w,renderer->src_h,renderer->src_p,renderer->dst_w,renderer->dst_h,renderer->dst_p);
-	Main_Flip();
-}
-*/
-SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
-/*
-SDL_ScaleModeNearest, /**< nearest pixel sampling 
-    SDL_ScaleModeLinear,  /**< linear filtering 
-    SDL_ScaleModeBest     /**< anisotropic filtering 
-*/
+//	scale1x_line(renderer->src_surface->pixels, vid.screen2->pixels, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch);
+	if (effect_type==EFFECT_LINE) {
+		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+		scale1x_line(vid.screen2->pixels, vid.screen->pixels, vid.screen2->w, vid.screen2->h, vid.screen2->pitch, vid.screen->w, vid.screen->h, vid.screen->pitch);
+	}
+	else if (effect_type==EFFECT_GRID) {
+		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+		scale1x_grid(vid.screen2->pixels, vid.screen->pixels, vid.screen2->w, vid.screen2->h, vid.screen2->pitch, vid.screen->w, vid.screen->h, vid.screen->pitch);
+	}
+	else {
+		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+	}
 }
 
 

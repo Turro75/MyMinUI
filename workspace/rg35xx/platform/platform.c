@@ -158,6 +158,7 @@ static struct VID_Context {
 	struct fb_var_screeninfo vinfo;  //adjustable fb info
 	void *fbmmap; //mmap address of the framebuffer
 	SDL_Surface* screen;  //swsurface to let sdl thinking it's the screen
+	SDL_Surface* screen2;  //used to apply screen_effect
 	GFX_Renderer* blit; // yeesh, let's see if useful
 	int linewidth;
 	int screen_size;
@@ -263,6 +264,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	//if (vid.pixels) {free(vid.pixels);vid.pixels=NULL;}
 	vid.pixels = malloc(h*p);
 	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, w, h, FIXED_DEPTH, p, RGBA_MASK_565);
+	vid.screen2 = SDL_CreateRGBSurface(0, w, h, p, RGBA_MASK_565); 
 	//vid.screen	= SDL_CreateRGBSurfaceFrom(pixels, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	//vid.screen	= SDL_CreateRGBSurface(SDL_HWSURFACE, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	vid.width	= w;
@@ -289,6 +291,7 @@ void PLAT_quitVideo(void) {
 	PLAT_clearAll();
 	if (vid.pixels) free(vid.pixels);
 	SDL_FreeSurface(vid.screen);
+	SDL_FreeSurface(vid.screen2);
 	vid.pixels=NULL;
 	munmap(vid.fbmmap, 0);	
     close(vid.fdfb);
@@ -378,9 +381,21 @@ scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
 }
 
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
-//	uint32_t now = SDL_GetTicks();
-	SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
-//	LOG_info("BLIT_RENDERER took %imsec\n", SDL_GetTicks()-now);fflush(stdout);
+	if (effect_type!=next_effect) {
+		effect_type = next_effect;
+	}
+//	scale1x_line(renderer->src_surface->pixels, vid.screen2->pixels, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch);
+	if (effect_type==EFFECT_LINE) {
+		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+		scale1x_line(vid.screen2->pixels, vid.screen->pixels, vid.screen2->w, vid.screen2->h, vid.screen2->pitch, vid.screen->w, vid.screen->h, vid.screen->pitch);
+	}
+	else if (effect_type==EFFECT_GRID) {
+		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+		scale1x_grid(vid.screen2->pixels, vid.screen->pixels, vid.screen2->w, vid.screen2->h, vid.screen2->pitch, vid.screen->w, vid.screen->h, vid.screen->pitch);
+	}
+	else {
+		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+	}
 }
 
 void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu + minui + tools
