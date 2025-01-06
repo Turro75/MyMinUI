@@ -61,8 +61,9 @@ if [ -f "$UPDATE_PATH" ]; then
 
 	# the updated system finishes the install/update
 	$SYSTEM_PATH/$PLATFORM/bin/install.sh
+	./show.elf ./done.png
 fi
-dd if=/dev/zero of=/dev/fb0
+
 # or launch (and keep launched)
 LAUNCH_PATH="$SYSTEM_PATH/$PLATFORM/paks/MinUI.pak/launch.sh"
 while [ -f "$LAUNCH_PATH" ] ; do
