@@ -17,9 +17,6 @@
 #include "api.h"
 #include "utils.h"
 
-#include "ion.h"
-#include "ion-owl.h"
-#include "de_atm7059.h"
 #include "scaler.h"
 
 ///////////////////////////////
@@ -236,51 +233,109 @@ int RG35XX_SDLFB_Flip(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	return 0;	
 }
 
+int RG35XX_SDLFB_FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth) {
+	//copy a surface to the screen and flip it
+	//it must be the same resolution, the bpp16 is then converted to 32bpp
+	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y;
+	if (buffer->format->BitsPerPixel == 16) {
+		//ok start conversion assuming it is RGB565		
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w; x++) {
+				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
+				*((uint32_t *)fbmmap + y + (buffer->w - x - 1) * linewidth) = (uint32_t)((0xFF000000) |  ((pixel & 0xF800) >> 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 19));
+			}
+		}
+	}
+	return 0;	
+}
+
+int RG35XX_SDLFB_FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth) {
+	//copy a surface to the screen and flip it
+	//it must be the same resolution, the bpp16 is then converted to 32bpp
+	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y;
+	if (buffer->format->BitsPerPixel == 16) {
+		//ok start conversion assuming it is RGB565		
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w; x++) {
+				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
+				*((uint32_t *)fbmmap + (buffer->w - x) + (buffer->h - y - 1) * linewidth) = (uint32_t)((0xFF000000) |  ((pixel & 0xF800) >> 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 19));
+			}
+		}
+	}
+	return 0;	
+}
+
+int RG35XX_SDLFB_FlipRotate90(SDL_Surface *buffer, void * fbmmap, int linewidth) {
+	//copy a surface to the screen and flip it
+	//it must be the same resolution, the bpp16 is then converted to 32bpp
+	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y;
+	if (buffer->format->BitsPerPixel == 16) {
+		//ok start conversion assuming it is RGB565		
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w; x++) {
+				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
+				*((uint32_t *)fbmmap + (buffer->h- y -1) + (x  * linewidth)) = (uint32_t)((0xFF000000) |  ((pixel & 0xF800) >> 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 19));
+			}
+		}
+	}
+	return 0;	
+}
+
 SDL_Surface* PLAT_initVideo(void) {
-	
 	vid.fdfb = open("/dev/fb0", O_RDWR);
 	int w = FIXED_WIDTH;
 	int h = FIXED_HEIGHT;
 	int p = FIXED_PITCH;
+	DEVICE_WIDTH = w;
+	DEVICE_HEIGHT = h;
 	vid.rotate = 0;
+	
+	get_fbinfo();	
 
-	get_fbinfo();
+	if (exists(ROTATE_SYSTEM_PATH)) {
+		vid.rotate = getInt(ROTATE_SYSTEM_PATH) &3;
+	}
+
+	if (vid.rotate % 2 == 1) {
+		DEVICE_WIDTH = FIXED_HEIGHT;
+		DEVICE_HEIGHT = FIXED_WIDTH;
+	}
+	
     vid.vinfo.xres=w;
     vid.vinfo.yres=h;
 	vid.vinfo.bits_per_pixel=32;
 
+	int m = vid.vinfo.xres>vid.vinfo.yres?vid.vinfo.xres:vid.vinfo.yres;
 	//at the beginning set the screen size to 640x480
     set_fbinfo();
 	get_fbinfo();
-
+	LOG_info("DEVICE_WIDTH=%d, DEVICE_HEIGHT=%d\n", DEVICE_WIDTH, DEVICE_HEIGHT);fflush(stdout);
 //	if (getInt(HDMI_STATE_PATH)) {
 //		w = HDMI_WIDTH;
 //		h = HDMI_HEIGHT;
 //		p = HDMI_PITCH;
 //	}
-	//SDL_Init(SDL_INIT_VIDEO);
-	//SDL_ShowCursor(0);
-	//create a surface to let SDL draw everything to
-	//if (vid.pixels) {free(vid.pixels);vid.pixels=NULL;}
-	vid.pixels = malloc(h*p);
-	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, w, h, FIXED_DEPTH, p, RGBA_MASK_565);
-	vid.screen2 = SDL_CreateRGBSurface(0, w, h, FIXED_DEPTH, RGBA_MASK_565); 
-	//vid.screen	= SDL_CreateRGBSurfaceFrom(pixels, w,h, FIXED_DEPTH, RGBA_MASK_565);
-	//vid.screen	= SDL_CreateRGBSurface(SDL_HWSURFACE, w,h, FIXED_DEPTH, RGBA_MASK_565);
-	vid.width	= w;
-	vid.height	= h;
-	vid.pitch	= p;
-	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
-	device_width	= vid.vinfo.xres;
-	device_height	= vid.vinfo.yres;
-	device_pitch	= vid.linewidth;
+	vid.pixels = malloc(m*p);
+	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, p, RGBA_MASK_565);
+	vid.screen2 = SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
 
-	//vid.screen_size = vid.finfo.line_length * vid.vinfo.yres_virtual;
+	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
 
 	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
-	vid.screen_size = vid.finfo.line_length * w;
+	vid.screen_size = vid.finfo.line_length * m;
     vid.fbmmap = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
-	//vid.fbmmap = malloc(vid.screen_size *(sizeof(uint8_t)));
 	
 	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
@@ -404,7 +459,27 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
 	// No Rotation
-	RG35XX_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
+	if (vid.rotate == 0) 
+	{
+		// No Rotation
+		RG35XX_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+	if (vid.rotate == 1)
+	{
+		// 90 Rotation
+		RG35XX_SDLFB_FlipRotate90(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+	if (vid.rotate == 2)
+	{
+		// 180 Rotation
+		RG35XX_SDLFB_FlipRotate180(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+	if (vid.rotate == 3)
+	{
+		// 270 Rotation
+		RG35XX_SDLFB_FlipRotate270(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+	
 //	LOG_info("FLIP_VIDEO took %imsec\n", SDL_GetTicks()-now);fflush(stdout);
 }
 

@@ -19,10 +19,6 @@
 #include "utils.h"
 #include "api.h"
 
-#define FIXED_WIDTH 640
-#define FIXED_HEIGHT 480
-
-
 #define SRCDIR  SDCARD_PATH "/Tools/" THISPLATFORM "/Convert BoxArt.pak/srcimgdir"
 #define DSTDIR SRCDIR "/outdir"
 

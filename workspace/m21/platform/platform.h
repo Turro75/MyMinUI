@@ -113,7 +113,7 @@
 #define FIXED_SIZE		(FIXED_PITCH * FIXED_HEIGHT)
 
 #define MAX_WIDTH 1280
-#define MAX_HEIGHT 1440
+#define MAX_HEIGHT 1280
 #define MAX_DEPTH 32 
 
 #define ARGB_MASK_8888	0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
@@ -121,6 +121,7 @@
 
 #define THISPLATFORM "m21"
 #define M21 1   
+//#define M22 1
 #define SDCARD_PATH "/mnt/SDCARD"
 #define MUTE_VOLUME_RAW 0
 #define HAS_NEON

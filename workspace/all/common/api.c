@@ -21,6 +21,8 @@
 ///////////////////////////////
 
 extern int fancy_mode;
+int DEVICE_WIDTH;
+int DEVICE_HEIGHT;
 
 void LOG_note(int level, const char* fmt, ...) {
 	char buf[1024] = {0};

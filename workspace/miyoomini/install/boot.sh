@@ -10,6 +10,8 @@ SYSTEM_PATH="$SDCARD_PATH/.system"
 CPU_PATH=/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 echo performance > "$CPU_PATH"
 
+SWAPFILE=${SYSTEM_PATH}/${PLATFORM}/myswapfile
+
 # is there an update available?
 if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
     NEWFILE=$(ls ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip)
@@ -75,17 +77,17 @@ if [ -f "$UPDATE_PATH" ]; then
 	
 	# the updated system finishes the install/update
 	$SYSTEM_PATH/$PLATFORM/bin/install.sh
+	sync	
+	if [ -f ${SWAPFILE}.gz ]; then
+		#the swapfile does not exists, let's create it
+    	rm -rf $SWAPFILE
+    	gzip -d ${SWAPFILE}.gz
+    	chmod 600 $SWAPFILE
+    	mkswap $SWAPFILE
+	fi
+	sync
 fi
 
-SWAPFILE=${SYSTEM_PATH}/${PLATFORM}/myswapfile
-
-if [ -f ${SWAPFILE}.gz ]; then
-#the swapfile does not exists, let's create it
-    rm -rf $SWAPFILE
-    gzip -d ${SWAPFILE}.gz
-    chmod 600 $SWAPFILE
-    mkswap $SWAPFILE
-fi
 if [ -f $SWAPFILE ]; then
 	swapon $SWAPFILE
 fi

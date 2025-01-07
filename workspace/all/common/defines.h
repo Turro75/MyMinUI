@@ -13,6 +13,7 @@
 #define ROMS_PATH SDCARD_PATH "/Roms"
 #define ROOT_SYSTEM_PATH SDCARD_PATH "/.system/"
 #define SYSTEM_PATH SDCARD_PATH "/.system/" PLATFORM
+#define ROTATE_SYSTEM_PATH SYSTEM_PATH "/screen_rotate.txt"
 #define RES_PATH SDCARD_PATH "/.system/res"
 #define FONT_PATH RES_PATH "/BPreplayBold-unhinted.otf"
 #define USERDATA_PATH SDCARD_PATH "/.userdata/" PLATFORM

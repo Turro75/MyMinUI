@@ -5,12 +5,12 @@ $(PLATFORM):
 	# installer
 	mkdir -p ./build/BASE/$@
 	cp ./workspace/$@/boot/boot.sh ./build/BASE/$@/emulationstation
+	cp ./workspace/$@/boot/boot.sh ./build/BASE/$@/tomato
 	cp ./workspace/$@/boot/*.png ./build/BASE/$@/
 	cp -R ./workspace/$@/boot/libmusl ./build/BASE/$@/
 	cp -R ./workspace/$@/boot/binmusl ./build/BASE/$@/
 	mv ./workspace/$@/boot/rootfs.ext2 ./build/SYSTEM/$@/
 	cp ./workspace/$@/boot/update.sh ./build/SYSTEM/$@/bin/install.sh
-	cp ./workspace/$@/overclock/overclock.elf ./build/SYSTEM/$@
 #	mkdir -p ./build/BOOT/common/$@/
 	# extras
 	cp ./workspace/$@/other/DinguxCommander/output/DinguxCommander ./build/EXTRAS/Tools/$@/Files.pak/

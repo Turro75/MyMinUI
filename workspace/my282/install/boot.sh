@@ -62,6 +62,8 @@ if [ -f "$UPDATE_PATH" ]; then
 	# the updated system finishes the install/update
 	$SYSTEM_PATH/$PLATFORM/bin/install.sh
 	./show.elf ./done.png
+	sync
+	poweroff -nf
 fi
 
 # or launch (and keep launched)
@@ -70,4 +72,4 @@ while [ -f "$LAUNCH_PATH" ] ; do
 	"$LAUNCH_PATH"
 done
 
-poweroff # under no circumstances should stock be allowed to touch this card
+poweroff -nf# under no circumstances should stock be allowed to touch this card

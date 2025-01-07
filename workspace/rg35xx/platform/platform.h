@@ -112,7 +112,7 @@
 #define FIXED_SIZE		(FIXED_PITCH * FIXED_HEIGHT)
 
 #define MAX_WIDTH 640
-#define MAX_HEIGHT 480
+#define MAX_HEIGHT 640
 #define MAX_DEPTH 32
 
 ///////////////////////////////

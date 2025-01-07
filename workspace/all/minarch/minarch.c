@@ -105,8 +105,6 @@ static int overclock = 1; // normal
 static int has_custom_controllers = 0;
 static int gamepad_type = 0; // index in gamepad_labels/gamepad_values
 static int downsample = 0; // set to 1 to convert from 8888 to 565
-static int DEVICE_WIDTH = FIXED_WIDTH;
-static int DEVICE_HEIGHT = FIXED_HEIGHT;
 static int DEVICE_PITCH = FIXED_PITCH;
 
 GFX_Renderer renderer;
@@ -3056,9 +3054,9 @@ SDL_Rect video_refresh_callback_resize_native(void) {
 	SDL_Rect retvalue;
 	int scale = 6;
 	int max_xscale = 6;
-	while (max_xscale * renderer.src_surface->w > FIXED_WIDTH) max_xscale--;
+	while (max_xscale * renderer.src_surface->w > DEVICE_WIDTH) max_xscale--;
 	int max_yscale = 6;
-	while (max_yscale * renderer.src_surface->h > FIXED_HEIGHT) max_yscale--;
+	while (max_yscale * renderer.src_surface->h > DEVICE_HEIGHT) max_yscale--;
 	scale = MIN(max_xscale, max_yscale);
 	scale = MIN(scale, screen_max_scale+1);
 	LOG_info("MAX xscaler = %d ** MAX yscaler = %d ** MAX scaler = %d\n", max_xscale, max_yscale, scale);fflush(stdout);
@@ -3066,8 +3064,8 @@ SDL_Rect video_refresh_callback_resize_native(void) {
 	
 	int dst_w = renderer.src_surface->w * scale;
 	int dst_h = renderer.src_surface->h * scale;
-	int dst_x = (FIXED_WIDTH - dst_w) / 2;
-	int dst_y = (FIXED_HEIGHT - dst_h) / 2;
+	int dst_x = (DEVICE_WIDTH - dst_w) / 2;
+	int dst_y = (DEVICE_HEIGHT - dst_h) / 2;
 	retvalue.x = dst_x;
 	retvalue.y = dst_y;
 	retvalue.w = dst_w;
@@ -3081,21 +3079,21 @@ SDL_Rect video_refresh_callback_resize_aspect(void) {
 	//maximum scaling keeping original aspect ratio 
 	SDL_Rect retvalue;
 	int dst_x,dst_y,dst_w,dst_h;
-	double sysaspect = 1.0 * FIXED_WIDTH / FIXED_HEIGHT;
+	double sysaspect = 1.0 * DEVICE_WIDTH / DEVICE_HEIGHT;
 	double aspect = renderer.src_surface->w / (double)renderer.src_surface->h;
 	if (aspect >= sysaspect) {
 		//landscape or 1:1 -> width limited
-		dst_w = FIXED_WIDTH;
+		dst_w = DEVICE_WIDTH;
 		double _dst_h = 1.0 * dst_w / aspect;
 		dst_h = (int)_dst_h;
 		dst_x = 0;
-		dst_y = (FIXED_HEIGHT - dst_h) / 2;
+		dst_y = (DEVICE_HEIGHT - dst_h) / 2;
 	} else {
 		//portrait -> height limited		
-		dst_h = FIXED_HEIGHT;
+		dst_h = DEVICE_HEIGHT;
 		double _dst_w = 1.0 * dst_h * aspect;
 		dst_w = (int)_dst_w;
-		dst_x = (FIXED_WIDTH - dst_w) / 2;
+		dst_x = (DEVICE_WIDTH - dst_w) / 2;
 		dst_y = 0;		
 	}
 	retvalue.x = dst_x;
@@ -3111,7 +3109,7 @@ void video_refresh_callback_resize(void) {
 	LOG_info("RESIZE IN\n");fflush(stdout);
 	uint32_t now = SDL_GetTicks();
 	//LOG_info(" VideoResize IN %d %d %d ABS:%d\n", renderer.src_surface->w, renderer.src_surface->h, renderer.src_surface->pitch, now);fflush(stdout);
-	SDL_Rect targetarea = {0,0,FIXED_WIDTH,FIXED_HEIGHT};
+	SDL_Rect targetarea = {0,0,DEVICE_WIDTH,DEVICE_HEIGHT};
 	switch(screen_scaling) {
 		case SCALE_ASPECT: { 
 							targetarea = video_refresh_callback_resize_aspect();
@@ -3157,7 +3155,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	// 14 will let GB hit 10x but NES and SNES will drop to 1.5x at 30fps (not sure why)
 	// but 10 hurts PS...
 	// TODO: 10 was based on rg35xx, probably different results on other supported platforms
-	if (fast_forward && SDL_GetTicks()-last_flip_time<15) return;
+	if (fast_forward && SDL_GetTicks()-last_flip_time<17) return;
 	
 	// FFVII menus 
 	// 16: 30/200
@@ -5436,8 +5434,8 @@ int main(int argc , char* argv[]) {
 	if (processors > 2){
 		//this is a quadcore cpu, set main thread to cpu 2, flip thread to cpu 3 and corethread to cpu 4
 		LOG_info("Quadcore CPU detected\n");
-		CPU_SET(1, &flipt);
-		CPU_SET(2, &coret);
+		CPU_SET(2, &flipt);
+		CPU_SET(1, &coret);
 	} else {
 		//this is a dual core cpu, set main thread to cpu 0, flip thread to cpu 0 and corethread to cpu 1
 		LOG_info("Dualcore CPU detected\n");

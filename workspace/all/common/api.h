@@ -30,6 +30,10 @@ void LOG_note(int level, const char* fmt, ...);
 
 ///////////////////////////////
 
+extern int DEVICE_WIDTH;
+extern int DEVICE_HEIGHT;
+
+//////////////////////////////
 // TODO: these only seem to be used by a tmp.pak in trimui (model s)
 // used by minarch, optionally defined in platform.h
 #ifndef PLAT_PAGE_BPP
