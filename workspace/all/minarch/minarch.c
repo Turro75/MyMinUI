@@ -79,16 +79,10 @@ int fancy_mode;
 enum {
 	SCALE_NATIVE,
 	SCALE_ASPECT,
+	SCALE_EXTENDED,
 	SCALE_FULLSCREEN,
-#ifdef CROP_OVERSCAN
-	SCALE_CROPPED,
-#endif
 	SCALE_COUNT,
 };
-
-#ifndef CROP_OVERSCAN
-	int SCALE_CROPPED = -1;
-#endif
 
 
 // default frontend options
@@ -719,10 +713,8 @@ static char* onoff_labels[] = {
 static char* scaling_labels[] = {
 	"Native",
 	"Aspect",
+	"Extended",
 	"Fullscreen",
-#ifdef CROP_OVERSCAN
-	"Cropped",
-#endif
 	NULL
 };
 static char* max_scaling_labels[] = {
@@ -948,11 +940,7 @@ static struct Config {
 			[FE_OPT_SCALING] = {
 				.key	= "minarch_screen_scaling", 
 				.name	= "Screen Scaling",
-#ifdef CROP_OVERSCAN
-				.desc	= "Native uses integer scaling. Aspect uses core\nreported aspect ratio. Fullscreen has non-square\npixels. Cropped is integer scaled then cropped.",
-#else
-				.desc	= "Native uses integer scaling.\nAspect uses core reported aspect ratio.\nFullscreen has non-squarepixels.\nFullscreen 1X fits native to fullscreen.",
-#endif
+				.desc	= "Native uses integer scaling.\nAspect uses core reported aspect ratio.\nExtended is like aspect but the it extends the image to fit 3/4 of screen.\nFullscreen has non-squarepixels.",
 				.default_value = 1,
 				.value = 1,
 				.count = SCALE_COUNT,
@@ -3105,6 +3093,45 @@ SDL_Rect video_refresh_callback_resize_aspect(void) {
 	//calculate offsets
 }
 
+SDL_Rect video_refresh_callback_resize_extended(void) {
+	LOG_info("RESIZE EXTENDED\n");fflush(stdout);
+	//maximum scaling keeping original aspect ratio 
+	SDL_Rect retvalue;
+	int dst_x,dst_y,dst_w,dst_h;
+	double sysaspect = 1.0 * DEVICE_WIDTH / DEVICE_HEIGHT;
+	double aspect = renderer.src_surface->w / (double)renderer.src_surface->h;
+	if (aspect >= sysaspect) {
+		//landscape or 1:1 -> width limited
+		dst_w = DEVICE_WIDTH;
+		double _dst_h = 1.0 * dst_w / aspect;
+		dst_h = (int)_dst_h;
+		dst_x = 0;
+		dst_y = (DEVICE_HEIGHT - dst_h) / 2;
+		if (dst_y > 2){
+			dst_h = dst_h + dst_y;
+			dst_y = (DEVICE_HEIGHT - dst_h) / 2;
+		}
+	} else {
+		//portrait -> height limited		
+		dst_h = DEVICE_HEIGHT;
+		double _dst_w = 1.0 * dst_h * aspect;
+		dst_w = (int)_dst_w;
+		dst_x = (DEVICE_WIDTH - dst_w) / 2;
+		if (dst_x > 2){
+			dst_w = dst_w + dst_x;
+			dst_x = (DEVICE_WIDTH - dst_w) / 2;
+		}
+		dst_y = 0;		
+	}
+	retvalue.x = dst_x;
+	retvalue.y = dst_y;
+	retvalue.w = dst_w;
+	retvalue.h = dst_h;
+	LOG_info("Sysaspect %f aspect %f dst_w %d dst_h %d dst_x %d dst_y %d\n", sysaspect, aspect,dst_w, dst_h, dst_x, dst_y);fflush(stdout);
+	return retvalue;
+	//calculate offsets
+}
+
 void video_refresh_callback_resize(void) {
 	LOG_info("RESIZE IN\n");fflush(stdout);
 	uint32_t now = SDL_GetTicks();
@@ -3113,6 +3140,10 @@ void video_refresh_callback_resize(void) {
 	switch(screen_scaling) {
 		case SCALE_ASPECT: { 
 							targetarea = video_refresh_callback_resize_aspect();
+							break;
+							};
+		case SCALE_EXTENDED: { 
+							targetarea = video_refresh_callback_resize_extended();
 							break;
 							};
 		case SCALE_NATIVE: { 
@@ -3217,10 +3248,12 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 //	LOG_info("videorefreshcallbackmain took %dmsec - softstrech took %dmsec - rotate took %dmsec - flip took %dmsec\n", last_flip_time - now, now5 - now4, now4 - now2, last_flip_time-now6 );
 //	LOG_info("Video_refresh_callback_main OUT  ABS:%i\n", last_flip_time);fflush(stdout);
 }
-
+int storage_audio_timing[60*60*10][4] = {-1};
+int _x = 0;
 static uint32_t last_callback_time = 0;
 static void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
 	int callback_time = SDL_GetTicks();
+	storage_audio_timing[_x][2] = callback_time;
 //	LOG_info("\nFRAME:%d video_refresh_callback IN elapsed %lums width:%i height:%i pitch:%i ABS:%i\n",framecounter, callback_time-last_callback_time ,width,height,pitch, callback_time);fflush(stdout);
 	if (!data || show_menu) {
 //		LOG_info("FRAME:%d Empty Frame\n");fflush(stdout);
@@ -3254,6 +3287,8 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 	last_callback_time = callback_time;
 }
 ///////////////////////////////
+//array to store the audio timing profile, each second is 60frames, so I'll record the first 10 minutes of every game 
+// each record contains 2 values, the first is the entry time in msec, the second is the exit time in msec
 
 // NOTE: sound must be disabled for fast forward to work...
 static void audio_sample_callback(int16_t left, int16_t right) {
@@ -3266,14 +3301,38 @@ static void audio_sample_callback(int16_t left, int16_t right) {
 #endif
 }
 static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) { 
+	storage_audio_timing[_x][0] = SDL_GetTicks();
+	storage_audio_timing[_x][3] = frames;
 	if (fast_forward) return frames;
 #ifdef M21	
 	if (GetVolume()) return SND_batchSamples((const SND_Frame*)data, frames);
 	else return SND_batchSamples((const SND_Frame*)mutedaudiodata, frames);
 #else
-	return SND_batchSamples((const SND_Frame*)data, frames);
+	int retvalue = SND_batchSamples((const SND_Frame*)data, frames);
+	
+	storage_audio_timing[_x++][1] = SDL_GetTicks();
+	if (_x == 60*60*10) _x=0;
+	return retvalue;
 #endif
 };
+
+//store the array to a file at exit of the game to avoid interference 
+void save_storage_audio_timing(void) {
+	int i = 0;
+	FILE* file = fopen( SDCARD_PATH "/storage_audio_timing.txt", "w");
+	for (i = 1; i < _x; i++) {
+		fprintf(file, "%05d VideoFrame IN = %d Cycle = %dmsec AudioFrames%d: TimeIn=%dmsec TimeOut=%dmsec Cycle = %d\n", 
+			i, 
+			storage_audio_timing[i][2], 
+			storage_audio_timing[i][2] - storage_audio_timing[i-1][2], 
+			storage_audio_timing[i][3],
+			storage_audio_timing[i][0], 
+			storage_audio_timing[i][1], 
+			storage_audio_timing[i][0] - storage_audio_timing[i-1][0]
+		);
+	}
+	fclose(file);
+}
 
 ///////////////////////////////////////
 
@@ -4566,9 +4625,6 @@ static void Menu_scale(SDL_Surface* src, SDL_Surface* dst) {
 	int rh = dh;
 	
 	int scaling = screen_scaling;
-	if (scaling==SCALE_CROPPED && DEVICE_WIDTH==HDMI_WIDTH) {
-		scaling = SCALE_NATIVE;
-	}
 	if (scaling==SCALE_NATIVE) {
 		// LOG_info("native\n");
 		
@@ -4588,24 +4644,6 @@ static void Menu_scale(SDL_Surface* src, SDL_Surface* dst) {
 			sw = rw;
 			sh = rh;
 		}
-		
-		if (dw==DEVICE_WIDTH/2) {
-			// LOG_info("halve\n");
-			rx /= 2;
-			ry /= 2;
-			rw /= 2;
-			rh /= 2;
-		}
-	}
-	else if (scaling==SCALE_CROPPED) {
-		// LOG_info("cropped\n");
-		sw -= renderer.src_x * 2;
-		sh -= renderer.src_y * 2;
-
-		rx = renderer.dst_x;
-		ry = renderer.dst_y;
-		rw = sw * renderer.scale;
-		rh = sh * renderer.scale;
 		
 		if (dw==DEVICE_WIDTH/2) {
 			// LOG_info("halve\n");
@@ -5636,6 +5674,7 @@ finish:
 	SND_quit();
 	PAD_quit();
 	GFX_quit();
+//	save_storage_audio_timing();
 	free(backbuffer.pixels);
 	free(mutedaudiodata);
 	buffer_dealloc();
