@@ -3095,7 +3095,8 @@ SDL_Rect video_refresh_callback_resize_aspect(void) {
 
 SDL_Rect video_refresh_callback_resize_extended(void) {
 	LOG_info("RESIZE EXTENDED\n");fflush(stdout);
-	//maximum scaling keeping original aspect ratio 
+	//maximum scaling keeping original aspect ratio then expand the shortest dimensione to fill better the screen
+	// for games that have a too narrow or too low aspect ratio (i.e. 1941 arcade) 
 	SDL_Rect retvalue;
 	int dst_x,dst_y,dst_w,dst_h;
 	double sysaspect = 1.0 * DEVICE_WIDTH / DEVICE_HEIGHT;

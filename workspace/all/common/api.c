@@ -1072,7 +1072,7 @@ void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 	
 	SDL_PauseAudio(0);
 
-	LOG_info("sample rate: %i (req) %i (rec)\n", snd.sample_rate_in, snd.sample_rate_out);
+	LOG_info("Sample rate: %i (req) %i (rec)\nNumChannels: %i (req) %i (rec)\nFormat: %i (req) %i (rec)\n", snd.sample_rate_in, snd.sample_rate_out, spec_in.channels, spec_out.channels, spec_in.format, spec_out.format);
 	snd.initialized = 1;
 }
 void SND_quit(void) { // plat_sound_finish
