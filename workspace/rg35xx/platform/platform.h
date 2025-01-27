@@ -106,13 +106,17 @@
 #define FIXED_SCALE 	2
 #define FIXED_WIDTH		640
 #define FIXED_HEIGHT	480
+#define HDMI_WIDTH_		920
+#define HDMI_HEIGHT_	520
 #define FIXED_BPP		2
 #define FIXED_DEPTH		(FIXED_BPP * 8)
 #define FIXED_PITCH		(FIXED_WIDTH * FIXED_BPP)
+#define HDMI_PITCH_		(HDMI_WIDTH_ * FIXED_BPP)
 #define FIXED_SIZE		(FIXED_PITCH * FIXED_HEIGHT)
+#define HDMI_SIZE_		(HDMI_PITCH_ * HDMI_HEIGHT_)
 
-#define MAX_WIDTH 640
-#define MAX_HEIGHT 640
+#define MAX_WIDTH HDMI_WIDTH_
+#define MAX_HEIGHT HDMI_WIDTH_
 #define MAX_DEPTH 32
 
 ///////////////////////////////
@@ -121,6 +125,7 @@
 #define SDCARD_PATH "/mnt/sdcard"
 #define MUTE_VOLUME_RAW 0
 #define HAS_NEON
+//#define HAS_HDMI
 
 ///////////////////////////////
 

@@ -24,24 +24,14 @@ echo on > /sys/devices/b0238000.mmc/mmc_host/mmc0/power/control
 echo on > /sys/devices/b0230000.mmc/mmc_host/mmc1/power/control
 
 #######################################
-
-# enable all CPU cores
-echo 0xf > /sys/devices/system/cpu/autoplug/plug_mask
-echo 1 > /sys/devices/system/cpu/cpu1/online
-echo 1 > /sys/devices/system/cpu/cpu2/online
-echo 1 > /sys/devices/system/cpu/cpu3/online
-
-
+export NUM_CPU=3
 export CPU_SPEED_MENU=504000
 export CPU_SPEED_POWERSAVE=1104000
 export CPU_SPEED_GAME=1200000
 export CPU_SPEED_PERF=1392000
 export CPU_SPEED_MAX=1488000
-echo userspace > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-#echo userspace > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor
-#echo userspace > /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor
-#echo userspace > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
-overclock.elf $CPU_SPEED_PERF
+
+overclock.elf $CPU_SPEED_PERF $NUM_CPU
 
 #######################################
 
@@ -66,7 +56,8 @@ NEXT_PATH="/tmp/next"
 rm -rf $LOGS_PATH/minui.txt
 touch "$EXEC_PATH" && sync
 while [ -f "$EXEC_PATH" ]; do
-	overclock.elf $CPU_SPEED_PERF
+	overclock.elf $CPU_SPEED_PERF $NUM_CPU
+	cp -f /$SYSTEM_PATH/dat/audio.conf /usr/share/alsa/alsa.conf.d/audio.conf
 	minui.elf >> $LOGS_PATH/minui.txt 2>&1
 	echo `date +'%F %T'` > "$DATETIME_PATH"
 	sync
@@ -75,7 +66,7 @@ while [ -f "$EXEC_PATH" ]; do
 		CMD=`cat $NEXT_PATH`
 		eval $CMD
 		rm -f $NEXT_PATH
-		overclock.elf $CPU_SPEED_PERF
+		overclock.elf $CPU_SPEED_PERF $NUM_CPU
 		echo `date +'%F %T'` > "$DATETIME_PATH"
 		sync
 	fi

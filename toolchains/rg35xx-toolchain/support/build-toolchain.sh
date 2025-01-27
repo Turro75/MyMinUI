@@ -27,7 +27,9 @@ done
 
 cd ~/buildroot
 # patches for buildroot itself
+patch -p1 < ~/sdl2-update-to-2.30.11.patch
 patch -p1 < ~/toolchain-expose-BR2_TOOLCHAIN_EXTRA_EXTERNAL_LIBS-for-all-toolchain-types-2017.11.1.diff
+patch -p1 < ~/001-evtest-slow-site.patch
 
 cp ~/rg35xx-buildroot-$BUILDROOT_VERSION.config ./.config
 if [ -f ~/rg35xx-toolchain.tar.xz ]; then
@@ -35,7 +37,6 @@ if [ -f ~/rg35xx-toolchain.tar.xz ]; then
 else
 	export FORCE_UNSAFE_CONFIGURE=1
 	make oldconfig
-	make world
-	
+	make -j4 world
 	~/install-toolchain.sh
 fi

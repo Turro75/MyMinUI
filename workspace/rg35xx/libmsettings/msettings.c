@@ -152,9 +152,16 @@ void SetJack(int value) {
 	SetVolume(GetVolume());
 }
 
-int GetHDMI(void) {
-	return 0;
+int getInt(char* path) {
+	int i = 0;
+	FILE *file = fopen(path, "r");
+	if (file!=NULL) {
+		fscanf(file, "%i", &i);
+		fclose(file);
+	}
+	return i;
 }
-void SetHDMI(int value) {
-	// buh
+
+int GetHDMI(void) {
+	return getInt("/sys/class/switch/hdmi/state");
 }

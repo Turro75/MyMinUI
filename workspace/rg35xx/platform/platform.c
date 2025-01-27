@@ -18,6 +18,18 @@
 #include "utils.h"
 
 #include "scaler.h"
+////////////////////////////////
+//test for vsync
+struct owlfb_sync_info {
+	uint8_t enabled;
+	uint8_t disp_id;
+	uint16_t reserved2;
+};
+
+#define OWL_IOW(num, dtype) _IOW('O', num, dtype)
+#define OWLFB_WAITFORVSYNC      OWL_IOW(57, long long)
+#define OWLFB_VSYNC_EVENT_EN	OWL_IOW(67, struct owlfb_sync_info)
+// end test for VSYNC
 
 ///////////////////////////////
 #define RAW_UP			0x5A
@@ -153,6 +165,7 @@ static struct VID_Context {
 	int fdfb; // /dev/fb0 handler
 	struct fb_fix_screeninfo finfo;  //fixed fb info
 	struct fb_var_screeninfo vinfo;  //adjustable fb info
+	//void *fbmmap; //malloc for double buffering
 	void *fbmmap; //mmap address of the framebuffer
 	SDL_Surface* screen;  //swsurface to let sdl thinking it's the screen
 	SDL_Surface* screen2;  //used to apply screen_effect
@@ -179,13 +192,13 @@ static int lastp=0;
 void get_fbinfo(void){
     ioctl(vid.fdfb, FBIOGET_FSCREENINFO, &vid.finfo);
     ioctl(vid.fdfb, FBIOGET_VSCREENINFO, &vid.vinfo);
-/*	
+	
     fprintf(stdout, "Fixed screen informations\n"
                     "-------------------------\n"
                     "Id string: %s\n"
                     "FB start memory: %p\n"
                     "FB LineLength: %d\n",
-                    finfo.id, (void *)finfo.smem_start, finfo.line_length);
+                    vid.finfo.id, (void *)vid.finfo.smem_start, vid.finfo.line_length);
 
     fprintf(stdout, "Variable screen informations\n"
                     "----------------------------\n"
@@ -198,15 +211,15 @@ void get_fbinfo(void){
                     "GREEN: L=%d, O=%d\n"
                     "BLUE: L=%d, O=%d\n"            
                     "ALPHA: L=%d, O=%d\n",
-                    vinfo.xres, vinfo.yres, vinfo.xres_virtual,
-                    vinfo.yres_virtual, vinfo.bits_per_pixel,
-                    vinfo.red.length, vinfo.red.offset,
-                    vinfo.blue.length,vinfo.blue.offset,
-                    vinfo.green.length,vinfo.green.offset,
-                    vinfo.transp.length,vinfo.transp.offset);
+                    vid.vinfo.xres, vid.vinfo.yres, vid.vinfo.xres_virtual,
+                    vid.vinfo.yres_virtual, vid.vinfo.bits_per_pixel,
+                    vid.vinfo.red.length, vid.vinfo.red.offset,
+                    vid.vinfo.blue.length,vid.vinfo.blue.offset,
+                    vid.vinfo.green.length,vid.vinfo.green.offset,
+                    vid.vinfo.transp.length,vid.vinfo.transp.offset);
 
     //fprintf(stdout, "PixelFormat is %d\n", vinfo.pixelformat);
-    fflush(stdout);*/
+    fflush(stdout);
 }
 
 void set_fbinfo(void){
@@ -230,6 +243,16 @@ int RG35XX_SDLFB_Flip(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 			}
 		}
 	}
+	if (buffer->format->BitsPerPixel == 32) {
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w; x++) {
+				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * thispitch);
+				*((uint32_t *)fbmmap + x + y * linewidth) = 
+					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
+			}
+		}
+	}	
+	//memcpy(fbmmap2, fbmmap, vid.screen_size);
 	return 0;	
 }
 
@@ -250,6 +273,7 @@ int RG35XX_SDLFB_FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth
 			}
 		}
 	}
+	//memcpy(fbmmap2, fbmmap, vid.screen_size);
 	return 0;	
 }
 
@@ -270,6 +294,7 @@ int RG35XX_SDLFB_FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth
 			}
 		}
 	}
+	//memcpy(fbmmap2, fbmmap, vid.screen_size);
 	return 0;	
 }
 
@@ -290,16 +315,43 @@ int RG35XX_SDLFB_FlipRotate90(SDL_Surface *buffer, void * fbmmap, int linewidth)
 			}
 		}
 	}
+	//memcpy(fbmmap2, fbmmap, vid.screen_size);
 	return 0;	
 }
 
-SDL_Surface* PLAT_initVideo(void) {
-	vid.fdfb = open("/dev/fb0", O_RDWR);
-	int w = FIXED_WIDTH;
-	int h = FIXED_HEIGHT;
-	int p = FIXED_PITCH;
+void SetHDMI(int value) {
+	putInt("/sys/class/backlight/backlight.2/bl_power", value);
+	SDL_setenv("AUDIODEV", "default", 1);
+	//putInt("sys/class/graphics/fb0/mirror_to_hdmi", value);
+	if (value == 1) {
+		SDL_setenv("AUDIODEV", "hdmi", 1);
+		//system("cp -f /mnt/sdcard/hdmi.conf /usr/share/alsa/alsa.conf.d/display.conf");system("sync");
+	}
+	else {
+		SDL_setenv("AUDIODEV", "default", 1);
+		//system("cp -f /mnt/sdcard/display.conf /usr/share/alsa/alsa.conf.d/display.conf");system("sync");
+	}
+	usleep(500000);
+}
+
+SDL_Surface* PLAT_initVideo(void) {	
+	int w,p,h;
+	if (GetHDMI()){
+		SetHDMI(1);
+		vid.fdfb = open("/dev/fb1", O_RDWR);
+		w = HDMI_WIDTH_;
+		h = HDMI_HEIGHT_;
+		p = HDMI_PITCH_;		
+	} else {
+		SetHDMI(0);
+		vid.fdfb = open("/dev/fb0", O_RDWR);
+		w = FIXED_WIDTH;
+		h = FIXED_HEIGHT;
+		p = FIXED_PITCH;
+	}
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
+	DEVICE_PITCH = p;
 	vid.rotate = 0;
 	
 	get_fbinfo();	
@@ -309,8 +361,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	}
 
 	if (vid.rotate % 2 == 1) {
-		DEVICE_WIDTH = FIXED_HEIGHT;
-		DEVICE_HEIGHT = FIXED_WIDTH;
+		DEVICE_WIDTH = h;
+		DEVICE_HEIGHT = w;
 	}
 	
     vid.vinfo.xres=w;
@@ -321,14 +373,16 @@ SDL_Surface* PLAT_initVideo(void) {
 	//at the beginning set the screen size to 640x480
     set_fbinfo();
 	get_fbinfo();
-	LOG_info("DEVICE_WIDTH=%d, DEVICE_HEIGHT=%d\n", DEVICE_WIDTH, DEVICE_HEIGHT);fflush(stdout);
-//	if (getInt(HDMI_STATE_PATH)) {
-//		w = HDMI_WIDTH;
-//		h = HDMI_HEIGHT;
-//		p = HDMI_PITCH;
-//	}
+	LOG_info("DEVICE_WIDTH=%d, DEVICE_HEIGHT=%d, DEVICE_PITCH=%d\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH);fflush(stdout);
+	
+	struct owlfb_sync_info sinfo;
+	sinfo.enabled = 1;
+	sinfo.disp_id = 2;
+	if (ioctl(vid.fdfb, OWLFB_VSYNC_EVENT_EN, &sinfo)<0) LOG_error("VSYNC_EVENT_EN failed %s\n",strerror(errno));
+	
+	
 	vid.pixels = malloc(m*p);
-	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, p, RGBA_MASK_565);
+	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, DEVICE_PITCH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
 
 	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
@@ -336,6 +390,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
 	vid.screen_size = vid.finfo.line_length * m;
     vid.fbmmap = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+	//vid.fbmmap = malloc(vid.screen_size);
 	
 	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
@@ -345,6 +400,8 @@ void PLAT_quitVideo(void) {
 		// clearVideo();
 	PLAT_clearAll();
 	if (vid.pixels) free(vid.pixels);
+	//if (vid.fbmmap) free(vid.fbmmap);
+	//vid.fbmmap = NULL;
 	SDL_FreeSurface(vid.screen);
 	SDL_FreeSurface(vid.screen2);
 	vid.pixels=NULL;
@@ -380,7 +437,7 @@ void PLAT_setVsync(int vsync) {
 
 //static int hard_scale = 4; // TODO: base src size, eg. 160x144 can be 4
 static void resizeVideo(int w, int h, int p, int game) {
-
+	// buh
 }
 
 static int next_effect = EFFECT_NONE;
@@ -407,8 +464,10 @@ void PLAT_setSharpness(int sharpness) {
 void PLAT_setEffect(int effect) {
 	next_effect = effect;
 }
+
+static int _;
 void PLAT_vsync(int remaining) {
-	if (remaining>0) usleep(remaining*1000);
+	if (ioctl(vid.fdfb, OWLFB_WAITFORVSYNC, &_)) LOG_info("OWLFB_WAITFORVSYNC failed %s\n", strerror(errno));
 }
 
 scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
@@ -438,10 +497,25 @@ scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
 	*/
 }
 
+void rgb565_to_rgb888(uint16_t *src, uint32_t *dst, int count) {
+	int i;
+	for (i=0;i<count;i++) {
+		dst[i] = 0xff000000 | (src[i] & 0xf800) << 8 | (src[i] & 0x07e0) << 5 | (src[i] & 0x001f) << 3;
+	}
+}	
+
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	if (effect_type!=next_effect) {
 		effect_type = next_effect;
 	}
+
+	//uint32_t *tmpsrc;
+	//experimental work with 32bit surfaces
+	//if (renderer->src_surface->format->BitsPerPixel==16) {
+	//tmpsrc = malloc(renderer->src_surface->pitch*renderer->src_surface->h);
+	//rgb565_to_rgb888((uint16_t*)renderer->src_surface->pixels, tmpsrc, renderer->src_surface->pitch*renderer->src_surface->h);
+	//}
+	//SDL_Surface* tmpsurface = SDL_CreateRGBSurfaceFrom(tmpsrc, renderer->src_surface->w, renderer->src_surface->h, 32, renderer->src_surface->w*4, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
 //	scale1x_line(renderer->src_surface->pixels, vid.screen2->pixels, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch);
 	if (effect_type==EFFECT_LINE) {
 		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
@@ -454,11 +528,16 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	else {
 		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
 	}
+	//free(tmpsrc);
+	//SDL_FreeSurface(tmpsurface);
 }
 
-void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu + minui + tools
+void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
 	// No Rotation
+	if (sync) {
+		PLAT_vsync(0);
+	}
 	if (vid.rotate == 0) 
 	{
 		// No Rotation
@@ -547,6 +626,14 @@ void PLAT_powerOff(void) {
 
 void PLAT_setCPUSpeed(int speed) {
 	int freq = 0;
+	int numCPU = 4;
+	char * buf = SDL_getenv("NUM_CPU");
+	if (buf) {
+		numCPU = atoi(buf);
+		if ((numCPU < 1) || (numCPU > 4)) {
+			numCPU = 4;
+		}
+	}
 	switch (speed) {
 		case CPU_SPEED_MENU: 		freq =  504000; break;
 		case CPU_SPEED_POWERSAVE:	freq = 1008000; break;
@@ -556,7 +643,7 @@ void PLAT_setCPUSpeed(int speed) {
 	}
 	
 	char cmd[32];
-	sprintf(cmd,"overclock.elf %d\n", freq);
+	sprintf(cmd,"overclock.elf %d %d\n", freq, numCPU);
 	system(cmd);
 }
 

@@ -80,7 +80,7 @@ static struct cpu_opp {
 
 int main(int argc, char* argv[]) {
 	if (argc<2) {
-		printf("Usage: %s <freq>\n", argv[0]);
+		printf("Usage: %s <freq> <numCPU>\n", argv[0]);
 		for (int i=0; cpu_opps[i].clk; i++) {
 			printf("  %8i\n", cpu_opps[i].clk);
 		}
@@ -91,7 +91,23 @@ int main(int argc, char* argv[]) {
 	char *p;
     errno = 0;
     long arg = strtol(argv[1], &p, 10);
-	
+	char cmd[128];
+	sprintf(cmd, "echo userspace > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+	system(cmd);
+	int numCPU = 1;
+	if (argc>2) {
+		numCPU = strtol(argv[2], &p, 10);
+	}
+	sprintf(cmd, "echo 0xf > /sys/devices/system/cpu/autoplug/plug_mask");
+	system(cmd);
+	for (int i = 1; i < 4; i++) {
+		int value = 0;
+		if (i<numCPU) {
+			value = 1;
+		}
+		sprintf(cmd, "echo %i > /sys/devices/system/cpu/cpu%i/online\n", value, i);
+		system(cmd);
+	}
 	if (errno != 0 || *p != '\0' || arg > INT_MAX || arg < INT_MIN); // buh
 	else clk = arg;
 	

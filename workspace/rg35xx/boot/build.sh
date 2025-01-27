@@ -24,7 +24,7 @@ if [ ! -f data ]; then
 	mv data.zip data
 fi
 
-cp ~/buildroot/output/images/rootfs.ext2 ./
+cp /opt/rg35xx-toolchain/rootfs.ext2 ./
 
 cat ../boot.sh > $TARGET
 echo BINARY >> $TARGET
