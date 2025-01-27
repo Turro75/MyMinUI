@@ -345,6 +345,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	int p = FIXED_PITCH;
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
+	DEVICE_PITCH = p;
 	vid.rotate = 0;
 	
 	get_fbinfo();	
@@ -354,8 +355,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	}
 
 	if (vid.rotate % 2 == 1) {
-		DEVICE_WIDTH = FIXED_HEIGHT;
-		DEVICE_HEIGHT = FIXED_WIDTH;
+		DEVICE_WIDTH = h;
+		DEVICE_HEIGHT = w;
 	}
 	
     vid.vinfo.xres=w;
@@ -373,7 +374,7 @@ SDL_Surface* PLAT_initVideo(void) {
 //		p = HDMI_PITCH;
 //	}
 	vid.pixels = malloc(m*p);
-	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, p, RGBA_MASK_565);
+	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, DEVICE_PITCH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
 
 	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
@@ -488,6 +489,9 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	if (effect_type!=next_effect) {
 		effect_type = next_effect;
 	}
+
+	//SDL_Surface * ciao = SDL_SurfaceConvertFormat(renderer->src_surface, SDL_PIXELFORMAT_RGBA8888, 0);
+
 //	scale1x_line(renderer->src_surface->pixels, vid.screen2->pixels, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch);
 	if (effect_type==EFFECT_LINE) {
 		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
@@ -500,13 +504,16 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	else {
 		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
 	}
+	//SDL_FreeSurface(ciao);
 }
 
+#define FRAME_BUDGET 17
 
-
-void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu + minui + tools
+void PLAT_flip(SDL_Surface* IGNORED, int sync) { 
 	//SDL_SoftStretch(vid.screen, NULL, vid.screen2, &(SDL_Rect){0,0,FIXED_WIDTH,FIXED_HEIGHT});	
 //	uint32_t now = SDL_GetTicks();
+//	if (sync) PLAT_vsync(FRAME_BUDGET - (SDL_GetTicks()-frame_start));
+	
 	if (vid.rotate == 0) 
 	{
 		// No Rotation

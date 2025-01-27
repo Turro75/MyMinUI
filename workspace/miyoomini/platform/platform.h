@@ -122,6 +122,7 @@ extern int is_plus;
 
 ///////////////////////////////
 
+#define MIYOOMINI 1
 #define THISPLATFORM "miyoomini"
 #define SDCARD_PATH "/mnt/SDCARD"
 #define MUTE_VOLUME_RAW -60
