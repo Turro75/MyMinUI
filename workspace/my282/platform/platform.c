@@ -357,7 +357,9 @@ SDL_Surface* PLAT_initVideo(void) {
 	int p = FIXED_PITCH;
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
-	vid.rotate = 0;	
+	DEVICE_PITCH = p;
+	vid.rotate = 0;
+	
 	get_fbinfo();	
 
 	if (exists(ROTATE_SYSTEM_PATH)) {
@@ -365,8 +367,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	}
 
 	if (vid.rotate % 2 == 0) {
-		DEVICE_WIDTH = FIXED_WIDTH;
-		DEVICE_HEIGHT = FIXED_HEIGHT;
+		DEVICE_WIDTH = h;
+		DEVICE_HEIGHT = w;
 	}
 	
     vid.vinfo.xres=w;
@@ -384,7 +386,7 @@ SDL_Surface* PLAT_initVideo(void) {
 //		p = HDMI_PITCH;
 //	}
 	vid.pixels = malloc(m*p);
-	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, p, RGBA_MASK_565);
+	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, DEVICE_PITCH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
 
 	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
