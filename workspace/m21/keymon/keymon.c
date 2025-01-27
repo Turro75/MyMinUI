@@ -14,6 +14,8 @@
 
 // uses different codes from SDL
 #define CODE_MENU		27
+#define CODE_SELECT 	296
+#define CODE_START		297
 #define CODE_PLUS		12
 #define CODE_MINUS		11
 #define CODE_PWR		-1
@@ -42,6 +44,8 @@ int main (int argc, char *argv[]) {
 	uint32_t input;
 	uint32_t val;
 	uint32_t menu_pressed = 0;
+	uint32_t select_pressed = 0;
+	uint32_t start_pressed = 0;
 	
 	uint32_t up_pressed = 0;
 	uint32_t up_just_pressed = 0;	
@@ -76,6 +80,12 @@ int main (int argc, char *argv[]) {
 					case CODE_MENU:
 						menu_pressed = val;
 					break;
+					case CODE_SELECT:
+						select_pressed = val;
+					break;
+					case CODE_START:
+						start_pressed = val;
+					break;
 					case CODE_PLUS:
 						up_pressed = up_just_pressed = val;
 						if (val) up_repeat_at = now + 300;
@@ -102,7 +112,7 @@ int main (int argc, char *argv[]) {
 		}
 		
 		if (up_just_pressed || (up_pressed && now>=up_repeat_at)) {
-			if (menu_pressed) {
+			if ((menu_pressed) || ((select_pressed) && (start_pressed))) {
 				//printf("brightness up\n"); fflush(stdout);
 				val = GetBrightness();
 				if (val<BRIGHTNESS_MAX) SetBrightness(++val);
@@ -118,7 +128,7 @@ int main (int argc, char *argv[]) {
 		}
 		
 		if (down_just_pressed || (down_pressed && now>=down_repeat_at)) {
-			if (menu_pressed) {
+			if ((menu_pressed) || ((select_pressed) && (start_pressed))) {
 				//printf("brightness down\n"); fflush(stdout);
 				val = GetBrightness();
 				if (val>BRIGHTNESS_MIN) SetBrightness(--val);

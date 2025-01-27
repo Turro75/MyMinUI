@@ -16,6 +16,7 @@
 #include "api.h"
 #include "utils.h"
 
+#define ISM22_PATH "/mnt/SDCARD/m21/thisism22"
 
 ///////////////////////////////
 void Main_Flip(void);
@@ -83,13 +84,14 @@ struct input_event {
 #define EV_KEY			0x01
 #define EV_ABS			0x03
 
+static int ism22 = 0;
 static int PWR_Pressed = 0;
 static int PWR_Actions = 0;
 static uint32_t PWR_Tick = 0;
 #define PWR_TIMEOUT 2000
 int last_dpad_used[2];
-int selectstartstatus[2] = {0}; 
-int selectstartlaststatus[2] = {0}; 
+int selectstartstatus[3] = {0}; 
+int selectstartlaststatus[3] = {0}; 
 
 
 
@@ -135,20 +137,20 @@ void PLAT_pollInput(void) {
 			
 				pressed = value;
 
-				if (i > 0) { //external controllers
+				if ((i > 0) || (ism22 == 1)) { //external controllers or is the m22 which doesn't have the menu button
 				//special handling as the sjgam external controller does not provide menu button but only select+start, 
 				//let's find a way to simulate menu button when select+start is detected
-					if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; pressed ? selectstartstatus[i-1]++ : selectstartstatus[i-1]--; } 
-				    if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; pressed ? selectstartstatus[i-1]++ : selectstartstatus[i-1]--;}
-					if (selectstartstatus[i-1] == 2) {
+					if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; pressed ? selectstartstatus[i]++ : selectstartstatus[i]--; } 
+				    if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; pressed ? selectstartstatus[i]++ : selectstartstatus[i]--;}
+					if (selectstartstatus[i] == 2) {
 							btn = BTN_MENU;  id = BTN_ID_MENU; 
-							selectstartlaststatus[i-1]=1; 
+							selectstartlaststatus[i]=1; 
 							pad.is_pressed		&= ~BTN_SELECT; // unset
 							pad.just_repeated	&= ~BTN_SELECT; // unset	
 							pad.is_pressed		&= ~BTN_START; // unset
 							pad.just_repeated	&= ~BTN_START; // unset						
 							}
-					if ((selectstartstatus[i-1] == 1) && (selectstartlaststatus[i-1] == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus[i-1]=0;}	
+					if ((selectstartstatus[i] == 1) && (selectstartlaststatus[i] == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus[i]=0;}	
 					if (code==RAW_A)		{ btn = BTN_B; 			id = BTN_ID_B; }
 					if (code==RAW_B)		{ btn = BTN_A; 			id = BTN_ID_A; }
 				} 
@@ -234,7 +236,7 @@ int PLAT_shouldWake(void) {
 	static struct input_event event;
 	if (inputs[0] >= 0) {
 		while (read(inputs[0], &event, sizeof(event))==sizeof(event)) {
-		if (event.type==EV_KEY && event.code==RAW_MENU && event.value==0) {
+		if (event.type==EV_KEY && (event.code==RAW_MENU || ( ism22 && event.code==RAW_SELECT)) && event.value==0) {
 			return 1;
 		}
 	}	
@@ -260,15 +262,6 @@ static struct VID_Context {
 	uint16_t* pixels;
 	int rotate;
 } vid;
-
-static int device_width;
-static int device_height;
-static int device_pitch;
-
-static int lastw=0;
-static int lasth=0;
-static int lastp=0;
-
 
 void get_fbinfo(void){
     ioctl(vid.fdfb, FBIOGET_FSCREENINFO, &vid.finfo);
@@ -426,65 +419,110 @@ int M21_SDLFB_FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	return 0;	
 }
 
+int getHDMIStatus(void) {	
+	int retvalue = 0;
+	FILE * __stream = fopen("/sys/class/extcon/extcon0/state","r");
+    if (__stream == (FILE *)0x0) {
+      retvalue = 0;
+    }
+    else {
+	  char acStack_128 [260];
+      memset(acStack_128,0,0x100);
+      fread(acStack_128,0x100,1,__stream);
+	  
+      char *pcVar10 = strstr(acStack_128,"HDMI=1");
+      if (pcVar10 == (char *)0x0) {
+        retvalue = 0;
+      }
+      else {
+        retvalue = 1;
+      }      
+    }
+	fclose(__stream);
+	return retvalue;
+}
 
 SDL_Surface* PLAT_initVideo(void) {
+	ism22 = 0;
+	if (exists(ISM22_PATH)) {
+		ism22 = 1;
+	}
 	vid.fdfb = open("/dev/fb0", O_RDWR);
+	int w,h,p;
+	int behavior = 0;
+	if (getHDMIStatus() || (ism22)) {
+		w = _HDMI_WIDTH;
+		h = _HDMI_HEIGHT;
+		p = _HDMI_PITCH;
+	} else {
+		//is an m21
+		w = FIXED_WIDTH;
+		h = FIXED_HEIGHT;
+		p = FIXED_PITCH;		
+	}
 
-#ifndef M22
-	//M21
-	int w = FIXED_WIDTH;
-	int h = FIXED_HEIGHT;
-	int p = FIXED_PITCH;
-#else
-	//M22
-	int w = FIXED_HEIGHT;
-	int h = FIXED_WIDTH;
-	int p = FIXED_PITCH;
-#endif
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
-	vid.rotate = 0;	
+	DEVICE_PITCH = p;
+	vid.rotate = ism22 * (1 - getHDMIStatus());   //m21 always 0, m22 is 0 on HDMI and 1 on display
+
 	get_fbinfo();	
 
 	if (exists(ROTATE_SYSTEM_PATH)) {
 		vid.rotate = getInt(ROTATE_SYSTEM_PATH) &3;
 	}
-#ifndef M22
-	//M21
+	
+	vid.vinfo.xres=w;
+	vid.vinfo.yres=h;
+
 	if (vid.rotate % 2 == 1) {
-		DEVICE_WIDTH = FIXED_HEIGHT;
-		DEVICE_HEIGHT = FIXED_WIDTH;
+		vid.vinfo.xres=h;
+		vid.vinfo.yres=w;
 	}
-#else
-	//M22
-	if (vid.rotate % 2 == 0) {
-		DEVICE_WIDTH = FIXED_WIDTH;
-		DEVICE_HEIGHT = FIXED_HEIGHT;
-	}
-#endif
-    vid.vinfo.xres=w;
-    vid.vinfo.yres=h;
+	
+	/////for m22
+	//HDMI ok
+	//DEVICE_WIDTH=854;
+	//DEVICE_HEIGHT=480;
+	//DEVICE_PITCH=854*2;
+	//vid.vinfo.xres=854;
+    //vid.vinfo.yres=480;
+	//vid.rotate=0;
+
+	//display ok
+	//DEVICE_WIDTH=854;
+	//DEVICE_HEIGHT=480;
+	//DEVICE_PITCH=854*2;
+	//vid.rotate=1;
+    //vid.vinfo.xres=480;
+    //vid.vinfo.yres=854;
+	
+	
 	vid.vinfo.bits_per_pixel=32;
 
 	int m = vid.vinfo.xres>vid.vinfo.yres?vid.vinfo.xres:vid.vinfo.yres;
 	//at the beginning set the screen size to 640x480
     set_fbinfo();
 	get_fbinfo();
-	
+
 //	if (getInt(HDMI_STATE_PATH)) {
 //		w = HDMI_WIDTH;
 //		h = HDMI_HEIGHT;
 //		p = HDMI_PITCH;
 //	}
+
+    if (vid.pixels) free(vid.pixels);
 	vid.pixels = malloc(m*p);
-	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, p, RGBA_MASK_565);
+	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, DEVICE_PITCH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
 
 	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
 
 	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
 	vid.screen_size = vid.finfo.line_length * m;
-	vid.fbmmap = malloc(vid.screen_size *(sizeof(uint8_t)));
+    vid.fbmmap = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+	//vid.fbmmap = malloc(vid.screen_size *(sizeof(uint8_t)));
+	
 	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
 }
@@ -644,7 +682,6 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 
 void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu + minui + tools
 
-#ifndef M22
 	if (vid.rotate == 0) 
 	{
 		// No Rotation
@@ -665,28 +702,6 @@ void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu 
 		// 270 Rotation
 		M21_SDLFB_FlipRotate270(vid.screen, vid.fbmmap,vid.linewidth);
 	}
-#else
-	if (vid.rotate == 0) 
-	{
-		// No Rotation
-		M21_SDLFB_FlipRotate270(vid.screen, vid.fbmmap,vid.linewidth);
-	}
-	if (vid.rotate == 1)
-	{
-		// 90 Rotation
-		M21_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
-	}
-	if (vid.rotate == 2)
-	{
-		// 180 Rotation
-		M21_SDLFB_FlipRotate90(vid.screen, vid.fbmmap,vid.linewidth);
-	}
-	if (vid.rotate == 3)
-	{
-		// 270 Rotation
-		M21_SDLFB_FlipRotate180(vid.screen, vid.fbmmap,vid.linewidth);
-	}
-#endif
 }
 
 ///////////////////////////////
@@ -857,23 +872,11 @@ uint32_t PLAT_screenMemSize(void) {
 
 void PLAT_getAudioOutput(void){
 	LOG_info("Check for Videooutput\n");
-	FILE * __stream = fopen("/sys/class/extcon/extcon0/state","r");
-    if (__stream == (FILE *)0x0) {
-      setenv("AUDIODEV","default",1);
-    }
-    else {
-	  char acStack_128 [260];
-      memset(acStack_128,0,0x100);
-      fread(acStack_128,0x100,1,__stream);
-      char *pcVar10 = strstr(acStack_128,"HDMI=1");
-      if (pcVar10 == (char *)0x0) {
-        setenv("AUDIODEV","default",1);
-		LOG_info("VideoOutput default\n");
-      }
-      else {
-        setenv("AUDIODEV","audioHDMI",1);
+	if (getHDMIStatus()) {
+		setenv("AUDIODEV","audioHDMI",1);
 		LOG_info("VideoOutput audioHDMI\n");
-      }
-      fclose(__stream);
-    }
+	} else {
+		setenv("AUDIODEV","default",1);
+		LOG_info("VideoOutput default\n");
+	}
 }

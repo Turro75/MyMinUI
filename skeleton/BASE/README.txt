@@ -40,7 +40,7 @@ Once installation process is completed press the PWR button to shutdown the devi
 
 Format as FAT32 (it is also supported exFAT if You like) a micro sdcard with enough space to contains all Your games, the volume name assigned to the partition doesn't matter.
 in the release file (i.e. MyMinUI-YYYYMMDDb-0-m21.zip) there is a folder called "m21" copy that folder as is in the FAT32 partition created above.
-Move (or copy) the file m21/emulationstation to the root of the FAT32 partition created above.
+Move (or copy) the file m21/emulationstation and m21/tomato to the root of the FAT32 partition created above.
 Copy also the whole release zip file (leave it zipped) in the FAT32 partition created above.
 
 Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
@@ -128,7 +128,7 @@ There is no specific sequence to follow, You can add a device at any time, just 
 The devices will share bios, roms and saves folders.
 Some saved state files may work across devices (i.e. doom), but not all so don't expect support on that in case. If I'll move to a single setup file device independent I'll keep them separated per device.
 
-The pico8 native binary files must be copied under the Tools/<devicename>/splore folder for each device. 
+The pico8 native binary files must be copied in Bios/P8 folder. 
 
 ----------------------------------------
 Updating
@@ -204,6 +204,7 @@ Bios file names are case-sensitive:
   SGB: sgb.bios
   P8N: pico8.dat  (only for native Pico8)
        pico8_dyn
+       pico8_64
 	A5200: 5200.rom
          ATARIBAS.ROM
   A7800: 7800 BIOS (U).rom
@@ -254,7 +255,7 @@ There are 3 working modes Standard, Simple and Fancy, to select the mode press m
 
 Standard mode (Default)
  
-Same look & feel of MinUI keeping addtitional MyMinUI features.
+Same look & feel of MinUI keeping additional MyMinUI features.
 
 ----------------------------------------
 Fancy mode
@@ -281,7 +282,6 @@ ToggleSeekPageTriggers -> allow page scrolling by Left/Right (Default) or L2/R2
 ToggleHideState -> Hide saved state preview (Default OFF)
 ToggleHideBOXARTifState -> If state is present the BOXART below is not shown (Default OFF) 
 Convert BoxArt -> Utility to convert images in the format You like, refer to BOXART.md for details
-Retroarch -> launch retroarch (not on M21) without any games
 
 ----------------------------------------
 Support for non US fonts:

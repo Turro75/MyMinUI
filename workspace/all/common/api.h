@@ -32,6 +32,8 @@ void LOG_note(int level, const char* fmt, ...);
 
 extern int DEVICE_WIDTH;
 extern int DEVICE_HEIGHT;
+extern int DEVICE_PITCH;
+extern uint32_t frame_start;
 
 //////////////////////////////
 // TODO: these only seem to be used by a tmp.pak in trimui (model s)

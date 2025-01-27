@@ -1,5 +1,18 @@
 #!/bin/sh
 # NOTE: becomes emulationstation
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+#echo START >> /mnt/SDCARD/log.txt
+#ps >> /mnt/SDCARD/log.txt
+MOUNTEDTMP=$( mount | grep "rootfs.ext2" )
+#echo $MOUNTEDTMP >> /mnt/SDCARD/log.txt
+if [ "${MOUNTEDTMP}" = "" ]; then
+#    echo "NOT YET MOUNTED" >> /mnt/SDCARD/log.txt
+    MOUNTED=0
+else 
+#    echo "ALREADY MOUNTED" >> /mnt/SDCARD/log.txt
+    MOUNTED=1
+fi
 
 PLATFORM="m21"
 FWNAME=MinUI
@@ -64,9 +77,11 @@ fi
 
 ROOTFS_MOUNTPOINT=/overlay
 ROOTFS_IMG=${SYSTEM_PATH}/${PLATFORM}/rootfs.ext2
-${SDCARD_PATH}/${PLATFORM}/binmusl/fuse2fs ${ROOTFS_IMG} ${ROOTFS_MOUNTPOINT} 2&> /dev/null
 
-sync
+if [ "${MOUNTED}" = "0" ]; then
+    ${SDCARD_PATH}/${PLATFORM}/binmusl/fuse2fs ${ROOTFS_IMG} ${ROOTFS_MOUNTPOINT} 2&> /dev/null
+    sync
+fi
 #ls -l ${ROOTFS_MOUNTPOINT}/* >> /mnt/SDCARD/ls.txt && sync
 if [ -f ${ROOTFS_MOUNTPOINT}/bin/busybox ]; then
     rm -rf ${ROOTFS_MOUNTPOINT}/tmp/*
@@ -84,23 +99,35 @@ if [ -f ${ROOTFS_MOUNTPOINT}/bin/busybox ]; then
     fi
 
 
-
-#mount all other fs as minui on rg35xx og
-    for f in dev dev/pts proc sys mnt/SDCARD tmp
-    do
-	mount -o bind /${f} ${ROOTFS_MOUNTPOINT}/${f}
-    done
+    if [ "${MOUNTED}" = "0" ]; then
+    #mount all other fs as minui on rg35xx og
+	for f in dev dev/pts proc sys mnt/SDCARD tmp
+	do
+		mount -o bind /${f} ${ROOTFS_MOUNTPOINT}/${f}
+	done
+    fi
     export PATH=/bin:/sbin:/usr/bin:/usr/sbin
     export LD_LIBRARY_PATH=/usr/lib/:/lib/
     export HOME=$SDCARD_PATH
 
-	cat /dev/zero > /dev/fb0
+    cat /dev/zero > /dev/fb0
 #evaluate if adding swap file or not
 
+    if [ "${MOUNTED}" = "1" ]; then
+		killall -9 launch.sh
+		killall -9 keymon.elf
+		killall -9 minui.elf
+		killall -9 minarch.elf
+    fi
+	if [ -f "/mnt/SDCARD/m21/thisism22" ]; then
+		rm -f /mnt/SDCARD/m21/thisism22
+	fi
+	if [ "$0" = "/mnt/SDCARD/tomato" ]; then
+		echo 1 > /mnt/SDCARD/m21/thisism22
+	fi
     chroot $ROOTFS_MOUNTPOINT ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/launch.sh #&> $SDCARD_PATH/chroot.txt
     sync
 fi
-
 
 #umount ${ROOTFS_MOUNTPOINT}
 sync

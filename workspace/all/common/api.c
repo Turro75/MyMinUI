@@ -23,6 +23,7 @@
 extern int fancy_mode;
 int DEVICE_WIDTH;
 int DEVICE_HEIGHT;
+int DEVICE_PITCH;
 
 void LOG_note(int level, const char* fmt, ...) {
 	char buf[1024] = {0};
@@ -206,7 +207,7 @@ int GFX_hdmiChanged(void) {
 }
 
 #define FRAME_BUDGET 17 // 60fps
-static uint32_t frame_start = 0;
+uint32_t frame_start;
 void GFX_startFrame(void) {
 	frame_start = SDL_GetTicks();
 }
@@ -1041,15 +1042,20 @@ size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count) { // plat_s
 
 void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 	LOG_info("SND_init\n");
-	
+	//SDL_setenv("SDL_AUDIODRIVER", "alsa", 1);
+//	LOG_info("BEFORE INIT AUDIO appname = %s\nAUDIODRIVER = %s\nAUDIODEV = %s\n", SDL_GetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME),SDL_GetHint(SDL_HINT_AUDIODRIVER), SDL_getenv("AUDIODEV")); // SDL_GetHint()
 	SDL_InitSubSystem(SDL_INIT_AUDIO);
 	
-/*	LOG_info("Available audio drivers:\n");
-	for (int i=0; i<SDL_GetNumAudioDrivers(); i++) {
-		LOG_info("- %s\n", SDL_GetAudioDriver(i));
-	}
-	LOG_info("Current audio driver: %s\n", SDL_GetCurrentAudioDriver());
-*/
+//	LOG_info("Available audio drivers:\n");
+//	for (int i=0; i<SDL_GetNumAudioDrivers(); i++) {
+//		LOG_info("- %s\n", SDL_GetAudioDriver(i));
+//	}
+//	LOG_info("Available audio devices:\n");
+//	for (int i=0; i<SDL_GetNumAudioDevices(0); i++) {
+//		LOG_info("- %s\n", SDL_GetAudioDeviceName(i,0));
+//	}
+//	LOG_info("Current audio driver: %s\n", SDL_GetCurrentAudioDriver());
+//	LOG_info("AFTER INIT AUDIO appname = %s\nAUDIODRIVER = %s\nAUDIODEV = %s\n", SDL_GetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME),SDL_GetHint(SDL_HINT_AUDIODRIVER), SDL_getenv("AUDIODEV")); 
 	snd.frame_rate = frame_rate;
 
 	SDL_AudioSpec spec_in;
