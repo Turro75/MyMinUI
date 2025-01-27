@@ -99,7 +99,6 @@ static int overclock = 1; // normal
 static int has_custom_controllers = 0;
 static int gamepad_type = 0; // index in gamepad_labels/gamepad_values
 static int downsample = 0; // set to 1 to convert from 8888 to 565
-static int DEVICE_PITCH = FIXED_PITCH;
 
 GFX_Renderer renderer;
 
@@ -1708,22 +1707,28 @@ static void Menu_afterSleep(void);
 static void Menu_saveState(void);
 static void Menu_loadState(void);
 static void Menu_makeboxart(void);
+int waiting_for_thread_stop = 0;
 
 static void wait_For_Thread(void) {
 	//at first stop running core.run
+	waiting_for_thread_stop = 1;
+//	LOG_info("wait_For_Thread IN0: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	pthread_mutex_lock(&core_mx);
 	should_run_core = 0;
 	pthread_mutex_unlock(&core_mx);
-	//wait 25msecs to be sure the core has stopped 
+	//wait 50msecs to be sure the core has stopped 
+//	LOG_info("wait_For_Thread IN1: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	usleep(25000);
+//	LOG_info("wait_For_Thread IN2: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	//rendering = 1;
 	//signal the core thread to unlock the main thread and render the last frame
 	pthread_mutex_lock(&core_mx);
 	pthread_cond_signal(&core_rq);
 	pthread_mutex_unlock(&core_mx);
-
+//	LOG_info("wait_For_Thread IN3: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	//wait 25msecs to be sure the flip thread has renderer the last frame
 	usleep(25000);
+//	LOG_info("wait_For_Thread IN4: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	int rendering2 = 1000;
 	//check if render and renderer are both 0, wait at least 1000msecs the go forward
 	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
@@ -1731,8 +1736,10 @@ static void wait_For_Thread(void) {
 		usleep(1000);
 		rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
 	}
+//	LOG_info("wait_For_Thread IN5: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	rendering = 0;
 	render = 0;
+	waiting_for_thread_stop = 0;
 }
 
 
@@ -2935,6 +2942,74 @@ static const char* bitmap_font[] = {
 		"    11    "
 		"    11    "
 		"    11    ",	
+	['F'] = 
+		"1111111111"
+		"1111111111"
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"1111111   "
+		"1111111   "
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"11        ",	
+	['E'] = 
+		"1111111111"
+		"1111111111"
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"1111111   "
+		"1111111   "
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"11        "
+		"1111111111"
+		"1111111111",
+	['A'] = 
+		"   1111   "
+		"  111111  "
+		"111    111"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"1111111111"
+		"1111111111"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11",
+	['N'] = 
+		"11      11"
+		"11      11"
+		"111     11"
+		"1111    11"
+		"11 11   11"
+		"11  11  11"
+		"11   11 11"
+		"11    1111"
+		"11     111"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11",		
 };
 
 static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
@@ -3035,7 +3110,7 @@ void video_refresh_callback_rotate(int rotation, void *data, unsigned width, uns
 //	LOG_info("Game Rotation of %d callback TOOK %dmsec\n", rotation*90, SDL_GetTicks() - now);
 }
 
-
+char resizemode;
 SDL_Rect video_refresh_callback_resize_native(void) {
 	LOG_info("RESIZE NATIVE\n");fflush(stdout);
 	//integer scaling
@@ -3141,23 +3216,28 @@ void video_refresh_callback_resize(void) {
 	switch(screen_scaling) {
 		case SCALE_ASPECT: { 
 							targetarea = video_refresh_callback_resize_aspect();
+							resizemode = 'A';
 							break;
 							};
 		case SCALE_EXTENDED: { 
 							targetarea = video_refresh_callback_resize_extended();
+							resizemode = 'E';
 							break;
 							};
 		case SCALE_NATIVE: { 
 							targetarea = video_refresh_callback_resize_native();
+							resizemode = 'N';
 							break;
 							};
 		case SCALE_FULLSCREEN: { 
 								LOG_info("RESIZE FULLSCREEN\n");fflush(stdout);
+								resizemode = 'F';
 								//targetarea = video_refresh_callback_resize_fullscreen(data);
 								break;
 							};
 		default: { 
 					LOG_info("RESIZE FULLSCREEN UNDEF\n");fflush(stdout);
+					resizemode = 'F';
 								//targetarea = video_refresh_callback_resize_fullscreen(data);
 					break;
 				}	
@@ -3171,7 +3251,7 @@ void video_refresh_callback_resize(void) {
 	renderer.dst_h = targetarea.h;
 	renderer.dst_x = targetarea.x;
 	renderer.dst_y = targetarea.y;	
-	renderer.dst_p = renderer.dst_w * FIXED_PITCH;	
+	renderer.dst_p = renderer.dst_w * FIXED_DEPTH;	
 	renderer.resize = 0;
 	LOG_info("VideoResize OUT %d %d %d %d TOOK %dms ABS:%d\n", renderer.dst_w , renderer.dst_h, renderer.dst_x , renderer.dst_y ,  SDL_GetTicks()-now, SDL_GetTicks());fflush(stdout);
 }
@@ -3227,17 +3307,18 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	// debug
 	if (show_debug) {
 		char debug_text[128];
-		sprintf(debug_text, "%ix%i %.1fx %d", renderer.src_w,renderer.src_h, renderer.scale, downsample?32:16);
+		sprintf(debug_text, "%ix%i %c%.1fx %d", renderer.src_w,renderer.src_h, resizemode, renderer.scale, downsample?32:16);
 		blitBitmapText(debug_text,2,2,screen->pixels,screen->pitch/2, screen->w,screen->h);
 
 		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.dst_w,renderer.dst_h);
 		blitBitmapText(debug_text,-2,2,screen->pixels,screen->pitch/2, screen->w,screen->h);
 
 		sprintf(debug_text, "%.1f/%.1f", fps_double,fps2_double);
-		blitBitmapText(debug_text,2,-21,screen->pixels,screen->pitch/2, screen->w,screen->h);
-
-		sprintf(debug_text, "%d %s", processors, cpuload);
+		//blitBitmapText(debug_text,2,-21,screen->pixels,screen->pitch/2, screen->w,screen->h);
 		blitBitmapText(debug_text,2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
+
+	//	sprintf(debug_text, "%s", cpuload);
+	//	blitBitmapText(debug_text,2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
 
 		sprintf(debug_text, "%s %i", effect_str,renderer.rotate*90);
 		blitBitmapText(debug_text,-2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
@@ -3249,12 +3330,12 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 //	LOG_info("videorefreshcallbackmain took %dmsec - softstrech took %dmsec - rotate took %dmsec - flip took %dmsec\n", last_flip_time - now, now5 - now4, now4 - now2, last_flip_time-now6 );
 //	LOG_info("Video_refresh_callback_main OUT  ABS:%i\n", last_flip_time);fflush(stdout);
 }
-int storage_audio_timing[60*60*10][4] = {-1};
-int _x = 0;
+//int storage_audio_timing[60*60*10][4] = {-1};
+//static uint32_t _x = 0;
 static uint32_t last_callback_time = 0;
 static void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
 	int callback_time = SDL_GetTicks();
-	storage_audio_timing[_x][2] = callback_time;
+//	storage_audio_timing[_x][2] = callback_time;
 //	LOG_info("\nFRAME:%d video_refresh_callback IN elapsed %lums width:%i height:%i pitch:%i ABS:%i\n",framecounter, callback_time-last_callback_time ,width,height,pitch, callback_time);fflush(stdout);
 	if (!data || show_menu) {
 //		LOG_info("FRAME:%d Empty Frame\n");fflush(stdout);
@@ -3302,23 +3383,26 @@ static void audio_sample_callback(int16_t left, int16_t right) {
 #endif
 }
 static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) { 
-	storage_audio_timing[_x][0] = SDL_GetTicks();
-	storage_audio_timing[_x][3] = frames;
+//	storage_audio_timing[_x][0] = SDL_GetTicks();
+//	storage_audio_timing[_x][3] = frames;
 	if (fast_forward) return frames;
+	int retvalue;
 #ifdef M21	
-	if (GetVolume()) return SND_batchSamples((const SND_Frame*)data, frames);
-	else return SND_batchSamples((const SND_Frame*)mutedaudiodata, frames);
+	if (GetVolume()) retvalue = SND_batchSamples((const SND_Frame*)data, frames);
+	else retvalue = SND_batchSamples((const SND_Frame*)mutedaudiodata, frames);
 #else
-	int retvalue = SND_batchSamples((const SND_Frame*)data, frames);
-	
-	storage_audio_timing[_x++][1] = SDL_GetTicks();
-	if (_x == 60*60*10) _x=0;
+    retvalue = SND_batchSamples((const SND_Frame*)data, frames);
+#endif	
+//	storage_audio_timing[_x++][1] = SDL_GetTicks();
+//	if (_x == 60*60*10) _x=0;
 	return retvalue;
-#endif
+
 };
 
 //store the array to a file at exit of the game to avoid interference 
-void save_storage_audio_timing(void) {
+/*void save_storage_audio_timing(void) {
+
+	LOG_info("save_storage_audio_timing writing to file START _x = %i\n",_x);
 	int i = 0;
 	FILE* file = fopen( SDCARD_PATH "/storage_audio_timing.txt", "w");
 	for (i = 1; i < _x; i++) {
@@ -3333,7 +3417,9 @@ void save_storage_audio_timing(void) {
 		);
 	}
 	fclose(file);
-}
+	LOG_info("save_storage_audio_timing writing to file DONE\n");
+	fflush(stdout);
+}*/
 
 ///////////////////////////////////////
 
@@ -4876,7 +4962,7 @@ static char* getAlias(char* path, char* alias) {
 static void Menu_loop(void) {
 
 	LOG_info("Entering Menu render= %i - rendering= %i\n",render,rendering);fflush(stdout);
-	wait_For_Thread();
+	//wait_For_Thread();
 /*	int rendering2 = 1500;
 	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
 		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);fflush(stdout);
@@ -5357,14 +5443,14 @@ void getCPUusage(char * data) {
        up[counter]=up1[counter]-up[counter];
        idle[counter]=idle1[counter]-idle[counter];
        load=((float)(up[counter]-idle[counter])/(float)up[counter])*100.0;
-// now you halve the load..
-        sprintf(data,"%s%02.0f%%", data, load);
+// now you have the load..
+        sprintf(data,"%s%03.0f%%", data, load);
         //if (counter == processors) printf("\n");
 // update staic variables for next loop
        up[counter]=up1[counter];
        idle[counter]=idle1[counter];
      }
-	sprintf(data,"%s T%d", data, thread_video);
+	sprintf(data,"%s%s", data, (thread_video == 1) ? "T": " ");
 	fclose(fp);
 }
 
@@ -5376,7 +5462,7 @@ static void trackFPS(void) {
 		double last_time = (double)(now - sec_start) / 1000;
 		fps_double = fps_ticks / last_time;
 		fps2_double = fps2_ticks / last_time;
-		getCPUusage(cpuload);
+		//getCPUusage(cpuload);
 		sec_start = now;
 		fps_ticks = 0;
 		fps2_ticks = 0;		
@@ -5415,6 +5501,7 @@ cpu_set_t coret;
 cpu_set_t flipt;
 static void* flipThread(void *arg) {
 	int run = 0;
+	int render_ = 0;
 	LOG_info("flipThread started now on cpu %i\n", sched_getcpu());fflush(stdout);
 	int moved = pthread_setaffinity_np(flip_pt, sizeof(cpu_set_t), &flipt);
 	LOG_info("flipThread moved to cpu %i with result %i\n", sched_getcpu(), moved);fflush(stdout);
@@ -5422,11 +5509,18 @@ static void* flipThread(void *arg) {
 	while (!quit) {
 		pthread_mutex_lock(&flip_mx);
 		run = should_run_flip;
+		render_ = render;
 		pthread_mutex_unlock(&flip_mx);
+#ifdef M21
+		if (run && render_) {
+			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
+			pthread_mutex_lock(&flip_mx);
+#else
 		if (run) {
 			pthread_mutex_lock(&flip_mx);
 			pthread_cond_wait(&flip_rq, &flip_mx);
 			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
+#endif
 			render = 0;
 			pthread_mutex_unlock(&flip_mx);
 		} else { //should never happen
@@ -5518,9 +5612,9 @@ int main(int argc , char* argv[]) {
 
 	screen = GFX_init(MODE_MENU);
 	PAD_init();
-	DEVICE_WIDTH = screen->w; // yea or nay?
-	DEVICE_HEIGHT = screen->h; // yea or nay?
-	DEVICE_PITCH = screen->pitch; // yea or nay?
+	//DEVICE_WIDTH = screen->w; // yea or nay?
+	//DEVICE_HEIGHT = screen->h; // yea or nay?
+	//DEVICE_PITCH = screen->pitch; // yea or nay?
 	// LOG_info("DEVICE_SIZE: %ix%i (%i)\n", DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
 	
 	VIB_init();
@@ -5587,6 +5681,7 @@ int main(int argc , char* argv[]) {
 		core.aspect_ratio = 1.0 / core.aspect_ratio;
 	}
 	quit = !loadgamesuccess;
+	waiting_for_thread_stop = 0;
 	int currentmaincpu = sched_getcpu();
 	LOG_info("DETECTED NUM %i CPUS\n", processors);
 	LOG_info("MAIN THREAD RUNNING ON CPU %i\n", currentmaincpu);
@@ -5603,20 +5698,22 @@ int main(int argc , char* argv[]) {
 		}
 
 		if (thread_video && !quit) {
-		//if (0 == 1) {
 			pthread_mutex_lock(&core_mx);
 			pthread_cond_wait(&core_rq,&core_mx);
 			rendering = 0;
 			pthread_mutex_unlock(&core_mx);
-			//if (backbuffer) {
 			pthread_mutex_lock(&flip_mx);
 			render = 1;
-				//LOG_info("%05d: Start Rendering BackBuffer!\n", fps_ticks);fflush(stdout);
+#ifndef M21
 			pthread_cond_signal(&flip_rq);
-			pthread_mutex_unlock(&flip_mx);						
-			//}
-			//core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-			
+#endif
+			pthread_mutex_unlock(&flip_mx);	
+#ifndef MIYOOMINI	//don't know why this makes Miyoomini cry :-)				
+			while (waiting_for_thread_stop) {
+				asm("nop");
+			//		usleep(0);
+			}
+#endif
 		}
 		
 		if (show_menu) Menu_loop();
