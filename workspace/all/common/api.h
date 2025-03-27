@@ -123,6 +123,7 @@ typedef struct GFX_Renderer {
 	double scale;
 	int rotate; // 0=0, 1=90, 2=180, 3=270
 	int resize;
+	int screenscaling;
 	// TODO: document this better
 	int true_w;
 	int true_h;
@@ -207,6 +208,11 @@ typedef struct SND_Frame {
 	int16_t left;
 	int16_t right;
 } SND_Frame;
+
+typedef struct {
+	SND_Frame* frames;
+	int frame_count;
+} ResampledFrames;
 
 void SND_init(double sample_rate, double frame_rate);
 size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count);

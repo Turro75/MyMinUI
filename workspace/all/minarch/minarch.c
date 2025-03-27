@@ -23,6 +23,7 @@
 #include "scaler.h"
 
 #include <sys/sysinfo.h>
+#include <sys/time.h>
 
 #if defined(USE_SDL2)
 #include "SDL2_rotozoom.h"
@@ -3052,7 +3053,7 @@ static double fps_double = 0;
 static double fps2_double = 0;
 //static double cpu_double = 0;
 static double use_double = 0;
-static char cpuload[64];
+static char cpuload[128];
 		
 static uint32_t sec_start = 0;
 
@@ -3064,7 +3065,7 @@ static uint32_t sec_start = 0;
 
 void video_refresh_callback_rotate(int rotation, void *data, unsigned width, unsigned height, size_t pitch) {
 	int x, y, thispitch;
-	int now = SDL_GetTicks();
+//	int now = SDL_GetTicks();
 
 	SDL_FreeSurface(renderer.src_surface);
 	thispitch = pitch/2;
@@ -3211,7 +3212,7 @@ SDL_Rect video_refresh_callback_resize_extended(void) {
 void video_refresh_callback_resize(void) {
 	LOG_info("RESIZE IN\n");fflush(stdout);
 	uint32_t now = SDL_GetTicks();
-	//LOG_info(" VideoResize IN %d %d %d ABS:%d\n", renderer.src_surface->w, renderer.src_surface->h, renderer.src_surface->pitch, now);fflush(stdout);
+	LOG_info(" VideoResize IN %d %d %d ABS:%d\n", renderer.src_surface->w, renderer.src_surface->h, renderer.src_surface->pitch, now);fflush(stdout);
 	SDL_Rect targetarea = {0,0,DEVICE_WIDTH,DEVICE_HEIGHT};
 	switch(screen_scaling) {
 		case SCALE_ASPECT: { 
@@ -3253,6 +3254,11 @@ void video_refresh_callback_resize(void) {
 	renderer.dst_y = targetarea.y;	
 	renderer.dst_p = renderer.dst_w * FIXED_DEPTH;	
 	renderer.resize = 0;
+	if (renderer.screenscaling != screen_scaling) {
+		renderer.resize = 1;
+		renderer.screenscaling = screen_scaling;
+	} 
+	
 	LOG_info("VideoResize OUT %d %d %d %d TOOK %dms ABS:%d\n", renderer.dst_w , renderer.dst_h, renderer.dst_x , renderer.dst_y ,  SDL_GetTicks()-now, SDL_GetTicks());fflush(stdout);
 }
 
@@ -3283,14 +3289,8 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	//LOG_info("%05d: fps_ticks incremented!\n", fps_ticks);fflush(stdout);
 	//if (downsample) pitch /= 2; // everything expects 16 but we're downsampling from 32
 
-	if (downsample) {
-		buffer_downsample(data,width,height,pitch);
-		renderer.src = buffer;
-		pitch /= 2;
-	}
-	else {
-		renderer.src = (void*)data;
-	}
+	renderer.src = (void*)data;
+
 	//ok here I have renderer.src that points to the frame data to display, it is in RGB565 format
 	//quite sure it is the right moment to rotate it, before calling the select scaler.
 	video_refresh_callback_rotate(renderer.rotate, renderer.src, width, height, pitch);
@@ -3302,34 +3302,42 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	}
 //	LOG_info("video_refresh_callback_main dst_p=%iwidth:%i-%i height:%i-%i pitch:%i-%i\n", renderer.dst_p,width, renderer.true_w ,height, renderer.true_h,pitch,renderer.true_p);
 //	uint32_t now4 = SDL_GetTicks();
+//	LOG_info("Video_refresh_callback_main before BLIT  ABS:%d\n", SDL_GetTicks());fflush(stdout);
 	GFX_blitRenderer(&renderer);
+//	LOG_info("Video_refresh_callback_main after BLIT  ABS:%d\n", SDL_GetTicks());fflush(stdout);
 //	uint32_t now5 = SDL_GetTicks();
 	// debug
 	if (show_debug) {
 		char debug_text[128];
 		sprintf(debug_text, "%ix%i %c%.1fx %d", renderer.src_w,renderer.src_h, resizemode, renderer.scale, downsample?32:16);
-		blitBitmapText(debug_text,2,2,screen->pixels,screen->pitch/2, screen->w,screen->h);
+		blitBitmapText(debug_text,renderer.dst_x+2,renderer.dst_y+2,screen->pixels,screen->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 
 		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.dst_w,renderer.dst_h);
-		blitBitmapText(debug_text,-2,2,screen->pixels,screen->pitch/2, screen->w,screen->h);
+		blitBitmapText(debug_text,-2,renderer.dst_y+2,screen->pixels,screen->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 
-		sprintf(debug_text, "%.1f/%.1f", fps_double,fps2_double);
-		//blitBitmapText(debug_text,2,-21,screen->pixels,screen->pitch/2, screen->w,screen->h);
+		sprintf(debug_text, "%.0f/%.0f", fps_double,fps2_double);
+//#ifdef M21
+#if 1
+		blitBitmapText(debug_text,renderer.dst_x+2,-2,screen->pixels,screen->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+#else
+		blitBitmapText(debug_text,2,-21,screen->pixels,screen->pitch/2, screen->w,screen->h);
+
+		sprintf(debug_text, "%s", cpuload);
 		blitBitmapText(debug_text,2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
-
-	//	sprintf(debug_text, "%s", cpuload);
-	//	blitBitmapText(debug_text,2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
-
+#endif
 		sprintf(debug_text, "%s %i", effect_str,renderer.rotate*90);
-		blitBitmapText(debug_text,-2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
+		blitBitmapText(debug_text,-2,-2,screen->pixels,screen->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 	}
 //	uint32_t now6 = SDL_GetTicks();
+//	LOG_info("Video_refresh_callback_main before FLIP  ABS:%d\n", SDL_GetTicks());fflush(stdout);
 	GFX_flip(screen);
+//	LOG_info("Video_refresh_callback_main after  FLIP  ABS:%d\n", SDL_GetTicks());fflush(stdout);
 	last_flip_time = SDL_GetTicks();
 	if (!thread_video) render = 0;
 //	LOG_info("videorefreshcallbackmain took %dmsec - softstrech took %dmsec - rotate took %dmsec - flip took %dmsec\n", last_flip_time - now, now5 - now4, now4 - now2, last_flip_time-now6 );
 //	LOG_info("Video_refresh_callback_main OUT  ABS:%i\n", last_flip_time);fflush(stdout);
 }
+
 //int storage_audio_timing[60*60*10][4] = {-1};
 //static uint32_t _x = 0;
 static uint32_t last_callback_time = 0;
@@ -3341,9 +3349,20 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 //		LOG_info("FRAME:%d Empty Frame\n");fflush(stdout);
 		return; //frameskip activated?
 	}
-	fps2_ticks++;
+	if (downsample) {
+		buffer_downsample(data,width,height,pitch);
+		data = (void*)buffer;
+		pitch /= 2;
+	} 
+	//renderer.src = (void*)data;
+		//ok here I have renderer.src that points to the frame data to display, it is in RGB565 format
+		//quite sure it is the right moment to rotate it, before calling the select scaler.
+	
+
+	
 	if (thread_video) {		
 		pthread_mutex_lock(&flip_mx);
+		fps2_ticks++;
 		backbuffer.w = width;
 		backbuffer.h = height;
 		backbuffer.pitch = pitch;
@@ -3354,9 +3373,10 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 		rendering = 1;
 		pthread_cond_signal(&core_rq);		
 		pthread_mutex_unlock(&core_mx);
-
+		//PLAT_vsync(0);
 	}
 	else {
+		fps2_ticks++;
 		rendering = 1;
 		video_refresh_callback_main(data,width,height,pitch);	
 	}
@@ -3382,10 +3402,16 @@ static void audio_sample_callback(int16_t left, int16_t right) {
 	SND_batchSamples(&(const SND_Frame){left,right}, 1);
 #endif
 }
+
+struct timeval tv;
+static uint64_t last_audio_time = 0;
+static uint64_t microsvalue = 0;
+static uint32_t frame_period_usecs = 0;
+
 static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) { 
+	if (fast_forward) return frames;
 //	storage_audio_timing[_x][0] = SDL_GetTicks();
 //	storage_audio_timing[_x][3] = frames;
-	if (fast_forward) return frames;
 	int retvalue;
 #ifdef M21	
 	if (GetVolume()) retvalue = SND_batchSamples((const SND_Frame*)data, frames);
@@ -3395,8 +3421,19 @@ static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) {
 #endif	
 //	storage_audio_timing[_x++][1] = SDL_GetTicks();
 //	if (_x == 60*60*10) _x=0;
-	return retvalue;
+	gettimeofday(&tv,NULL);
+	microsvalue = 1000000 * tv.tv_sec + tv.tv_usec;
+	if (last_audio_time == 0) last_audio_time = microsvalue;
+	//LOG_info("audio_sample_batch_callback %jd/%jd/%i usec\n",(intmax_t)last_audio_time,microsvalue,frame_period_usecs);fflush(stdout);
 
+//	while ((microsvalue - last_audio_time) < frame_period_usecs) 
+//		{
+//			gettimeofday(&tv,NULL);
+//			microsvalue = 1000000 * tv.tv_sec + tv.tv_usec;
+//		}
+
+	last_audio_time = microsvalue;
+	return retvalue;
 };
 
 //store the array to a file at exit of the game to avoid interference 
@@ -3520,6 +3557,9 @@ void Core_load(void) {
 
 	core.fps = av_info.timing.fps;
 	core.sample_rate = av_info.timing.sample_rate;
+	double frameperiod = 1000000.0/core.fps;
+	frame_period_usecs = (uint32_t)(frameperiod);
+	LOG_info("Expected fps: %f sample_rate: %f Frame_Period: %i\n", core.fps, core.sample_rate, frame_period_usecs);
 	double a = av_info.geometry.aspect_ratio;
 	if (a<=0) a = (double)av_info.geometry.base_width / av_info.geometry.base_height;
 	core.aspect_ratio = a;
@@ -5462,7 +5502,9 @@ static void trackFPS(void) {
 		double last_time = (double)(now - sec_start) / 1000;
 		fps_double = fps_ticks / last_time;
 		fps2_double = fps2_ticks / last_time;
-		//getCPUusage(cpuload);
+#ifndef M21
+//		getCPUusage(cpuload);
+#endif
 		sec_start = now;
 		fps_ticks = 0;
 		fps2_ticks = 0;		
@@ -5499,6 +5541,7 @@ static void limitFF(void) {
 }
 cpu_set_t coret;
 cpu_set_t flipt;
+
 static void* flipThread(void *arg) {
 	int run = 0;
 	int render_ = 0;
@@ -5517,8 +5560,10 @@ static void* flipThread(void *arg) {
 			pthread_mutex_lock(&flip_mx);
 #else
 		if (run) {
+			trackFPS();
 			pthread_mutex_lock(&flip_mx);
 			pthread_cond_wait(&flip_rq, &flip_mx);
+			//video_refresh_callback_main(renderer.src_surface->pixels,renderer.src_surface->w,renderer.src_surface->h,renderer.src_surface->pitch);	
 			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
 #endif
 			render = 0;
@@ -5542,7 +5587,7 @@ static void* coreThread(void *arg) {
 		if (run) {
 			core.run();
 			limitFF();
-			trackFPS();
+			//trackFPS();
 		} else { //to keep cpu low while in the menu
 			sleep(0);
 		}
