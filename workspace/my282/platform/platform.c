@@ -408,9 +408,6 @@ SDL_Surface* PLAT_initVideo(void) {
 }
 
 void PLAT_quitVideo(void) {
-		// clearVideo();
-	PLAT_clearAll();
-	pan_display(0);
 	SDL_FreeSurface(vid.screen);
 	SDL_FreeSurface(vid.screen2);
 	munmap(vid.fbmmap, 0);	

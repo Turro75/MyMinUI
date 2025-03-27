@@ -443,19 +443,10 @@ SDL_Surface* PLAT_initVideo(void) {
 }
 
 void PLAT_quitVideo(void) {
-		// clearVideo();
-	pan_display(0);
-	PLAT_clearAll();
 	SDL_FreeSurface(vid.screen);
 	SDL_FreeSurface(vid.screen2);
 	munmap(vid.fbmmap, 0);	
     close(vid.fdfb);
-}
-
-static void clearVideo(void) {
-	SDL_FillRect(vid.screen, NULL, 0);
-	SDL_FillRect(vid.screen2, NULL, 0);
-	memset(vid.fbmmap+vid.page*vid.offset, 0, vid.screen_size); //1228800);
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {
@@ -466,7 +457,7 @@ void PLAT_clearVideo(SDL_Surface* screen) {
 void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
-	memset(vid.fbmmap+vid.page*vid.offset, 0, vid.screen_size);
+	memset(vid.fbmmap, 0, vid.screen_size);
 }
 
 void PLAT_setVsync(int vsync) {
