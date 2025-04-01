@@ -560,9 +560,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 	}
 	vid.renderingGame = 0;
 	pan_display(vid.page);
-//	if (vid.numpages == 2) {
-	vid.page ^= 1;
-//	}
+	vid.page = 1 - vid.page;
 //	LOG_info("FLIP_VIDEO took %imsec\n", SDL_GetTicks()-now);fflush(stdout);
 }
 
