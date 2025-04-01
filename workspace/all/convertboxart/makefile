@@ -20,14 +20,14 @@ SDL?=SDL
 ###########################################################
 
 TARGET = convertboxart
-INCDIR = -I. -I../common/ -I../../$(PLATFORM)/platform/
+INCDIR = -I. -I../common/ -I../../$(PLATFORM)/platform/ $(MY_INCDIR)
 SOURCE =   $(TARGET).c ../common/utils.c ../common/api.c ../common/scaler.c ../common/$(SDL)_Rotozoom.c ../../$(PLATFORM)/platform/platform.c
 
 CC = $(CROSS_COMPILE)gcc
 CFLAGS   = $(MYARCH) -fomit-frame-pointer
-CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL)  -O2 
+CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL)  -O2 $(MY_CFLAGS)
 LDFLAGS	 = -ldl $(LIBS) -l$(SDL) -l$(SDL)_image -l$(SDL)_ttf -lpthread -lm -lz -lpng
-LDFLAGS +=  -lmsettings
+LDFLAGS +=  -lmsettings $(MY_LDFLAGS)
 
 PRODUCT= build/$(PLATFORM)/$(TARGET).elf
 

@@ -77,13 +77,7 @@ char pwractionstr[256];
 
 int fancy_mode;
 
-enum {
-	SCALE_NATIVE,
-	SCALE_ASPECT,
-	SCALE_EXTENDED,
-	SCALE_FULLSCREEN,
-	SCALE_COUNT,
-};
+
 
 
 // default frontend options

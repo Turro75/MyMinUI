@@ -2,12 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <linux/fb.h>
+#include <linux/kd.h>
 #include <sys/ioctl.h>
+
 #include <sys/mman.h>
 
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <xf86drm.h>
+#include <xf86drmMode.h>
 
 #include <msettings.h>
 
@@ -15,8 +19,10 @@
 #include "platform.h"
 #include "api.h"
 #include "utils.h"
+#include "sdl.h"
 
-//almost all event2
+//almost all event2 on r36s, event4 on rg353v
+// /dewv/input/event1 is for the touchscreen
 #define RAW_UP		544
 #define RAW_DOWN	545
 #define RAW_LEFT	546
@@ -25,15 +31,22 @@
 #define RAW_B		304
 #define RAW_X		307
 #define RAW_Y		308
-#define RAW_START	 705
+#define RAW_START	 705 
+#define RAW_START_353 315 
 #define RAW_SELECT	 704
+#define RAW_SELECT_353	314
 #define RAW_MENU	 708
+#define RAW_MENU_353 316
 #define RAW_L1		 310
 #define RAW_L2		 312
 #define RAW_R1		 311
 #define RAW_R2		 313
-#define RAW_L3		 706
-#define RAW_R3		 707
+#define RAW_R1_353P	 RAW_R2
+#define RAW_R2_353P	 RAW_R1
+#define RAW_L3		 706  
+#define RAW_L3_353	 317
+#define RAW_R3		 707  
+#define RAW_R3_353	 318
 #define RAW_PLUS	 115  //event3
 #define RAW_MINUS	 114  //event3
 #define RAW_POWER	116  //event0
@@ -53,7 +66,11 @@ static int PWR_Actions = 0;
 static uint32_t PWR_Tick = 0;
 #define PWR_TIMEOUT 2000
 ///////////////////////////////
+static int is353v = 0;
+static int is353p = 0;
+static int isg350 = 0;
 
+static int _R1_RAW, _R2_RAW, _L3_RAW, _R3_RAW, _START_RAW, _SELECT_RAW, _MENU_RAW;
 
 #define INPUT_COUNT 3
 static int inputs[INPUT_COUNT];
@@ -64,9 +81,59 @@ long map(int x, int in_min, int in_max, int out_min, int out_max) {
 
 void PLAT_initInput(void) {
 	inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
-	inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+	if (inputs[0]<0) {
+		LOG_info("/dev/input/event0 open failed"); // volume +/-
+	}
+	_R1_RAW = RAW_R1;
+	_R2_RAW = RAW_R2;
+	if (is353v) {
+		inputs[1] = open("/dev/input/event4", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		_L3_RAW = RAW_L3_353;
+		_R3_RAW = RAW_R3_353;
+
+		// check if is set as rg353p then swap R1/R2 to meet rg353p
+		if (is353p){
+			_R1_RAW = RAW_R2;
+	    	_R2_RAW = RAW_R1;
+		}
+
+		_START_RAW = RAW_START_353;
+		_SELECT_RAW = RAW_SELECT_353;
+		_MENU_RAW = RAW_MENU_353;
+	} else if (isg350) {
+		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		_L3_RAW = RAW_L3_353;
+		_R3_RAW = RAW_R3_353;
+		_START_RAW = RAW_START_353;
+		_SELECT_RAW = RAW_SELECT_353;
+		_MENU_RAW = RAW_MENU_353;
+	} else {
+		//r36s
+		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		_L3_RAW = RAW_L3;
+		_R3_RAW = RAW_R3;
+		_START_RAW = RAW_START;
+		_SELECT_RAW = RAW_SELECT;
+		_MENU_RAW = RAW_MENU;
+	}
+	if (inputs[1]<0) {
+		LOG_info("/dev/input/event2-4 open failed: is353v=%d - isg350=%d - r36s = %d", is353v, isg350, !is353v && !isg350); // volume +/-
+	}
 	inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+	if (inputs[2]<0) {
+		LOG_info("/dev/input/event3 open failed"); // volume +/-
+	}
 	//Stick_init(); // analog
+
+	// test to simulate a volume down pressure to let rg353v working...
+	struct input_event event;
+	event.type = EV_KEY;
+	event.code = RAW_MINUS;
+	event.value = 1;
+	write(inputs[2], &event, sizeof(event));
+	usleep(20000);
+	event.value = 0;
+	write(inputs[2], &event, sizeof(event));
 }
 
 void PLAT_quitInput(void) {
@@ -112,8 +179,8 @@ void PLAT_pollInput(void) {
 			
 				pressed = value;
 
-				if 		(code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
-			    else if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
+				if 		(code==_START_RAW)	{ btn = BTN_START; 		id = BTN_ID_START; } 
+			    else if (code==_SELECT_RAW)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
 				else if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
 				else if (code==RAW_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
 
@@ -127,12 +194,12 @@ void PLAT_pollInput(void) {
 				 
 				else if (code==RAW_L1)		{ btn = BTN_L1; 		id = BTN_ID_L1; }
 				else if (code==RAW_L2)		{ btn = BTN_L2; 		id = BTN_ID_L2; }				
-				else if (code==RAW_R1)		{ btn = BTN_R1; 		id = BTN_ID_R1; }
-				else if (code==RAW_R2)		{ btn = BTN_R2; 		id = BTN_ID_R2; }
-				else if (code==RAW_L3)		{ btn = BTN_L3; 		id = BTN_ID_L3; }
-				else if (code==RAW_R3)		{ btn = BTN_R3; 		id = BTN_ID_R3; }
+				else if (code==_R1_RAW)		{ btn = BTN_R1; 		id = BTN_ID_R1; }
+				else if (code==_R2_RAW)		{ btn = BTN_R2; 		id = BTN_ID_R2; }
+				else if (code==_L3_RAW)		{ btn = BTN_L3; 		id = BTN_ID_L3; }
+				else if (code==_R3_RAW)		{ btn = BTN_R3; 		id = BTN_ID_R3; }
 
-				else if (code==RAW_MENU)	{ 
+				else if (code==_MENU_RAW)	{ 
 							btn = BTN_MENU; 		id = BTN_ID_MENU; 
 							// hack to generate a pwr button
 				/* 			if (pressed){
@@ -207,20 +274,24 @@ int PLAT_shouldWake(void) {
 
 static struct VID_Context {
 	int fdfb; // /dev/fb0 handler
-	struct fb_fix_screeninfo finfo;  //fixed fb info
-	struct fb_var_screeninfo vinfo;  //adjustable fb info
-	void *fbmmap; //mmap address of the framebuffer
+	void *fbmmap[2]; //mmap address of the framebuffer
+	int fb[2];
+	int crtc[2];
+	int conn[2];
+	int handle[2];
+	struct _drmModeModeInfo mode[2];
 	SDL_Surface* screen;  //swsurface to let sdl thinking it's the screen
 	SDL_Surface* screen2; //stretched SDL2 surface
-	GFX_Renderer* blit; // yeesh, let's see if useful
-	int linewidth;
-	int screen_size;
+	int linewidth[2];
+	int screen_size[2];
 	int width;  //current width 
 	int height; // current height
 	int pitch;  //sdl bpp
 	int sharpness; //let's see if it works
-	uint16_t* pixels;
 	int rotate;
+	int page;
+	SDL_Rect targetRect;
+	int renderingGame;
 } vid;
 
 static int device_width;
@@ -233,44 +304,8 @@ static int lastp=0;
 
 static int finalrotate=0;
 
-void get_fbinfo(void){
-    ioctl(vid.fdfb, FBIOGET_FSCREENINFO, &vid.finfo);
-    ioctl(vid.fdfb, FBIOGET_VSCREENINFO, &vid.vinfo);
-/*	
-    fprintf(stdout, "Fixed screen informations\n"
-                    "-------------------------\n"
-                    "Id string: %s\n"
-                    "FB start memory: %p\n"
-                    "FB LineLength: %d\n",
-                    finfo.id, (void *)finfo.smem_start, finfo.line_length);
 
-    fprintf(stdout, "Variable screen informations\n"
-                    "----------------------------\n"
-                    "xres: %d\n"
-                    "yres: %d\n"
-                    "xres_virtual: %d\n"
-                    "yres_virtual: %d\n"
-                    "bits_per_pixel: %d\n\n"
-                    "RED: L=%d, O=%d\n"
-                    "GREEN: L=%d, O=%d\n"
-                    "BLUE: L=%d, O=%d\n"            
-                    "ALPHA: L=%d, O=%d\n",
-                    vinfo.xres, vinfo.yres, vinfo.xres_virtual,
-                    vinfo.yres_virtual, vinfo.bits_per_pixel,
-                    vinfo.red.length, vinfo.red.offset,
-                    vinfo.blue.length,vinfo.blue.offset,
-                    vinfo.green.length,vinfo.green.offset,
-                    vinfo.transp.length,vinfo.transp.offset);
-
-    //fprintf(stdout, "PixelFormat is %d\n", vinfo.pixelformat);
-    fflush(stdout);*/
-}
-
-void set_fbinfo(void){
-    ioctl(vid.fdfb, FBIOPUT_VSCREENINFO, &vid.vinfo);
-}
-
-int R36_SDLFB_Flip(SDL_Surface *buffer, void * fbmmap, int linewidth) {
+int R36_SDLFB_Flip(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
 	//copy a surface to the screen and flip it
 	//it must be the same resolution, the bpp16 is then converted to 32bpp
 	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
@@ -280,27 +315,27 @@ int R36_SDLFB_Flip(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	int x, y;
 	if (buffer->format->BitsPerPixel == 16) {
 		//ok start conversion assuming it is RGB565		
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
+		for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+			for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
-				*((uint32_t *)fbmmap + x + y * linewidth) = (uint32_t)(0xFF000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
+				*((uint32_t *)fbmmap + x + y * linewidth) = (uint32_t)(0x00000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
 			}
 		}
 	}
 	if (buffer->format->BitsPerPixel == 32) {
 		//ok start conversion assuming it is ABGR888
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
+		for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+			for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * thispitch);
 				*((uint32_t *)fbmmap + x + y * linewidth) = 
-					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
+					0x00000000 | (pixel & 0xFF0000)  | (pixel & 0xFF00)  | (pixel & 0xFF) ;
 			}
 		}
 	}
 	return 0;	
 }
 
-int R36_SDLFB_FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth) {
+int R36_SDLFB_FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
 	//copy a surface to the screen and flip it
 	//it must be the same resolution, the bpp16 is then converted to 32bpp
 	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
@@ -310,8 +345,8 @@ int R36_SDLFB_FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	int x, y;
 	if (buffer->format->BitsPerPixel == 16) {
 		//ok start conversion assuming it is RGB565		
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
+		for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+			for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
 				*((uint32_t *)fbmmap + (buffer->w - x) + (buffer->h - y -1) * linewidth) = (uint32_t)(0xFF000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
 			}
@@ -319,8 +354,8 @@ int R36_SDLFB_FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	}
 	if (buffer->format->BitsPerPixel == 32) {
 		//ok start conversion assuming it is ABGR888
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
+		for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+			for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * thispitch);
 				*((uint32_t *)fbmmap + (buffer->w - x) + (buffer->h - y -1) * linewidth) = 
 					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
@@ -330,7 +365,7 @@ int R36_SDLFB_FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	return 0;	
 }
 
-int R36_SDLFB_FlipRotate90(SDL_Surface *buffer, void * fbmmap, int linewidth) {
+int R36_SDLFB_FlipRotate90(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
 	//copy a surface to the screen and flip it
 	//it must be the same resolution, the bpp16 is then converted to 32bpp
 	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
@@ -340,8 +375,8 @@ int R36_SDLFB_FlipRotate90(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	int x, y;
 	if (buffer->format->BitsPerPixel == 16) {
 		//ok start conversion assuming it is RGB565		
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
+		for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+			for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
 				*((uint32_t *)fbmmap + (buffer->h- y -1) + (x  * linewidth)) = (uint32_t)(0xFF000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
 			}
@@ -349,8 +384,8 @@ int R36_SDLFB_FlipRotate90(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	}
 	if (buffer->format->BitsPerPixel == 32) {
 		//ok start conversion assuming it is ABGR888
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
+		for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+			for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * thispitch);
 				*((uint32_t *)fbmmap + (buffer->h- y -1) + (x  * linewidth)) = 
 					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
@@ -359,7 +394,7 @@ int R36_SDLFB_FlipRotate90(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	}
 	return 0;	
 }
-int R36_SDLFB_FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth) {
+int R36_SDLFB_FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
 	//copy a surface to the screen and flip it
 	//it must be the same resolution, the bpp16 is then converted to 32bpp
 	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
@@ -369,8 +404,8 @@ int R36_SDLFB_FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	int x, y;
 	if (buffer->format->BitsPerPixel == 16) {
 		//ok start conversion assuming it is RGB565		
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
+		for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+			for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
 				*((uint32_t *)fbmmap + y + (buffer->w - x - 1) * linewidth) = (uint32_t)(0xFF000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
 			}
@@ -378,8 +413,8 @@ int R36_SDLFB_FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	}
 	if (buffer->format->BitsPerPixel == 32) {
 		//ok start conversion assuming it is ABGR888
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
+		for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+			for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * thispitch);
 				*((uint32_t *)fbmmap + y + (buffer->w - x - 1) * linewidth) = 
 					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
@@ -389,72 +424,194 @@ int R36_SDLFB_FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	return 0;	
 }
 
+void IOCTLttyON(void){
+	int mode = -1;
+	int fdtty = -1;
+	fdtty = open("/dev/tty1", O_RDWR);
+	int res = ioctl(fdtty, KDGETMODE, &mode);
+	LOG_info("Console mode = %d Result = %d\n", mode,res);
+	if (mode == 0){
+		LOG_info("Console mode = %d Result = %d\n", mode,res);
+		mode = 1;
+		res = -1;
+		res = ioctl(fdtty, KDSETMODE, mode);
+		if (res < 0) {
+			LOG_info("Console mode now = %d Result = %d errno = %s \n",mode, res,strerror(errno));//\n", mode,res);
+		} else {
+			LOG_info("Console mode now = %d Result = %d\n",mode, res);//\n", mode,res);
+		}	
+	}
+	close(fdtty);
+}
+
+
+struct modeset_buf {
+	uint32_t width;
+	uint32_t height;
+	uint32_t stride;
+	uint32_t size;
+	uint32_t handle;
+	uint8_t *map;
+	uint32_t fb;
+};
+
+struct drm_mode_destroy_dumb dreq;
+
 
 SDL_Surface* PLAT_initVideo(void) {
-	vid.fdfb = open("/dev/fb0", O_RDWR);
-	int w = FIXED_WIDTH;
-	int h = FIXED_HEIGHT;
-	int p = FIXED_PITCH;
+	IOCTLttyON();
+	vid.fdfb = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
+	
+	drmModeRes *res;
+	drmModeConnector *conn;
+	
+	int w,p,h;
+	//get_fbinfo();
+	w = FIXED_WIDTH;
+	h = FIXED_HEIGHT;
+	p = FIXED_PITCH;	
+//	vid.numpages = 1;
+	if (exists("/dev/input/by-path/platform-fe5b0000.i2c-event")) {
+		//is the rg353v
+		is353v = 1;
+		isg350 = 0;
+		// check  here the  file exists then swap them to meet rg353p
+		if (exists(IS_RG353P)){
+			is353p = 1;
+		}
+		if (GetHDMI()) {
+			w = _HDMI_WIDTH;
+			h = _HDMI_HEIGHT;
+			p = _HDMI_PITCH;
+		} 
+	}
+	
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
+	DEVICE_PITCH = p;
 	vid.rotate = 0;
-	
-	get_fbinfo();	
 
 	if (exists(ROTATE_SYSTEM_PATH)) {
 		vid.rotate = getInt(ROTATE_SYSTEM_PATH) &3;
 	}
 
 	if (vid.rotate % 2 == 1) {
-		DEVICE_WIDTH = FIXED_HEIGHT;
-		DEVICE_HEIGHT = FIXED_WIDTH;
+		DEVICE_WIDTH = h;
+		DEVICE_HEIGHT = w;
 	}
 	
-    vid.vinfo.xres=w;
-    vid.vinfo.yres=h;
-	vid.vinfo.bits_per_pixel=32;
 
-	int m = vid.vinfo.xres>vid.vinfo.yres?vid.vinfo.xres:vid.vinfo.yres;
-	//at the beginning set the screen size to 640x480
-    set_fbinfo();
-	get_fbinfo();
-	LOG_info("DEVICE_WIDTH=%d, DEVICE_HEIGHT=%d\n", DEVICE_WIDTH, DEVICE_HEIGHT);fflush(stdout);
-//	if (getInt(HDMI_STATE_PATH)) {
-//		w = HDMI_WIDTH;
-//		h = HDMI_HEIGHT;
-//		p = HDMI_PITCH;
-//	}
-	vid.pixels = malloc(m*p);
-	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, p, RGBA_MASK_565);
-	vid.screen2 = SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
+	/* retrieve resources */
+	res = drmModeGetResources(vid.fdfb);
+	if (!res) {
+		fprintf(stdout, "cannot retrieve DRM resources (%d): %m\n",	errno);fflush(stdout);
+	}
+	/* iterate all connectors */
+	LOG_info("Connectors = %d\n", res->count_connectors);fflush(stdout);
+	for (int i = 0; i < res->count_connectors; ++i) {
+		/* get information for each connector */
+		conn = drmModeGetConnector(vid.fdfb, res->connectors[i]);
+		if (!conn) {
+			fprintf(stdout, "cannot retrieve DRM connector %u:%u (%d): %m\n",
+				i, res->connectors[i], errno);fflush(stdout);
+			continue;
+		}
+		//trovato un connettore
+		LOG_info("ConnectorID %u\n", conn->connector_id);fflush(stdout);
+		if (conn->connection != DRM_MODE_CONNECTED) {
+			fprintf(stderr, "ignoring unused connector %u\n",conn->connector_id);fflush(stdout);
+		}
+		for (int c = 0; c < conn->count_modes; c++) {
+			LOG_info("ConnectorID %i : mode %ux%u@%dHz\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
+			//found a mode
+			
+			if (conn->modes[c].vdisplay == DEVICE_HEIGHT && conn->modes[c].hdisplay == DEVICE_WIDTH && conn->modes[c].vrefresh == _HDMI_HZ) {
+				LOG_info("ConnectorID %i : mode %ux%u@%dHz found\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
+				drmModeEncoder *enc;
+				enc = drmModeGetEncoder(vid.fdfb, conn->encoder_id);
+				if (enc){
+					if (enc->crtc_id) {
+						memcpy(&vid.mode[0], &conn->modes[c], sizeof(drmModeModeInfo));
+						memcpy(&vid.mode[1], &conn->modes[c], sizeof(drmModeModeInfo));
+						
+						vid.crtc[0] = enc->crtc_id;
+						vid.conn[0] = conn->connector_id;
+						vid.crtc[1] = enc->crtc_id;
+						vid.conn[1] = conn->connector_id;
+						LOG_info("Found CRTC %u on Connector %u\n",enc->crtc_id,conn->connector_id);						
+				}
+				}				
+				drmModeFreeEncoder(enc);				
+			}
+		}
+		drmModeFreeConnector(conn);
+	}	
+	
+	for (int thispage = 0; thispage < 2; thispage++) {
+		struct drm_mode_create_dumb creq;
+		struct drm_mode_map_dumb mreq;
+		int ret;
 
-	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
+		 /* create dumb buffer */
+		memset(&creq, 0, sizeof(creq));
+		creq.width = w;
+		creq.height = h;
+		creq.bpp = 32;
+		ret = drmIoctl(vid.fdfb, DRM_IOCTL_MODE_CREATE_DUMB, &creq);
+		if (ret < 0) {
+			fprintf(stdout, "cannot create dumb buffer $d (%d): %m\n", thispage, errno);fflush(stdout);
+		}	
+		struct modeset_buf buf;
+		vid.screen_size[thispage] = creq.size;
+		vid.fb[thispage] = 0;
+		vid.handle[thispage] = creq.handle;
+		LOG_info("Screen[%d] %dx%d bpp=%d pitch=%d, size=%u\n", thispage, creq.width, creq.height, creq.bpp, creq.pitch, creq.size);fflush(stdout);
+		ret = drmModeAddFB(vid.fdfb, creq.width, creq.height, 24, creq.bpp, creq.pitch, creq.handle, &vid.fb[thispage]);
+		if (ret) {
+			fprintf(stdout, "cannot create framebuffer %d (%d): %m\n", thispage, errno);fflush(stdout);
+		}
+			/* prepare buffer for memory mapping */
+		memset(&mreq, 0, sizeof(mreq));
+		mreq.handle = creq.handle;
+		ret = drmIoctl(vid.fdfb, DRM_IOCTL_MODE_MAP_DUMB, &mreq);
+		if (ret < 0) {
+			fprintf(stdout, "cannot map dumb buffer %d (%d): %m\n", thispage, errno);fflush(stdout);
+		}
+		vid.fbmmap[thispage] = mmap(0, vid.screen_size[thispage], PROT_READ | PROT_WRITE, MAP_SHARED,	vid.fdfb, mreq.offset);
+		if (vid.fbmmap[thispage] == MAP_FAILED) {
+			fprintf(stdout, "cannot mmap dumb buffer %d (%d): %m\n", thispage,	errno);fflush(stdout);
+		}
+		memset(vid.fbmmap[thispage], 0, vid.screen_size[thispage]);
+		ret = drmModeSetCrtc(vid.fdfb, vid.crtc[thispage], vid.fb[thispage], 0, 0, &vid.conn[thispage], 1, &vid.mode[thispage]);
+		if (ret)
+			fprintf(stderr, "BUF%d cannot set CRTC for connector %u (%d): %m\n",thispage, vid.conn[thispage], errno);
+		vid.linewidth[thispage] = creq.pitch / (creq.bpp/8);
+	}
 
-	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
-	vid.screen_size = vid.finfo.line_length * m;
-	vid.fbmmap = malloc(vid.screen_size *(sizeof(uint8_t)));
+	vid.page = 0;
+	vid.renderingGame = 0;
+	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
+	vid.screen2 = SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);	
 	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
 }
 
 void PLAT_quitVideo(void) {
-		// clearVideo();
-	PLAT_clearAll();
-	if (vid.pixels) free(vid.pixels);
+	close(vid.fdfb);
 	SDL_FreeSurface(vid.screen);
 	SDL_FreeSurface(vid.screen2);
-	vid.pixels=NULL;
-	//munmap(vid.fbmmap, 0);	
-    close(vid.fdfb);
-	SDL_Quit();
-}
+	munmap(vid.fbmmap[0],vid.screen_size[0]);
+	munmap(vid.fbmmap[1],vid.screen_size[1]);
 
-static void clearVideo(void) {
-	SDL_FillRect(vid.screen, NULL, 0);
-	SDL_FillRect(vid.screen2, NULL, 0);
-	memset(vid.fbmmap, 0, vid.screen_size); //1228800);
-	write(vid.fdfb, vid.fbmmap, vid.screen_size);
-	lseek(vid.fdfb,0,0);
+	drmModeRmFB(vid.fdfb, vid.fb[0]);
+	memset(&dreq, 0, sizeof(dreq));
+	dreq.handle = vid.handle[0];
+	drmIoctl(vid.fdfb, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
+
+	drmModeRmFB(vid.fdfb, vid.fb[1]);
+	memset(&dreq, 0, sizeof(dreq));
+	dreq.handle = vid.handle[1];
+	drmIoctl(vid.fdfb, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {
@@ -465,9 +622,11 @@ void PLAT_clearVideo(SDL_Surface* screen) {
 void  PLAT_clearAll (void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
-	memset(vid.fbmmap, 0, vid.screen_size);
-	write(vid.fdfb, vid.fbmmap, vid.screen_size);
-	lseek(vid.fdfb,0,0);
+	memset(vid.fbmmap[0], 0, vid.screen_size[0]);
+	memset(vid.fbmmap[1], 0, vid.screen_size[1]);
+//	pwrite(vid.fdfb, vid.fbmmap[0], vid.screen_size/vid.numpages,0);
+//	pwrite(vid.fdfb, vid.fbmmap[1], vid.screen_size/vid.numpages,vid.offset);
+	//lseek(vid.fdfb,vid.offset*vid.page,0);
 }
 
 void PLAT_setVsync(int vsync) {
@@ -477,37 +636,13 @@ void PLAT_setVsync(int vsync) {
 
 //static int hard_scale = 4; // TODO: base src size, eg. 160x144 can be 4
 static void resizeVideo(int w, int h, int p, int game) {
-	if (w==vid.width && h==vid.height && p==vid.pitch) return;
-	int targetw = w;
-	int targeth = h;
-	if (game == 1){  //check final rotation only if in game
-		if (finalrotate % 2 == 1) {
-		targetw = h;
-		targeth = w;
-		}
-	}
-	// TODO: minarch disables crisp (and nn upscale before linear downscale) when native
-	if (targetw < 0) targetw = targetw* -1;
-	if (targeth < 0) targeth = targeth* -1;
-	
-	if (vid.screen) {
-		SDL_FreeSurface(vid.screen);
-	}
-	vid.pixels = (uint16_t *)realloc(vid.pixels,h*p);
-	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, w, h, FIXED_DEPTH, p, RGBA_MASK_565);
-	
-	vid.width	= w;
-	vid.height	= h;
-	vid.pitch	= p;
-	//LOG_info("resizeVideo(%i,%i,%i) hard_scale: %i crisp: %i\n",w,h,p, hard_scale,vid.sharpness==SHARPNESS_CRISP);
-	LOG_info("resizeVideo(%i,%i,%i)\n",w,h,p);
+	// buh
 }
 
 static int next_effect = EFFECT_NONE;
 static int effect_type = EFFECT_NONE;
 
 SDL_Surface* PLAT_resizeVideo(int w, int h, int p) {
-//	resizeVideo(w,h,p,0);
 	return vid.screen;
 }
 
@@ -528,41 +663,42 @@ void PLAT_setEffect(int effect) {
 	next_effect = effect;
 }
 void PLAT_vsync(int remaining) {
-	if (remaining>0) usleep(remaining*1000);
+//	if (remaining>0) usleep(remaining*1000);
+	int res = 0;
+	ioctl(vid.fdfb, FBIOBLANK, &res);
 }
 
 scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
-/*	if (effect_type==EFFECT_LINE) {
-		switch (renderer->scale) {
-			case 4:  return scale4x_line;
-			case 3:  return scale3x_line;
-			case 2:  return scale2x_line;
-			default: return scale1x_line;
-		}
-	}
-	else if (effect_type==EFFECT_GRID) {
-		switch (renderer->scale) {
-			case 3:  return scale3x_grid;
-			case 2:  return scale2x_grid;
-		}
-	}
-	
-	switch (renderer->scale) {
-		case 6:  return scale6x6_n16;
-		case 5:  return scale5x5_n16;
-		case 4:  return scale4x4_n16;
-		case 3:  return scale3x3_n16;
-		case 2:  return scale2x2_n16;
-		default: return scale1x1_n16;
-	}
-	*/
+	return NULL;
 }
 
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	if (effect_type!=next_effect) {
 		effect_type = next_effect;
 	}
+//	int a,b,c,d,e,f,g,h;
+//	a = SDL_GetTicks();
+//	SDL_Surface *tmp32_1 = SDL_ConvertSurfaceFormat(renderer->src_surface, SDL_PIXELFORMAT_ARGB8888, 0);
+//	b = SDL_GetTicks();
+//	SDL_Surface *tmp32_2 = SDL_CreateRGBSurfaceWithFormat(0, DEVICE_WIDTH, DEVICE_HEIGHT, 32, SDL_PIXELFORMAT_ARGB8888);
+//	c = SDL_GetTicks();
+//	SDL_SoftStretch(tmp32_1, NULL, tmp32_2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+//	d = SDL_GetTicks();
+//	SDL_SoftStretchLinear(tmp32_1, NULL, tmp32_2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+//	e = SDL_GetTicks();
+//	SDL_FreeSurface(tmp32_1);
+//	SDL_FreeSurface(tmp32_2);
 //	scale1x_line(renderer->src_surface->pixels, vid.screen2->pixels, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch);
+	if ( renderer->screenscaling != SCALE_FULLSCREEN){
+		//not fullscreen
+		if (DEVICE_WIDTH == _HDMI_WIDTH){
+			//ok the real resolution is set to 720x480, I need to stretch and compress the image 
+			renderer->dst_w = renderer->dst_w / (854/640);
+			//renderer->dst_x = 
+		}
+	}
+	
+
 	if (effect_type==EFFECT_LINE) {
 		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
 		scale1x_line(vid.screen2->pixels, vid.screen->pixels, vid.screen2->w, vid.screen2->h, vid.screen2->pitch, vid.screen->w, vid.screen->h, vid.screen->pitch);
@@ -573,39 +709,73 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	}
 	else {
 		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+	//	f = SDL_GetTicks();
+	//	SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+	//	g = SDL_GetTicks();
+	//	SDL_SoftStretchLinear(tmp32_1, NULL, vid.screen32, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
 	}
+	//LOG_info("convert 16to32 =%ims, softs=%ims, softslinear =%ims,  softsreal=%ims\n", b-a, d-c, e-d, g-f);fflush(stdout);
+	vid.targetRect.x = renderer->dst_x;
+	vid.targetRect.y = renderer->dst_y;
+	vid.targetRect.w = renderer->dst_w;
+	vid.targetRect.h = renderer->dst_h;
+	vid.renderingGame = 1;
+}
+int flipflag;
+static void modeset_page_flip_event(int fd, unsigned int frame,
+	unsigned int sec, unsigned int usec,
+	void *data)
+{
+	flipflag = 0;
 }
 
+void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
+//	uint32_t now = SDL_GetTicks();
 
-void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu + minui + tools
-	//SDL_SoftStretch(vid.screen, NULL, vid.screen2, &(SDL_Rect){0,0,FIXED_WIDTH,FIXED_HEIGHT});
+	drmEventContext ev;
 
-	//M21_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
-//	int now = SDL_GetTicks();
+	/* init variables */
+	memset(&ev, 0, sizeof(ev));
+	ev.version = DRM_EVENT_CONTEXT_VERSION;
+	ev.page_flip_handler = modeset_page_flip_event;
 
+	if (!vid.renderingGame) {
+		vid.targetRect.x = 0;
+		vid.targetRect.y = 0;
+		vid.targetRect.w = vid.screen->w;
+		vid.targetRect.h = vid.screen->h;
+		//vid.page = 0;
+	}
 	if (vid.rotate == 0) 
 	{
-		// No Rotation
-		R36_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
+		//No Rotation
+		R36_SDLFB_Flip(vid.screen, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);		
 	}
 	if (vid.rotate == 1)
 	{
 		// 90 Rotation
-		R36_SDLFB_FlipRotate90(vid.screen, vid.fbmmap,vid.linewidth);
+		R36_SDLFB_FlipRotate90(vid.screen, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
 	}
 	if (vid.rotate == 2)
 	{
 		// 180 Rotation
-		R36_SDLFB_FlipRotate180(vid.screen, vid.fbmmap,vid.linewidth);
+		R36_SDLFB_FlipRotate180(vid.screen, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
 	}
 	if (vid.rotate == 3)
 	{
 		// 270 Rotation
-		R36_SDLFB_FlipRotate270(vid.screen, vid.fbmmap,vid.linewidth);
+		R36_SDLFB_FlipRotate270(vid.screen, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
 	}
 //	int now2 = SDL_GetTicks();
-	write(vid.fdfb, vid.fbmmap, vid.screen_size);
-	lseek(vid.fdfb,0,0);
+	
+	
+	flipflag=1;	
+	int ret = drmModePageFlip(vid.fdfb	, vid.crtc[vid.page], vid.fb[vid.page], DRM_MODE_PAGE_FLIP_EVENT, NULL);
+	while(flipflag){
+		drmHandleEvent(vid.fdfb, &ev);
+	}
+	vid.page = 1 - vid.page;
+	vid.renderingGame = 0;	
 //	LOG_info("Total Flip TOOK: %imsec, Draw TOOK: %imsec\n", SDL_GetTicks()-now, now2-now);
 }
 
@@ -642,7 +812,7 @@ void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 		*is_charging = 0;
 	} else {
 		char buf[8];
-		read(charge_fd, buf, 2);
+		read(charge_fd, buf, 8);
 		*is_charging = (atoi(buf)>0)?1:0;
 	}
 	close(charge_fd);
@@ -652,7 +822,7 @@ void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 		i = 3380000;
 	} else {
 		char buf[10];//
-		read(charge_fd, buf, 8);
+		read(charge_fd, buf, 10);
 		i = atoi(buf);
 	}
 	close(charge_fd);
@@ -741,7 +911,7 @@ int PLAT_pickSampleRate(int requested, int max) {
 }
 
 char* PLAT_getModel(void) {
-	return "R36S ArkOS";
+	return "R36S/353 ArkOS";
 }
 
 int PLAT_isOnline(void) {
@@ -754,7 +924,7 @@ int PLAT_getNumProcessors(void) {
 }
 
 uint32_t PLAT_screenMemSize(void) {
-	return vid.screen_size;
+	return vid.screen_size[0];
 }
 
 void PLAT_getAudioOutput(void){

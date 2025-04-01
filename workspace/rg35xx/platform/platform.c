@@ -408,11 +408,13 @@ SDL_Surface* PLAT_initVideo(void) {
 	
     vid.vinfo.xres=w;
     vid.vinfo.yres=h;
+	vid.vinfo.xres_virtual = vid.vinfo.xres;
+	vid.vinfo.yres_virtual = vid.vinfo.yres * 2;
 	vid.vinfo.bits_per_pixel=32;
 	//at the beginning set the screen size to 640x480
     set_fbinfo();
 	get_fbinfo();
-	LOG_info("DEVICE_WIDTH=%d, DEVICE_HEIGHT=%d, DEVICE_PITCH=%d\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH);fflush(stdout);
+	LOG_info("DEVICE_WIDTH=%d, DEVICE_HEIGHT=%d, DEVICE_PITCH=%d Virtual %dx%d\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH, vid.vinfo.xres_virtual, vid.vinfo.yres_virtual);fflush(stdout);
 	
 	struct owlfb_sync_info sinfo;
 	sinfo.enabled = 1;
@@ -421,12 +423,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	
 	vid.page = 0;
 	pan_display(vid.page);
+//	vid.numpages=2;
 
-	if(vid.vinfo.yres_virtual >= vid.vinfo.yres*2) {
-		vid.numpages=2;
-	} else {
-		vid.numpages=1;
-	}
 	vid.offset = vid.vinfo.yres_virtual/2 * vid.finfo.line_length;
 	vid.screen_size = vid.offset*2;
 	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
@@ -507,13 +505,6 @@ scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
 	return NULL;
 }
 
-void rgb565_to_rgb888(uint16_t *src, uint32_t *dst, int count) {
-	int i;
-	for (i=0;i<count;i++) {
-		dst[i] = 0xff000000 | (src[i] & 0xf800) << 8 | (src[i] & 0x07e0) << 5 | (src[i] & 0x001f) << 3;
-	}
-}	
-
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	if (effect_type!=next_effect) {
 		effect_type = next_effect;
@@ -545,7 +536,6 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.screen->w;
 		vid.targetRect.h = vid.screen->h;
-		vid.page = 0;
 	}
 
 	if (vid.rotate == 0) 
@@ -570,9 +560,9 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 	}
 	vid.renderingGame = 0;
 	pan_display(vid.page);
-	if (vid.numpages == 2) {
-		vid.page ^= 1;
-	}
+//	if (vid.numpages == 2) {
+	vid.page ^= 1;
+//	}
 //	LOG_info("FLIP_VIDEO took %imsec\n", SDL_GetTicks()-now);fflush(stdout);
 }
 

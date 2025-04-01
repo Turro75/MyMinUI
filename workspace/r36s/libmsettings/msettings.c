@@ -173,8 +173,14 @@ void SetRawVolume(int val) { // 0 - 20
 	//	sprintf(cmd, "amixer sset 'Headphone volume' %d", 2);
 	//} else	{
 		//sprintf(cmd, "amixer sset 'Headphone' unmute && amixer sset 'Headphone volume' %d", rawval-1);
-		sprintf(cmd, "amixer sset 'Playback' %d", rawval);
-	//}
+		//r36s
+		if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
+			//is the rg353v
+			sprintf(cmd, "amixer sset 'Master' %d", rawval);
+		} else {
+			//is the r36s
+			sprintf(cmd, "amixer sset 'Playback' %d", rawval);
+		}
 	system(cmd);
 	printf("SetRawVolume(%i->%i) \"%s\"\n", val,rawval,cmd); fflush(stdout);
 }
@@ -189,8 +195,23 @@ void SetJack(int value) {
 	SetVolume(GetVolume());
 }
 
+int getInt(char* path) {
+	int i = 0;
+	FILE *file = fopen(path, "r");
+	if (file!=NULL) {
+		fscanf(file, "%i", &i);
+		fclose(file);
+	}
+	return i;
+}
+
+
 int GetHDMI(void) {
-	return 0;
+	if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) { 
+		return getInt("/sys/class/extcon/hdmi/cable.0/state");
+	} else {
+		return 0;
+	}
 }
 void SetHDMI(int value) {
 	// buh

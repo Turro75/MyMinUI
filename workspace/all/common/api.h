@@ -299,6 +299,15 @@ int PWR_isCharging(void);
 int PWR_getBattery(void);
 
 enum {
+	SCALE_NATIVE,
+	SCALE_ASPECT,
+	SCALE_EXTENDED,
+	SCALE_FULLSCREEN,
+	SCALE_COUNT,
+};
+
+
+enum {
 	CPU_SPEED_MENU,
 	CPU_SPEED_POWERSAVE,
 	CPU_SPEED_NORMAL,

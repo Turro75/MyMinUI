@@ -20,14 +20,14 @@ SDL?=SDL
 ###########################################################
 
 TARGET = clear_recent
-INCDIR = -I. -I../common/ -I../../$(PLATFORM)/platform/
+INCDIR = -I. -I../common/ -I../../$(PLATFORM)/platform/ $(MY_INCDIR)
 SOURCE = $(TARGET).c ../common/utils.c ../common/api.c ../common/scaler.c ../../$(PLATFORM)/platform/platform.c
 
 CC = $(CROSS_COMPILE)gcc
 CFLAGS   = $(MYARCH) -fomit-frame-pointer
-CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL)  -Ofast 
-LDFLAGS	 = -ldl $(LIBS) -l$(SDL) -l$(SDL)_image -l$(SDL)_ttf -lpthread -lm -lz
-LDFLAGS +=  -lmsettings
+CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL)  -Ofast $(MY_CFLAGS)
+LDFLAGS	 = -ldl $(LIBS) -l$(SDL) -l$(SDL)_image -l$(SDL)_ttf -lpthread -lm -lz 
+LDFLAGS +=  -lmsettings $(MY_LDFLAGS)
 
 PRODUCT= build/$(PLATFORM)/$(TARGET).elf
 

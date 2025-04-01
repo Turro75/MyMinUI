@@ -14,6 +14,7 @@
 
 // uses different codes from SDL
 #define CODE_MENU		708 //event2
+#define CODE_MENU_353 	316 //event4
 #define CODE_PLUS		115 //event3
 #define CODE_MINUS		114 //event3
 #define CODE_PWR		116 //event0
@@ -23,25 +24,37 @@
 #define PRESSED		1
 #define REPEAT		2
 
-#define INPUT_COUNT 4
+#define INPUT_COUNT 3
 static int inputs[INPUT_COUNT];
 static struct input_event ev;
 FILE *file_log;
 
 int main (int argc, char *argv[]) {
 	InitSettings();
+	int is353v = 0;
+	int isg350 = 0;
+	int _MENU_RAW = CODE_MENU;
 	// TODO: will require two inputs
 	// input_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+	if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
+		//is the rg353v
+		is353v = 1;
+		isg350 = 0;
+	}
+	inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
+	if (is353v) {
+		inputs[1] = open("/dev/input/event4", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		_MENU_RAW = CODE_MENU_353;
+	} else if (isg350) {
+		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+	} else {
+		//r36s
+		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+	}
+	
+	inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+	//Stick_init(); // analog
 
-	for (int x=0; x<INPUT_COUNT; x++) {
-		char filename[64];
-		sprintf(filename, "/dev/input/event%d", x);
-		inputs[x] = open(filename, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-		if (inputs[x] < 0) {
-		printf("KEYMON: failed to open /dev/input/event%d with error \n",x);system("sync");
-		return -1;
-	}
-	}
 	//inputs[0] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	
 	//printf("opened /dev/input/event1\n");system("sync");
@@ -79,9 +92,19 @@ int main (int argc, char *argv[]) {
 				val = ev.value;
 
 				if (( ev.type != EV_KEY ) || ( val > REPEAT )) continue;
-				
-				switch (ev.code) {
-					case CODE_MENU:
+				if (ev.code == _MENU_RAW) {
+					menu_pressed = val;
+				}
+				if (ev.code == CODE_PLUS) {
+					up_pressed = up_just_pressed = val;
+					if (val) up_repeat_at = now + 300;
+				}
+				if (ev.code == CODE_MINUS) {
+					down_pressed = down_just_pressed = val;
+					if (val) down_repeat_at = now + 300;
+				}
+				/* switch (ev.code) {
+					case _MENU_RAW:
 						menu_pressed = val;
 					break;
 					case CODE_PLUS:
@@ -97,7 +120,7 @@ int main (int argc, char *argv[]) {
 						//fprintf(file_log, "Event BTN Code = %d\n",ev.code);
 						//fclose(file_log); system("sync");
 					break;
-				}
+				} */
 			}
 		}
 		

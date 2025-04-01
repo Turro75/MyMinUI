@@ -17,13 +17,28 @@ if [ -e $SDCARD_PATH ]; then
 fi
 
 #check if a second SDCARD is inserted
-if [ -e /dev/mmcblk1p1 ]; then
+if [ -e "/dev/input/by-path/platform-fe5b0000.i2c-event" ]; then
+    echo "This is a 353v" >> $LOGFILE
+    if [ -e /dev/mmcblk2p1 ]; then
+	echo "Found /dev/mmcblk2p1" >> $LOGFILE
+	 sudo mkdir -p $SDCARD_PATH
+         sudo chmod 777 $SDCARD_PATH
+         sudo chown  ark:ark $SDCARD_PATH 
+         sudo mount /dev/mmcblk2p1 $SDCARD_PATH -o rw,defaults,noatime,uid=1002,gid=1002,fmask=0000,dmask=0000,errors=remount-ro
+    else
+	 ln -s /roms/MyMinUI $SDCARD_PATH
+    fi
+else
+    echo "This is an r36s" >> $LOGFILE
+    if [ -e /dev/mmcblk1p1 ]; then
+	echo "Found /dev/mmcblk1p1" >> $LOGFILE
 	 sudo mkdir -p $SDCARD_PATH
 	 sudo chmod 777 $SDCARD_PATH
 	 sudo chown  ark:ark $SDCARD_PATH 
 	 sudo mount /dev/mmcblk1p1 $SDCARD_PATH -o rw,defaults,noatime,uid=1002,gid=1002,fmask=0000,dmask=0000,errors=remount-ro
-else
+    else
 	 ln -s /roms/MyMinUI $SDCARD_PATH
+    fi
 fi
 sudo mount >> $LOGFILE
 
