@@ -3,12 +3,20 @@
 export SDL_ASSERT="always_ignore"
 
 
-event_num="2"
+if [[ -e "/dev/input/by-path/platform-fe5b0000.i2c-event" ]]; then
+  event_num="4"
+else
+  event_num="2"
+fi
 event_type="EV_KEY"
 event_btn="BTN_SOUTH"
 if [[ -e "/dev/input/by-path/platform-ff300000.usb-usb-0:1.2:1.0-event-joystick" ]]; then
   param_device="anbernic"
-  event_num="3"
+  if [[ -e "/dev/input/by-path/platform-fe5b0000.i2c-event" ]]; then
+  event_num="4"
+else
+  event_num="2"
+fi
   event_btn="BTN_EAST"
 elif [[ -e "/dev/input/by-path/platform-odroidgo2-joypad-event-joystick" ]]; then
     if [[ ! -z $(cat /etc/emulationstation/es_input.cfg | grep "190000004b4800000010000001010000") ]]; then
@@ -18,6 +26,8 @@ elif [[ -e "/dev/input/by-path/platform-odroidgo2-joypad-event-joystick" ]]; the
         fi
 elif [[ -e "/dev/input/by-path/platform-odroidgo3-joypad-event-joystick" ]]; then
   param_device="ogs"
+elif [[ -e "/dev/input/by-path/platform-singleadc-joypad-event-joystick" ]]; then
+  param_device="rg552"
 else
   param_device="chi"
 fi
@@ -72,7 +82,16 @@ if [ "$?" -eq "10" ]; then
                                 /usr/bin/emulationstation/emulationstation.sh
                                 exit
                                 ;;
-                          "2)") sudo kill -9 $(pidof boot_controls)
+                          "2)") if [ ! -z "$isitrgui" ]; then
+                                  if [ ! -f "~/.config/.setxmb" ]; then
+                                    sed -i '/menu_driver = \"rgui\"/s//menu_driver = \"xmb\"/g' /home/ark/.config/retroarch/retroarch.cfg
+                                    sed -i '/xmb_menu_color_theme = \"4\"/s//xmb_menu_color_theme = \"8\"/g' /home/ark/.config/retroarch/retroarch.cfg
+                                    touch ~/.config/.setxmb
+                                  fi
+                                fi
+                                sudo kill -9 $(pidof boot_controls)
+                                sudo cp -f /usr/bin/emulationstation/emulationstation.sh.ra /usr/bin/emulationstation/emulationstation.sh
+                                sed -i '/input_exit_emulator_btn/s//;input_exit_emulator_btn/g' /home/ark/.config/retroarch/retroarch.cfg
                                 printf "\033c" > /dev/tty1
                                 sudo systemctl restart oga_events &
                                 /usr/bin/emulationstation/emulationstation.sh
@@ -100,7 +119,7 @@ if [ "$?" -eq "10" ]; then
           done
   done
 else
-   if [ -f /roms/MyMinUI/r36s/r36s.sh ]; then
+  if [ -f /roms/MyMinUI/r36s/r36s.sh ]; then
     sudo /roms/MyMinUI/r36s/r36s.sh
     systemctl poweroff
    else

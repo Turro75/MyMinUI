@@ -3,12 +3,20 @@
 export SDL_ASSERT="always_ignore"
 
 
-event_num="2"
+if [[ -e "/dev/input/by-path/platform-fe5b0000.i2c-event" ]]; then
+  event_num="4"
+else
+  event_num="2"
+fi
 event_type="EV_KEY"
 event_btn="BTN_SOUTH"
 if [[ -e "/dev/input/by-path/platform-ff300000.usb-usb-0:1.2:1.0-event-joystick" ]]; then
   param_device="anbernic"
-  event_num="3"
+  if [[ -e "/dev/input/by-path/platform-fe5b0000.i2c-event" ]]; then
+  event_num="4"
+else
+  event_num="2"
+fi
   event_btn="BTN_EAST"
 elif [[ -e "/dev/input/by-path/platform-odroidgo2-joypad-event-joystick" ]]; then
     if [[ ! -z $(cat /etc/emulationstation/es_input.cfg | grep "190000004b4800000010000001010000") ]]; then
@@ -18,6 +26,8 @@ elif [[ -e "/dev/input/by-path/platform-odroidgo2-joypad-event-joystick" ]]; the
         fi
 elif [[ -e "/dev/input/by-path/platform-odroidgo3-joypad-event-joystick" ]]; then
   param_device="ogs"
+elif [[ -e "/dev/input/by-path/platform-singleadc-joypad-event-joystick" ]]; then
+  param_device="rg552"
 else
   param_device="chi"
 fi
