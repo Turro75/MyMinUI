@@ -563,11 +563,11 @@ SDL_Surface* PLAT_initVideo(void) {
 		if (ret < 0) {
 			fprintf(stdout, "cannot create dumb buffer $d (%d): %m\n", thispage, errno);fflush(stdout);
 		}	
-		struct modeset_buf buf;
-		vid.screen_size[thispage] = creq.size;
+		//struct modeset_buf buf;
+		vid.screen_size[thispage] = creq.width * creq.height * (creq.bpp / 8);
 		vid.fb[thispage] = 0;
 		vid.handle[thispage] = creq.handle;
-		LOG_info("Screen[%d] %dx%d bpp=%d pitch=%d, size=%u\n", thispage, creq.width, creq.height, creq.bpp, creq.pitch, creq.size);fflush(stdout);
+		LOG_info("Screen[%d] %dx%d bpp=%d pitch=%d, size=%u\n", thispage, creq.width, creq.height, creq.bpp, creq.pitch, vid.screen_size[thispage]);fflush(stdout);
 		ret = drmModeAddFB(vid.fdfb, creq.width, creq.height, 24, creq.bpp, creq.pitch, creq.handle, &vid.fb[thispage]);
 		if (ret) {
 			fprintf(stdout, "cannot create framebuffer %d (%d): %m\n", thispage, errno);fflush(stdout);
