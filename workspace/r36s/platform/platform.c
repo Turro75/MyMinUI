@@ -528,18 +528,20 @@ SDL_Surface* PLAT_initVideo(void) {
 			if (conn->modes[c].vdisplay == DEVICE_HEIGHT && conn->modes[c].hdisplay == DEVICE_WIDTH && conn->modes[c].vrefresh == _HDMI_HZ) {
 				LOG_info("ConnectorID %i : mode %ux%u@%dHz found\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
 				drmModeEncoder *enc;
+				vid.conn[0] = conn->connector_id;
+				vid.conn[1] = conn->connector_id;
 				enc = drmModeGetEncoder(vid.fdfb, conn->encoder_id);
 				if (enc){
 					if (enc->crtc_id) {
 						memcpy(&vid.mode[0], &conn->modes[c], sizeof(drmModeModeInfo));
 						memcpy(&vid.mode[1], &conn->modes[c], sizeof(drmModeModeInfo));
-						
 						vid.crtc[0] = enc->crtc_id;
-						vid.conn[0] = conn->connector_id;
 						vid.crtc[1] = enc->crtc_id;
-						vid.conn[1] = conn->connector_id;
 						LOG_info("Found CRTC %u on Connector %u\n",enc->crtc_id,conn->connector_id);						
-				}
+					}
+					else {
+						LOG_info("No CRTC found on Connector %u with error %s\n",conn->connector_id, strerror(errno));
+					}
 				}				
 				drmModeFreeEncoder(enc);				
 			}
@@ -688,16 +690,15 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 //	e = SDL_GetTicks();
 //	SDL_FreeSurface(tmp32_1);
 //	SDL_FreeSurface(tmp32_2);
-//	scale1x_line(renderer->src_surface->pixels, vid.screen2->pixels, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch);
+//	scale1x_line(renderer->src_surface->pixels, vid.screen2->pixels, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch, renderer->dst_w, renderer->dst_h, renderer->src_surface->pitch);	
 	if ( renderer->screenscaling != SCALE_FULLSCREEN){
 		//not fullscreen
-		if (DEVICE_WIDTH == _HDMI_WIDTH){
+		if ( DEVICE_WIDTH == _HDMI_WIDTH ) {
 			//ok the real resolution is set to 720x480, I need to stretch and compress the image 
-			renderer->dst_w = renderer->dst_w / (854/640);
-			//renderer->dst_x = 
+			vid.width = (renderer->dst_w * 64) / 72;						
 		}
 	}
-	
+
 
 	if (effect_type==EFFECT_LINE) {
 		SDL_SoftStretch(renderer->src_surface, NULL, vid.screen2, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
@@ -805,6 +806,7 @@ void PLAT_enableOverlay(int enable) {
 }
 
 ///////////////////////////////
+int online;
 
 void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 	int charge_fd = open("/sys/class/power_supply/battery/current_now", O_RDONLY);
@@ -829,6 +831,10 @@ void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 	i = MIN(i,4100000);
 	*charge = map(i,3380000,4100000,0,100);
 	LOG_info("Charging: %d, Raw battery: %i -> %d%%\n", *is_charging, i, *charge);
+
+	char status[16];
+	getFile("/sys/class/net/wlan0/operstate", status,16);
+	online = prefixMatch("up", status);
 }
 
 
@@ -915,7 +921,7 @@ char* PLAT_getModel(void) {
 }
 
 int PLAT_isOnline(void) {
-	return 0;
+	return online;
 }
 
 int PLAT_getNumProcessors(void) {
