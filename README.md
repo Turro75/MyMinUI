@@ -14,6 +14,61 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+## Release 02/04/2025
+
+not fancy features this time, just a huge "under the hood" rework to improve performances and stability. 
+
+# All:
+
+- Implemented double buffering and vsync in all supported platforms to avoid any kind of screen tearing/flickering.
+  That took a lot of time to implement, anyway it has been a rewarding process, I've learned a lot.
+  
+- Due to that I've removed the screen tearing (Off/Leanent/Strict) setting. now it is hardcoded as strict. 
+
+- Modified the framebuffer writing algo to skip black areas, helpful for performances especially while outputting to hdmi, useless in case of Fullscreen aspect setting.  
+
+
+# Minarch: 
+
+- refined the thread engine to avoid (hopefully) some race conditions that caused crashes.
+
+- optimised the rendering process to improve a bit the performances.
+
+- removed the cpu percent as debug hud data. 
+
+
+# m21/m22pro:
+
+- I broke again my m21, I gave up. I'm trying to release a doublebuffering and vsync release even for that platforms with the help of some discord users as testers, unfortunately it is a long process, so not Today.  
+
+
+# r36s/rg353v/rg353p:
+
+- added support to rg353v and rg353p (I guess also ps/vs/m will work the same, not tested) to the r36s platform. The installation process is the same for both devices, 
+  it is important that the right ArkOS image is used as a base system.
+  
+- I strongly suggest to use the 2 sdcard setup as reported in the Install.md and Readme.md files.
+
+- Even here I implemented the double buffering and vsync, the r36s don't provide a doubled video memory to do page flip (that is the approach used in the other platforms)  since there is no direct      frambuffer kernel support it was at the beginning a basic (but effective) driver based on write() functions using the vsync to stay away from screen tearing.
+  The rg353v/p instead provides a double video memory so I was able to double buffer and vsync.
+  Anyway I found that the ArkOS kernel provides a framebuffer support based by libdrm, finally thanks to a couple of tutorial found online (the libdrm doc is not so extensive) and a lot of trial & errors process I'm now able to do a proper double buffering and vsync on both r36s and rg353v/p in the best way.
+  No GPU support yet, that will be a further step in the future, maybe.   
+
+- For the curious/learner I uploaded also the write() and libsdl2 (I copied libsdl2 from minui) versions of platform.c to see all 3 ways to doublebuffer and vsync. 
+  Maybe helpful for other who wants to add other devices. Also interesting the platform.c of the miyoomini, rg35xx and a30 as they show a basic (but effective) mmapped framebuffer renderer approach.
+  As per my benchmarks I found the libdrm implementation the fastest, the write() version similar to libdrm and at last the libsdl2 even if set as hardware accelerated. Actually the libsdl2 can't work in this fork of minarch as libsdl2 requires that creation/rendering functions must all run in the same thread, this is the original minarch approach which I left months ago to a more threaded rendering process.
+
+- Added a Tool: ToggleISRG353P.pak as R1/R2 must be swapped on rg353p, I didn't find any way to automatically detect if the device is the v, p or m, maybe it must be used also on ps/m, who knows.  
+
+- Activated the wifi icon in case device is online (copied from minui trimui brick code)   
+
+- HDMI is still under working, set the default monitor resolution to 720x480, the rendered frames are a little stretched but seems more compatible to a wide range of recent and old monitor/tv. 
+
+# rg35xx OG:
+
+- HDMI is still under working, set the default monitor resolution to 720x480, the rendered frames are a little stretched but seems more compatible to a wide range of recent and old monitor/tv.
+
+
 ## Release 06/01/2025
 
 # All: 
