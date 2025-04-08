@@ -4955,7 +4955,7 @@ static void Menu_makeboxart(void) {
 	if (bitmap!=menu.bitmap) SDL_FreeSurface(bitmap);
 }
 
-static char* getAlias(char* path, char* alias) {
+static int getAlias(char* path, char* alias) {
 	LOG_info("alias path: %s\n", path);
 	char* tmp;
 	char map_path[256];
@@ -4979,20 +4979,23 @@ static char* getAlias(char* path, char* alias) {
 				trimTrailingNewlines(line);
 				if (strlen(line)==0) continue; // skip empty lines
 			
-				tmp = strchr(line,'#');
+				tmp = strchr(line,'\t');
 				if (tmp) {
 					tmp[0] = '\0';
 					char* key = line;
 					char* value = tmp+1;
 					if (exactMatch(file_name,key)) {
-						strcpy(alias, value);
-						break;
+						char tmp1[256];
+						sprintf(tmp1,"/%s",value); 
+						strcpy(alias, tmp1);
+						return 1;
 					}
 				}
 			}
 			fclose(file);
 		}
 	}
+	return 0;
 }
 
 static void Menu_loop(void) {
@@ -5050,9 +5053,11 @@ static void Menu_loop(void) {
 	// path and string things
 	char* tmp;
 	char rom_name[256]; // without extension or cruft
+	char rom_name2[256]; // without extension or cruft
 	getDisplayName(game.name, rom_name);
-	getAlias(game.path, rom_name);
-	
+	if (getAlias(game.path, rom_name2)){
+		getDisplayName(rom_name2, rom_name);
+	}
 	int rom_disc = -1;
 	char disc_name[16];
 	if (menu.total_discs) {
