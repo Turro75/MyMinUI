@@ -2208,6 +2208,7 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 		if (data) {
 			OptionList_reset();
 			OptionList_init((const struct retro_core_option_definition *)data); 
+			Config_readOptions();
 		}
 		break;
 	}
@@ -2217,6 +2218,7 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 		if (options && options->us) {
 			OptionList_reset();
 			OptionList_init(options->us);
+			Config_readOptions();
 		}
 		break;
 	}
