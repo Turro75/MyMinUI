@@ -4985,9 +4985,7 @@ static int getAlias(char* path, char* alias) {
 					char* key = line;
 					char* value = tmp+1;
 					if (exactMatch(file_name,key)) {
-						char tmp1[256];
-						sprintf(tmp1,"/%s",value); 
-						strcpy(alias, tmp1);
+						strcpy(alias, value);
 						return 1;
 					}
 				}
@@ -5054,9 +5052,19 @@ static void Menu_loop(void) {
 	char* tmp;
 	char rom_name[256]; // without extension or cruft
 	char rom_name2[256]; // without extension or cruft
-	getDisplayName(game.name, rom_name);
+	
 	if (getAlias(game.path, rom_name2)){
-		getDisplayName(rom_name2, rom_name);
+		// remove trailing parens (round and square)
+		char *tmp;
+		while ((tmp=strrchr(rom_name2, '('))!=NULL || (tmp=strrchr(rom_name2, '['))!=NULL) {
+			if (tmp==rom_name2) 
+				break;
+			tmp[0] = '\0';
+			tmp = rom_name2;
+		}
+		strcpy(rom_name, rom_name2);
+	} else {
+		getDisplayName(game.name, rom_name);
 	}
 	int rom_disc = -1;
 	char disc_name[16];

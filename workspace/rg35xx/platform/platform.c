@@ -220,20 +220,45 @@ void get_fbinfo(void){
 		"RED: L=%d, O=%d\n"
 		"GREEN: L=%d, O=%d\n"
 		"BLUE: L=%d, O=%d\n"            
-		"ALPHA: L=%d, O=%d\n",
+		"ALPHA: L=%d, O=%d\n\n"
+
+		"width: %d\n"
+		"height: %d\n"
+		"pixclock: %d\n"
+		"left_margin: %d\n"
+		"right_margin: %d\n"
+		"upper_margin: %d\n"
+		"lower_margin: %d\n"
+		"hsync_len: %d\n"
+		"vsync_len: %d\n"
+		"sync: %d\n"
+		"vmode: %d\n"
+		"rotate: %d\n"
+		"colorspace: %d\n",
 		vid.vinfo.xres, vid.vinfo.yres, vid.vinfo.xres_virtual,
 		vid.vinfo.yres_virtual, vid.vinfo.bits_per_pixel,
 		vid.vinfo.red.length, vid.vinfo.red.offset,
 		vid.vinfo.blue.length,vid.vinfo.blue.offset,
 		vid.vinfo.green.length,vid.vinfo.green.offset,
-		vid.vinfo.transp.length,vid.vinfo.transp.offset);
+		vid.vinfo.transp.length,vid.vinfo.transp.offset,
+		vid.vinfo.width, vid.vinfo.height,
+		vid.vinfo.pixclock,
+		vid.vinfo.left_margin, vid.vinfo.right_margin,
+		vid.vinfo.upper_margin, vid.vinfo.lower_margin,
+		vid.vinfo.hsync_len, vid.vinfo.vsync_len
+		,vid.vinfo.sync, vid.vinfo.vmode, vid.vinfo.rotate, vid.vinfo.colorspace
+	);
 
     //fprintf(stdout, "PixelFormat is %d\n", vinfo.pixelformat);
     fflush(stdout);
 }
 
 void set_fbinfo(void){
-    ioctl(vid.fdfb, FBIOPUT_VSCREENINFO, &vid.vinfo);
+
+	int i = ioctl(vid.fdfb, FBIOPUT_VSCREENINFO, &vid.vinfo);
+	if (i<0) {
+		fprintf(stdout, "FBIOPUT_VSCREENINFO failed with error %s\n", strerror(errno));
+	}
 }
 
 /*int RG35XX_SDLFB_Flip(SDL_Surface *buffer, void * fbmmap, int linewidth) {
@@ -390,6 +415,7 @@ SDL_Surface* PLAT_initVideo(void) {
 		h = FIXED_HEIGHT;
 		p = FIXED_PITCH;
 	}
+
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
 	DEVICE_PITCH = p;
@@ -421,6 +447,18 @@ SDL_Surface* PLAT_initVideo(void) {
 	sinfo.disp_id = 2;
 	if (ioctl(vid.fdfb, OWLFB_VSYNC_EVENT_EN, &sinfo)<0) LOG_error("VSYNC_EVENT_EN failed %s\n",strerror(errno));
 	
+	vid.vinfo.xoffset=0;
+	vid.vinfo.yoffset=0;
+	for (int i = 0; i < 11; i++) {
+		int cnow = SDL_GetTicks();
+		usleep(5000*(i%2));
+		int tmp = 0;
+		vid.vinfo.yoffset = (i%2) * (vid.vinfo.yres_virtual/2);
+		int error_code = ioctl(vid.fdfb, FBIOPAN_DISPLAY, &vid.vinfo); 
+		ioctl(vid.fdfb, OWLFB_WAITFORVSYNC, &tmp);
+		printf("FBIOPAN_DISPLAY Y MIXED DELAY took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
+	}
+
 	vid.page = 0;
 	pan_display(vid.page);
 //	vid.numpages=2;
