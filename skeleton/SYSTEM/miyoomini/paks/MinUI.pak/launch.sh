@@ -108,7 +108,7 @@ keymon.elf & # &> /mnt/SDCARD/out1.txt &
 #######################################
 
 # init datetime
-if [ -f "$DATETIME_PATH" ]; then
+if [ -f "$DATETIME_PATH" ] && [ ! -f "$SHARED_USERDATA_PATH/enable-rtc" ]; then
 	DATETIME=`cat "$DATETIME_PATH"`
 	date +'%F %T' -s "$DATETIME"
 	DATETIME=`date +'%s'`

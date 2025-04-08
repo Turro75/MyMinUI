@@ -15,6 +15,7 @@ Copy also the whole release zip file (leave it zipped) in the FAT32 partition cr
 Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
 Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
+If you have a later device with RTC support, you can enable it by creating an empty file named "enable-rtc" (no extension) in "/.userdata/shared/".
 
 # Miyoo Mini Plus:
 
@@ -25,6 +26,7 @@ Copy also the whole release zip file (leave it zipped) in the FAT32 partition cr
 Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
 Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
+If you have a later device with RTC support, you can enable it by creating an empty file named "enable-rtc" (no extension) in "/.userdata/shared/".
 
 # Miyoo A30:
 
