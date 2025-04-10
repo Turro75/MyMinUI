@@ -37,7 +37,7 @@ struct mybackbuffer {
 	int w;
 	int h;
 	int pitch;
-	uint32_t* pixels;
+	uint16_t* pixels;
 };
 
 
@@ -84,7 +84,6 @@ int fancy_mode;
 static int screen_scaling = SCALE_ASPECT;
 static int screen_max_scale = 5; //6x
 static int screen_effect = EFFECT_NONE;
-static int allow_32bpp = 0;
 static int screen_sharpness = SHARPNESS_SOFT;
 static int prevent_tearing = 1; // lenient
 static int show_debug = 0;
@@ -93,7 +92,7 @@ static int fast_forward = 0;
 static int overclock = 1; // normal
 static int has_custom_controllers = 0;
 static int gamepad_type = 0; // index in gamepad_labels/gamepad_values
-static int downsample = 0; // set to 1 to convert from 8888 to 565
+static int downsample = 0; // set to 1 to convert from 8888 to 565, set to 2 to convert from 1555 to 565
 
 GFX_Renderer renderer;
 
@@ -755,7 +754,6 @@ static char* max_ff_labels[] = {
 enum {
 	FE_OPT_SCALING,
 	FE_OPT_MAX_SCALE,
-	FE_OPT_32BPP,
 	FE_OPT_EFFECT,
 	FE_OPT_SHARPNESS,
 	FE_OPT_TEARING,
@@ -951,16 +949,6 @@ static struct Config {
 				.values = max_scaling_labels,
 				.labels = max_scaling_labels,
 			},
-			[FE_OPT_32BPP] = {
-				.key	= "minarch_allow_32bpp",
-				.name	= "Allow 32bpp",
-				.desc	= "Allow 32bpp for cores/games that prefer it.",
-				.default_value = 0,
-				.value = 0,
-				.count = 2,
-				.values = onoff_labels,
-				.labels = onoff_labels,
-			},
 			[FE_OPT_EFFECT] = {
 				.key	= "minarch_screen_effect",
 				.name	= "Screen Effect",
@@ -1102,10 +1090,6 @@ static void Config_syncFrontend(char* key, int value) {
 		screen_max_scale = value;
 		renderer.dst_p = 0;
 		i = FE_OPT_MAX_SCALE;
-	}
-	else if (exactMatch(key,config.frontend.options[FE_OPT_32BPP].key)) {
-		allow_32bpp = value;
-		i = FE_OPT_32BPP;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_EFFECT].key)) {
 		screen_effect = value;
@@ -1972,43 +1956,9 @@ static bool set_rumble_state(unsigned port, enum retro_rumble_effect effect, uin
 	return 1;
 }
 
-// buffer to convert xrgb8888 to rgb565
-static void* buffer = NULL;
-static void buffer_dealloc(void) {
-	if (!buffer) return;
-	free(buffer);
-	buffer = NULL;
-}
-static void buffer_realloc(int w, int h, int p) {
-	buffer_dealloc();
-	buffer = malloc((w * FIXED_BPP) * h);
-	LOG_info("for 32bit: Buffer_realloc: %d %d %d\n", w, h, p);
-	fflush(stdout);
-}
-static void buffer_downsample(const void *data, unsigned width, unsigned height, size_t pitch) {
-	// from picoarch! https://git.crowdedwood.com/picoarch/tree/video.c#n51
-	//LOG_info("buffer_downsampleIN: %d %d %d\n", width, height, pitch);fflush(stdout);
-	const uint32_t *input = data;
-	uint16_t *output = buffer;
-	size_t extra = pitch / sizeof(uint32_t) - width;
-
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width; x++) {
-			*output =  (*input & 0xF80000) >> 8;
-			*output |= (*input & 0xFC00) >> 5;
-			*output |= (*input & 0xF8) >> 3;
-			input++;
-			output++;
-		}
-
-		input += extra; // TODO: commenting this out fixes geolith when cropped, it appears to be lying about the pitch...
-	}
-
-	//LOG_info("buffer_downsampleOUT: %d %d %d\n", width, height, pitch);fflush(stdout);
-}
 
 static bool environment_callback(unsigned cmd, void *data) { // copied from picoarch initially
-	// LOG_info("environment_callback: %i\n", cmd);
+//	LOG_info("Received environment_callback: %i\n", cmd);
 	
 	switch(cmd) {
 	case RETRO_ENVIRONMENT_SET_ROTATION: { // 1 wait to activate until rotation render is working
@@ -2055,23 +2005,20 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 	case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: { /* 10 */
 		const enum retro_pixel_format *format = (enum retro_pixel_format *)data;
 		LOG_info("SET RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: %i\n", *format);
+		if (*format == RETRO_PIXEL_FORMAT_0RGB1555) { // TODO: pull from platform.h?		
+			downsample = 2; 
+			return true;
+		}		
+
 		if (*format == RETRO_PIXEL_FORMAT_RGB565) { // TODO: pull from platform.h?
 			/* 565 is only supported format */
 			downsample = 0;
-			backbuffer.pitch = MAX_WIDTH*(sizeof(uint16_t));
 			return true;
-			// downsample = 1; // TODO: not ready for primetime yet
-		} //else {
-		//	return false;
-		//}
+		} 
+
 		if (*format == RETRO_PIXEL_FORMAT_XRGB8888) { // TODO: pull from platform.h?
-			/* 565 is only supported format */
-			if (allow_32bpp) {
-				downsample = 1; // TODO: not ready for primetime yet
-				buffer_realloc(MAX_WIDTH, MAX_HEIGHT,0);
-				backbuffer.pitch = MAX_WIDTH*(sizeof(uint32_t));
-				return true;
-			}
+			downsample = 1; 
+			return true;
 		}
 		return false;
 		break;
@@ -2321,7 +2268,7 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 	// };
 	
 	default:
-		// LOG_debug("Unsupported environment cmd: %u\n", cmd);
+		LOG_debug("Unsupported environment cmd: %u\n", cmd);fflush(stdout);
 		return false;
 	}
 	return true;
@@ -3305,7 +3252,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	// debug
 	if (show_debug) {
 		char debug_text[128];
-		sprintf(debug_text, "%ix%i %c%.1fx %d", renderer.src_w,renderer.src_h, resizemode, renderer.scale, downsample?32:16);
+		sprintf(debug_text, "%ix%i %c%.1fx %d", renderer.src_w,renderer.src_h, resizemode, renderer.scale, (downsample==1)?32:16);
 		blitBitmapText(debug_text,renderer.dst_x+2,renderer.dst_y+2,screen->pixels,screen->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 
 		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.dst_w,renderer.dst_h);
@@ -3345,24 +3292,44 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 //		LOG_info("FRAME:%d Empty Frame\n");fflush(stdout);
 		return; //frameskip activated?
 	}
-	if (downsample) {
-		buffer_downsample(data,width,height,pitch);
-		data = (void*)buffer;
-		pitch /= 2;
-	} 
-	//renderer.src = (void*)data;
-		//ok here I have renderer.src that points to the frame data to display, it is in RGB565 format
-		//quite sure it is the right moment to rotate it, before calling the select scaler.
-	
 
-	
+	uint16_t *output = backbuffer.pixels;
+	int counter = pitch * height;
+	if (downsample == 1) {
+		// from 8888 to 565
+		pitch /= 2;
+		const uint32_t *input32 = data;
+		while (counter--) {
+			*output =  (*input32 & 0xF80000) >> 8;
+			*output |= (*input32 & 0xFC00) >> 5;
+			*output |= (*input32 & 0xF8) >> 3;
+			input32++;
+			output++;
+		}
+	} 
+
+	if (downsample == 2) {
+		//from 1555 to 565
+		const uint16_t *input16 = data;		
+		while (counter--) {
+			*output =  (*input16 & 0x7C00) << 1;
+			*output |= (*input16 & 0x3E0) << 1;
+			*output |= (*input16 & 0x1F);
+			input16++;
+			output++;
+		}
+	}
+
+	if (downsample == 0) {
+		//as is
+		memcpy(backbuffer.pixels, data, counter);
+	}
+	backbuffer.w = width;
+	backbuffer.h = height;
+	backbuffer.pitch = pitch;
 	if (thread_video) {		
 		pthread_mutex_lock(&flip_mx);
 		fps2_ticks++;
-		backbuffer.w = width;
-		backbuffer.h = height;
-		backbuffer.pitch = pitch;
-		memcpy(backbuffer.pixels, data, backbuffer.h*backbuffer.pitch);
 		pthread_mutex_unlock(&flip_mx);
 		
 		pthread_mutex_lock(&core_mx);
@@ -3374,7 +3341,7 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 	else {
 		fps2_ticks++;
 		rendering = 1;
-		video_refresh_callback_main(data,width,height,pitch);	
+		video_refresh_callback_main(backbuffer.pixels,width,height,pitch);	
 	}
 	//uint32_t cur = SDL_GetTicks() - last_callback_time;
 	//if ( cur < 16) SDL_Delay(16 - cur);
@@ -5563,7 +5530,7 @@ static void* flipThread(void *arg) {
 		run = should_run_flip;
 		render_ = render;
 		pthread_mutex_unlock(&flip_mx);
-#ifdef M21
+#ifdef M210
 		if (run && render_) {
 			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
 			pthread_mutex_lock(&flip_mx);
@@ -5637,10 +5604,10 @@ int main(int argc , char* argv[]) {
 	mutedaudiodata = calloc(2000,sizeof(uint32_t));
 
 	//backbuffer.pixels = (uint16_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint16_t));
-	backbuffer.pixels = (uint32_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint32_t));
+	backbuffer.pixels = (uint16_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint16_t));
 	backbuffer.w = MAX_WIDTH;
 	backbuffer.h = MAX_HEIGHT;
-	backbuffer.pitch = MAX_WIDTH*sizeof(uint32_t);
+	backbuffer.pitch = MAX_WIDTH*sizeof(uint16_t);
 
 	renderer.rotate = 0; //set default rotation to 0 deg
 #ifdef M21 //if hdmi cable is detected the audio is routed to hdmi instead of speakers, specific for SJGAM M21.
@@ -5758,7 +5725,7 @@ int main(int argc , char* argv[]) {
 			pthread_mutex_unlock(&core_mx);
 			pthread_mutex_lock(&flip_mx);
 			render = 1;
-#ifndef M21
+#ifndef M210
 			pthread_cond_signal(&flip_rq);
 #endif
 			pthread_mutex_unlock(&flip_mx);	
@@ -5829,7 +5796,6 @@ finish:
 //	save_storage_audio_timing();
 	free(backbuffer.pixels);
 	free(mutedaudiodata);
-	buffer_dealloc();
 	
 	return EXIT_SUCCESS;
 }
