@@ -5,7 +5,7 @@ I modified a bit the build process to make them easier to adapt to other scenari
 
 In the docker files there are 2 lines You can edit to build or reuse a prebuild image.
 
-RUN ./build-toolchain.sh
+>RUN ./build-toolchain.sh\
 #RUN ./setup-toolchain.sh
 
 The above makes the whole docker image from scratch, the process is quite slow it takes roughly 20mins on mac mini m2.
