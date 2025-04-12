@@ -1,28 +1,26 @@
 diff --git a/src/video/directfb/SDL_DirectFB_events.c b/src/video/directfb/SDL_DirectFB_events.c
-index 71aac7669..abdc3a4bd 100644
+index e076ff000..6d66091ce 100644
 --- a/src/video/directfb/SDL_DirectFB_events.c
 +++ b/src/video/directfb/SDL_DirectFB_events.c
-@@ -302,9 +302,8 @@ ProcessWindowEvent(_THIS, SDL_Window *sdlwin, DFBWindowEvent * evt)
-     } else
+@@ -297,7 +297,7 @@ static void ProcessWindowEvent(_THIS, SDL_Window *sdlwin, DFBWindowEvent * evt)
          printf("Event Clazz %d\n", evt->clazz);
  }
--
- static void
--ProcessInputEvent(_THIS, DFBInputEvent * ievt)
-+_ProcessInputEvent(_THIS, DFBInputEvent * ievt)
+ 
+-static void ProcessInputEvent(_THIS, DFBInputEvent * ievt)
++static void _ProcessInputEvent(_THIS, DFBInputEvent * ievt)
  {
      SDL_DFB_DEVICEDATA(_this);
      SDL_Keysym keysym;
-@@ -407,7 +406,7 @@ ProcessInputEvent(_THIS, DFBInputEvent * ievt)
+@@ -399,7 +399,7 @@ static void ProcessInputEvent(_THIS, DFBInputEvent * ievt)
+     }
  }
  
- void
--DirectFB_PumpEventsWindow(_THIS)
-+_DirectFB_PumpEventsWindow(_THIS)
+-void DirectFB_PumpEventsWindow(_THIS)
++void _DirectFB_PumpEventsWindow(_THIS)
  {
      SDL_DFB_DEVICEDATA(_this);
      DFBInputEvent ievt;
-@@ -444,7 +443,7 @@ DirectFB_PumpEventsWindow(_THIS)
+@@ -436,7 +436,7 @@ void DirectFB_PumpEventsWindow(_THIS)
              wmmsg.msg.dfb.event.input = ievt;
              SDL_SendSysWMEvent(&wmmsg);
          }
@@ -31,30 +29,30 @@ index 71aac7669..abdc3a4bd 100644
      }
  }
  
-@@ -701,7 +700,7 @@ EnumKeyboards(DFBInputDeviceID device_id,
+@@ -686,7 +686,7 @@ static DFBEnumerationResult EnumKeyboards(DFBInputDeviceID device_id, DFBInputDe
+     return DFENUM_OK;
  }
  
- void
--DirectFB_InitKeyboard(_THIS)
-+_DirectFB_InitKeyboard(_THIS)
+-void DirectFB_InitKeyboard(_THIS)
++void _DirectFB_InitKeyboard(_THIS)
  {
      SDL_DFB_DEVICEDATA(_this);
      cb_data cb;
-@@ -731,9 +730,125 @@ DirectFB_InitKeyboard(_THIS)
+@@ -715,9 +715,125 @@ void DirectFB_InitKeyboard(_THIS)
+     }
  }
  
- void
--DirectFB_QuitKeyboard(_THIS)
-+_DirectFB_QuitKeyboard(_THIS)
+-void DirectFB_QuitKeyboard(_THIS)
++void _DirectFB_QuitKeyboard(_THIS)
  {
      /* SDL_DFB_DEVICEDATA(_this); */
  }
  
 +struct input_event {
-+	struct timeval time;
-+	uint16_t type;
-+	uint16_t code;
-+	int32_t value;
++    struct timeval time;
++    uint16_t type;
++    uint16_t code;
++    int32_t value;
 +};
 +#define EV_KEY			0x01
 +
@@ -94,9 +92,9 @@ index 71aac7669..abdc3a4bd 100644
 +DirectFB_QuitKeyboard(_THIS)
 +{
 +   if (keyboard_fd >= 0){
-+		close(keyboard_fd);
-+	}
-+	keyboard_fd = -1;
++	close(keyboard_fd);
++    }
++    keyboard_fd = -1;
 +}
 +
 +static void
@@ -105,31 +103,31 @@ index 71aac7669..abdc3a4bd 100644
 +    int pressed;    
 +    SDL_Keysym keysym;
 +    if (event->type==EV_KEY) {
-+		if (event->value>1) return; // ignore repeats
-+		if (event->value==0) pressed = SDL_RELEASED;
-+		if (event->value==1) pressed = SDL_PRESSED;
-+		keysym.scancode = SDL_SCANCODE_UNKNOWN;
-+		keysym.sym = SDLK_UNKNOWN;
-+		// LOG_info("key event: %i (%i)\n", code,pressed);
-+		     if (event->code==RAW_UP) 		    { keysym.scancode = SDL_SCANCODE_UP;            keysym.sym = SDLK_UP; }
-+		else if (event->code==RAW_DOWN)		    { keysym.scancode = SDL_SCANCODE_DOWN;          keysym.sym = SDLK_DOWN; }
-+		else if (event->code==RAW_LEFT)		    { keysym.scancode = SDL_SCANCODE_LEFT;          keysym.sym = SDLK_LEFT; }
-+		else if (event->code==RAW_RIGHT)		{ keysym.scancode = SDL_SCANCODE_RIGHT;         keysym.sym = SDLK_RIGHT; }
-+		else if (event->code==RAW_A)			{ keysym.scancode = SDL_SCANCODE_A;             keysym.sym = SDLK_a; }
-+		else if (event->code==RAW_B)			{ keysym.scancode = SDL_SCANCODE_B;             keysym.sym = SDLK_b; }
-+		else if (event->code==RAW_X)			{ keysym.scancode = SDL_SCANCODE_X;             keysym.sym = SDLK_x; }
-+		else if (event->code==RAW_Y)			{ keysym.scancode = SDL_SCANCODE_Y;             keysym.sym = SDLK_y; }
-+		else if (event->code==RAW_START)		{ keysym.scancode = SDL_SCANCODE_RETURN;        keysym.sym = SDLK_RETURN; }
-+		else if (event->code==RAW_SELECT)	    { keysym.scancode = SDL_SCANCODE_ESCAPE;        keysym.sym = SDLK_ESCAPE; }
-+		else if (event->code==RAW_MENU)		    { keysym.scancode = SDL_SCANCODE_MENU;          keysym.sym = SDLK_MENU; }
-+		else if (event->code==RAW_L2)		    { keysym.scancode = SDL_SCANCODE_TAB;           keysym.sym = SDLK_TAB; }
-+		else if (event->code==RAW_L1)		    { keysym.scancode = SDL_SCANCODE_PAGEUP;        keysym.sym = SDLK_PAGEUP; }
-+		else if (event->code==RAW_R2)		    { keysym.scancode = SDL_SCANCODE_BACKSPACE;     keysym.sym = SDLK_BACKSPACE; }
-+		else if (event->code==RAW_R1)		    { keysym.scancode = SDL_SCANCODE_PAGEDOWN;      keysym.sym = SDLK_PAGEDOWN; }
-+		else if (event->code==RAW_PLUS)		    { keysym.scancode = SDL_SCANCODE_VOLUMEUP;      keysym.sym = SDLK_VOLUMEUP; }
-+		else if (event->code==RAW_MINUS)		{ keysym.scancode = SDL_SCANCODE_VOLUMEDOWN;    keysym.sym = SDLK_VOLUMEDOWN; }
-+	    SDL_SendKeyboardKey(pressed, keysym.scancode);
-+	}
++	if (event->value>1) return; // ignore repeats
++	if (event->value==0) pressed = SDL_RELEASED;
++	if (event->value==1) pressed = SDL_PRESSED;
++	keysym.scancode = SDL_SCANCODE_UNKNOWN;
++	keysym.sym = SDLK_UNKNOWN;
++	// LOG_info("key event: %i (%i)\n", code,pressed);
++	     if (event->code==RAW_UP) 		    { keysym.scancode = SDL_SCANCODE_UP;            keysym.sym = SDLK_UP; }
++	else if (event->code==RAW_DOWN)		    { keysym.scancode = SDL_SCANCODE_DOWN;          keysym.sym = SDLK_DOWN; }
++	else if (event->code==RAW_LEFT)		    { keysym.scancode = SDL_SCANCODE_LEFT;          keysym.sym = SDLK_LEFT; }
++	else if (event->code==RAW_RIGHT)		{ keysym.scancode = SDL_SCANCODE_RIGHT;         keysym.sym = SDLK_RIGHT; }
++	else if (event->code==RAW_A)			{ keysym.scancode = SDL_SCANCODE_A;             keysym.sym = SDLK_a; }
++	else if (event->code==RAW_B)			{ keysym.scancode = SDL_SCANCODE_B;             keysym.sym = SDLK_b; }
++	else if (event->code==RAW_X)			{ keysym.scancode = SDL_SCANCODE_X;             keysym.sym = SDLK_x; }
++	else if (event->code==RAW_Y)			{ keysym.scancode = SDL_SCANCODE_Y;             keysym.sym = SDLK_y; }
++	else if (event->code==RAW_START)		{ keysym.scancode = SDL_SCANCODE_RETURN;        keysym.sym = SDLK_RETURN; }
++	else if (event->code==RAW_SELECT)	    { keysym.scancode = SDL_SCANCODE_ESCAPE;        keysym.sym = SDLK_ESCAPE; }
++	else if (event->code==RAW_MENU)		    { keysym.scancode = SDL_SCANCODE_MENU;          keysym.sym = SDLK_MENU; }
++	else if (event->code==RAW_L2)		    { keysym.scancode = SDL_SCANCODE_TAB;           keysym.sym = SDLK_TAB; }
++	else if (event->code==RAW_L1)		    { keysym.scancode = SDL_SCANCODE_PAGEUP;        keysym.sym = SDLK_PAGEUP; }
++	else if (event->code==RAW_R2)		    { keysym.scancode = SDL_SCANCODE_BACKSPACE;     keysym.sym = SDLK_BACKSPACE; }
++	else if (event->code==RAW_R1)		    { keysym.scancode = SDL_SCANCODE_PAGEDOWN;      keysym.sym = SDLK_PAGEDOWN; }
++	else if (event->code==RAW_PLUS)		    { keysym.scancode = SDL_SCANCODE_VOLUMEUP;      keysym.sym = SDLK_VOLUMEUP; }
++	else if (event->code==RAW_MINUS)		{ keysym.scancode = SDL_SCANCODE_VOLUMEDOWN;    keysym.sym = SDLK_VOLUMEDOWN; }
++        SDL_SendKeyboardKey(pressed, keysym.scancode);
++    }
 +}
 +
 +void
@@ -159,8 +157,8 @@ index 71aac7669..abdc3a4bd 100644
 +        }
 +    }
 +    if (keyboard_fd >= 0) {
-+	struct input_event event;
-+		while (read(keyboard_fd, &event, sizeof(event))==sizeof(event)) {
++    struct input_event event;
++	while (read(keyboard_fd, &event, sizeof(event))==sizeof(event)) {
 +            ProcessInputEvent(_this, &event);
 +        }
 +    }

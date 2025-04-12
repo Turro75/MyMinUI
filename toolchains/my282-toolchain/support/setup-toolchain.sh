@@ -20,6 +20,9 @@ rm -rf "/root/${TOOLCHAIN_TAR}"
 #mv /opt/a30 /opt/my282-toolchain
 #fi
 cp /root/hwcap.h /opt/my282-toolchain/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/asm/
+cp /root/SDL_image.h /opt/my282-toolchain/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL/
+cp /root/SDL_ttf.h /opt/my282-toolchain/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL/
+
 # this version of buildroot doesn't have relocate-sdk.sh yet so we bring our own
 cp /root/relocate-sdk.sh /opt/my282-toolchain/
 cp /root/sdk-location /opt/my282-toolchain/
