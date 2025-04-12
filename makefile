@@ -53,7 +53,7 @@ system:
 cores:
 	cp ./workspace/$(PLATFORM)/cores/output/* ./build/SYSTEM/$(PLATFORM)/cores/
 #    mv ./build/SYSTEM/$(PLATFORM)/cores/retroarch ./build/SYSTEM/$(PLATFORM)/bin/retroarch.elf
-	mv ./build/SYSTEM/$(PLATFORM)/cores/bmp2png ./build/SYSTEM/$(PLATFORM)/bin/bmp2png.elf
+#	mv ./build/SYSTEM/$(PLATFORM)/cores/bmp2png ./build/SYSTEM/$(PLATFORM)/bin/bmp2png.elf
 
 common: build system cores
 	

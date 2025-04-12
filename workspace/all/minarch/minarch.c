@@ -27,6 +27,7 @@
 
 #if defined(USE_SDL2)
 #include "SDL2_rotozoom.h"
+#include <SDL2/SDL_image.h>
 #else
 #include "SDL_rotozoom.h"
 #endif
@@ -1966,11 +1967,7 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 		if (out)
 			renderer.rotate = *out;
 			LOG_info("RETRO_ENVIRONMENT_SET_ROTATION set to %i\n", renderer.rotate);
-//#ifdef M21
 		return true;
-//#else
-//		return false;
-//#endif
 		break;
 	}
 	case RETRO_ENVIRONMENT_GET_OVERSCAN: { /* 2 */
@@ -3713,14 +3710,11 @@ int makeBoxart(SDL_Surface *image, char *filename) {
 
 
     SDL_RWops* out = SDL_RWFromFile(filename, "wb");
-    SDL_SaveBMP_RW(mysurface, out, 1); 
+    IMG_SavePNG_RW(mysurface, out, 1); 
     //SDL_BlitSurface(mysurface,NULL,screen,NULL); 
     SDL_FreeSurface(scaled_myimg); 
     //SDL_FreeSurface(unscaled_myimg);
     SDL_FreeSurface(mysurface);
-
-
-    bmp2png(filename);
     return 1;
 }
 
@@ -4861,8 +4855,7 @@ static void Menu_saveState(void) {
 	SDL_Surface* bitmap = menu.bitmap;
 	if (!bitmap) bitmap = SDL_CreateRGBSurfaceFrom(renderer.src, renderer.true_w, renderer.true_h, FIXED_DEPTH, renderer.src_p, RGBA_MASK_565);
 	SDL_RWops* out = SDL_RWFromFile(menu.bmp_path, "wb");
-	SDL_SaveBMP_RW(bitmap, out, 1);
-	bmp2png(menu.bmp_path);
+	IMG_SavePNG_RW(bitmap, out, 1);
 	
 	// LOG_info("%s %ix%i\n", menu.bmp_path, bitmap->w,bitmap->h);
 	
@@ -5532,14 +5525,14 @@ static void* flipThread(void *arg) {
 		pthread_mutex_unlock(&flip_mx);
 #ifdef M210
 		if (run && render_) {
+			trackFPS();
 			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
 			pthread_mutex_lock(&flip_mx);
 #else
 		if (run) {
 			trackFPS();
 			pthread_mutex_lock(&flip_mx);
-			pthread_cond_wait(&flip_rq, &flip_mx);
-			//video_refresh_callback_main(renderer.src_surface->pixels,renderer.src_surface->w,renderer.src_surface->h,renderer.src_surface->pitch);	
+			pthread_cond_wait(&flip_rq, &flip_mx);	
 			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
 #endif
 			render = 0;

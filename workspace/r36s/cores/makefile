@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom
-CORES += neocd bmp2png a5200 a7800 a2600 dosbox tyrquake puae #easyrpg #scummvm
+CORES += neocd a5200 a7800 a2600 dosbox tyrquake puae #ffmpeg #easyrpg #scummvm bmp2png 
 
 ###############################
 
@@ -11,6 +11,10 @@ CORES += neocd bmp2png a5200 a7800 a2600 dosbox tyrquake puae #easyrpg #scummvm
 # *_FLAGS=
 # *_MAKEFILE=
 # *_BUILD_PATH=
+
+ffmpeg_REPO = https://github.com/libretro/ffmpeg
+ffmpeg_CORE = ffmpeg_libretro.so
+ffmpeg_MAKEFILE = libretro/Makefile
 
 tyrquake_REPO = https://github.com/libretro/tyrquake
 tyrquake_CORE = tyrquake_libretro.so

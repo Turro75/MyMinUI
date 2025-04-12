@@ -34,11 +34,6 @@ int hide(char* file_name) {
 	return result;
 }
 
-void bmp2png(char * filename){
-	char cmd[512];
-    sprintf(cmd,"bmp2png.elf -X \"%s\" && rm \"%s.bak\"", filename, filename);
-    system(cmd);
-}
 
 void getStatePath(char * gamepath, char* statepath){
 	//problem, given the full rom path how to retrieve the core used at the time of state creation? minarch knows the core but minui don't.
