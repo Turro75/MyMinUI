@@ -197,9 +197,9 @@ static int lastp=0;
 static int finalrotate=0;
 
 void get_fbinfo(void){
-	ioctl(vid.fdfb, FBIOGET_FSCREENINFO, &vid.finfo);
-	ioctl(vid.fdfb, FBIOGET_VSCREENINFO, &vid.vinfo);
-
+    ioctl(vid.fdfb, FBIOGET_FSCREENINFO, &vid.finfo);
+    ioctl(vid.fdfb, FBIOGET_VSCREENINFO, &vid.vinfo);
+	
     fprintf(stdout, "Fixed screen informations\n"
 		"-------------------------\n"
 		"Id string: %s\n"
@@ -220,18 +220,45 @@ void get_fbinfo(void){
 		"RED: L=%d, O=%d\n"
 		"GREEN: L=%d, O=%d\n"
 		"BLUE: L=%d, O=%d\n"            
-		"ALPHA: L=%d, O=%d\n",
+		"ALPHA: L=%d, O=%d\n\n"
+
+		"width: %d\n"
+		"height: %d\n"
+		"pixclock: %d\n"
+		"left_margin: %d\n"
+		"right_margin: %d\n"
+		"upper_margin: %d\n"
+		"lower_margin: %d\n"
+		"hsync_len: %d\n"
+		"vsync_len: %d\n"
+		"sync: %d\n"
+		"vmode: %d\n"
+		"rotate: %d\n"
+		"colorspace: %d\n",
 		vid.vinfo.xres, vid.vinfo.yres, vid.vinfo.xres_virtual,
 		vid.vinfo.yres_virtual, vid.vinfo.bits_per_pixel,
 		vid.vinfo.red.length, vid.vinfo.red.offset,
 		vid.vinfo.blue.length,vid.vinfo.blue.offset,
 		vid.vinfo.green.length,vid.vinfo.green.offset,
-		vid.vinfo.transp.length,vid.vinfo.transp.offset);
-	fflush(stdout);
+		vid.vinfo.transp.length,vid.vinfo.transp.offset,
+		vid.vinfo.width, vid.vinfo.height,
+		vid.vinfo.pixclock,
+		vid.vinfo.left_margin, vid.vinfo.right_margin,
+		vid.vinfo.upper_margin, vid.vinfo.lower_margin,
+		vid.vinfo.hsync_len, vid.vinfo.vsync_len
+		,vid.vinfo.sync, vid.vinfo.vmode, vid.vinfo.rotate, vid.vinfo.colorspace
+	);
+
+    //fprintf(stdout, "PixelFormat is %d\n", vinfo.pixelformat);
+    fflush(stdout);
 }
 
 void set_fbinfo(void){
-    ioctl(vid.fdfb, FBIOPUT_VSCREENINFO, &vid.vinfo);
+
+	int i = ioctl(vid.fdfb, FBIOPUT_VSCREENINFO, &vid.vinfo);
+	if (i<0) {
+		fprintf(stdout, "FBIOPUT_VSCREENINFO failed with error %s\n", strerror(errno));
+	}
 }
 
 int MY_SDLFB_FlipRotate90(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
@@ -381,6 +408,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	
     vid.vinfo.xres=w;
     vid.vinfo.yres=h;
+	vid.vinfo.xres_virtual=vid.vinfo.xres;
+	vid.vinfo.yres_virtual=vid.vinfo.yres*2;
 	vid.vinfo.bits_per_pixel=32;	
 	//at the beginning set the screen size to 640x480
     set_fbinfo();
