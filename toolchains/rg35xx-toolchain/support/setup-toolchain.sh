@@ -1,10 +1,9 @@
 #! /bin/sh
 
 TOOLCHAIN_GLIBC="rg35xx-toolchain.tar.gz"
-#TOOLCHAIN_GLIBC="r36s_toolchain_aarch64.tar.gz"
 
-TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/rg35xx_toolchain/rg35xx_toolchain.tar.gz"
-#TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/sjgam_m21_toolchain/m21_toolchain_glibc.tar.gz"
+TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/rg35xxOG_toolchain/rg35xx-toolchain.tar.gz"
+
 TOOLCHAIN_TAR=$TOOLCHAIN_GLIBC
 
 if [ -f "./$TOOLCHAIN_TAR" ]; then

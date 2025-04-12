@@ -1,5 +1,5 @@
 FROM debian:buster-slim
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 ENV TZ=Europe/Rome
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -34,7 +34,8 @@ RUN mkdir -p /root/workspace
 WORKDIR /root
 
 COPY support .
-RUN ./build-toolchain.sh && rm -rf buildroot/output/build/* && rm -rf buildroot/output/dl/*
+#RUN ./build-toolchain.sh && rm -rf buildroot/output/build/* && rm -rf buildroot/output/dl/*
+RUN ./setup-toolchain.sh
 RUN cat ./setup-env.sh >> .bashrc
 
 VOLUME /root/workspace
