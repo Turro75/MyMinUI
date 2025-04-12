@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index b06a377..00eb639 100644
+index b06a377..97e3e0e 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -11,14 +11,14 @@ UNAME := $(shell uname -s)
@@ -16,7 +16,7 @@ index b06a377..00eb639 100644
  endif
  ifndef CFLAGS
 -CFLAGS  = -O2 -g -Wall
-+CFLAGS  = -O2 -g -Wall -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve -fomit-frame-pointer
++CFLAGS  = -O2 -g -Wall $(MYARCH) -fomit-frame-pointer
  endif
  
  ifeq ($(UNAME),Darwin)

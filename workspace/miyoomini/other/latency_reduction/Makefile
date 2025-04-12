@@ -5,7 +5,7 @@ CC 	= $(CROSS_COMPILE)gcc
 SOURCES = . 
 CFILES = $(foreach dir, $(SOURCES), $(wildcard $(dir)/*.c))
 
-CFLAGS = -Os -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve+simd
+CFLAGS = -Os $(MYARCH)
 CFLAGS += -fPIC -Wall
 LDFLAGS	= -shared -ldl -s
 

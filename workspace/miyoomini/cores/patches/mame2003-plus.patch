@@ -1,11 +1,11 @@
 diff --git a/Makefile b/Makefile
-index 21129613..eaf61b92 100644
+index 34b050e..a46ac19 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -525,6 +525,30 @@ else ifeq ($(platform), miyoo)
- 	PLATCFLAGS += -fomit-frame-pointer -march=armv5te -mtune=arm926ej-s -ffast-math
- 	CXXFLAGS += -fno-rtti -fno-exceptions
-
+@@ -541,6 +541,31 @@ else ifeq ($(platform), miyoo)
+ 	USE_CYCLONE := 1
+ 	USE_DRZ80 := 1
+ 
 +# MIYOOMINI
 +else ifeq ($(platform), miyoomini)
 +	TARGET := $(TARGET_NAME)_libretro.so
@@ -20,8 +20,7 @@ index 21129613..eaf61b92 100644
 +	-fno-stack-protector -fno-ident -fomit-frame-pointer \
 +	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
 +	-fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
-+	-fmerge-all-constants -fno-math-errno \
-+	-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve
++	-fmerge-all-constants -fno-math-errno $(MYARCH)
 +	CXXFLAGS += $(CFLAGS)
 +	CPPFLAGS += $(CFLAGS)
 +	ASFLAGS += $(CFLAGS)
@@ -29,6 +28,8 @@ index 21129613..eaf61b92 100644
 +	ARCH = arm
 +	CPU_ARCH := arm
 +	ARM = 1
++	USE_CYCLONE := 1
++	USE_DRZ80 := 1
 +
  # Emscripten
  else ifeq ($(platform), emscripten)

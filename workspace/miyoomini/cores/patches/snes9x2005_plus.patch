@@ -24,7 +24,7 @@ index 07d5368a8e78a020813732239ec369d83e931ede..009f13b8e61c634de4cb83e97785a10b
 +	CFLAGS += -fPIC
 +	CFLAGS += -DLSB_FIRST -DFAST_ALIGNED_LSB_WORD_ACCESS -DRIGHTSHIFT_IS_SAR
 +	CFLAGS += -std=c99 -fomit-frame-pointer -ffast-math
-+	CFLAGS += -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve
++	CFLAGS += $(MYARCH)
 +	LDFLAGS += -flto
 +	OPTIMIZE += -Ofast -DNDEBUG=1
 +	ifeq (,$(DEBUG))

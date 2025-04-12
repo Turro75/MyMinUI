@@ -14,8 +14,8 @@ index 8f2907c..5da10cb 100644
 +   AR = $(CROSS_COMPILE)ar
 +   SHARED := -s -shared -Wl,--version-script=link.T -Wl,-no-undefined
 +	fpic := -fPIC
-+   CFLAGS +=  -s -Ofast -marm -mtune=cortex-a7 -mfpu=neon-vfpv4  -mfloat-abi=hard -march=armv7ve -fomit-frame-pointer  -flto -DSYNC_CDROM=1
-+   CXXFLAGS += -s -Ofast -marm -mtune=cortex-a7 -mfpu=neon-vfpv4  -mfloat-abi=hard -march=armv7ve -fomit-frame-pointer -flto -mword-relocations -DSYNC_CDROM=1
++   CFLAGS +=  -s -Ofast $(MYARCH) -fomit-frame-pointer  -flto -DSYNC_CDROM=1
++   CXXFLAGS += -s -Ofast $(MYARCH) -fomit-frame-pointer -flto -mword-relocations -DSYNC_CDROM=1
  # Nintendo WiiU
  else ifeq ($(platform), wiiu)
     TARGET := $(TARGET_NAME)_libretro_$(platform).a

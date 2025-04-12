@@ -16,8 +16,8 @@ index fa86aeb..1586ba7 100644
 +   SHARED := -shared -Wl,--version-script=$(CORE_DIR)/libretro/link.T -Wl,--no-undefined
 +   LDFLAGS += -lm -lrt -lpthread -ldl
 +   CFLAGS += -Ofast -flto=4 \
-+           -fmerge-all-constants -fno-math-errno -march=armv7ve \
-+           -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
++           -fmerge-all-constants -fno-math-errno \
++           $(MYARCH)
 +   LDFLAGS += -static-libgcc -static-libstdc++ -s
 +#######################################
 +

@@ -21,7 +21,7 @@ index 58120a1a88eab75ca13f2ed062f37d075c05a51b..8c8cd8a54c6b5a874725400d4de6d037
 +	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
 +	-fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
 +	-fmerge-all-constants -fno-math-errno \
-+	-marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard
++	$(MYARCH)
 +	CXXFLAGS += $(CFLAGS)
 +	CFLAGS += -fPIC
 +	LDFLAGS += -flto

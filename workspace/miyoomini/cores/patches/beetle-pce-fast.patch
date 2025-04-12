@@ -18,7 +18,7 @@ index d580571511b43d1ec4597db4a9611b0924bb2c53..2a7a5348c59220f82a99916bf85cc720
 +   CXXFLAGS += -std=c++11
 +   CFLAGS += -std=gnu11
 +   CFLAGS += -fomit-frame-pointer -ffast-math -fPIC -flto
-+   CFLAGS += -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve
++   CFLAGS += $(MYARCH)
 +   LDFLAGS += -flto
 +   ifeq (,$(DEBUG))
 +      LDFLAGS += -s
