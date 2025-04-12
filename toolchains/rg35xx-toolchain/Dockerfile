@@ -34,7 +34,7 @@ RUN mkdir -p /root/workspace
 WORKDIR /root
 
 COPY support .
-#RUN ./build-toolchain.sh && rm -rf buildroot/output/build/* && rm -rf buildroot/output/dl/*
+#RUN ./build-toolchain.sh
 RUN ./setup-toolchain.sh
 RUN cat ./setup-env.sh >> .bashrc
 

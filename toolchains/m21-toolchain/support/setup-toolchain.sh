@@ -3,13 +3,13 @@
 TARGET=$1
 TOOLCHAIN_MUSL="m21_toolchain_musl.tar.gz"
 TOOLCHAIN_GLIBC="m21_toolchain_glibc.tar.gz"
-TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/sjgam_m21_toolchain/m21_toolchain.tar.gz"
-#TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/sjgam_m21_toolchain/m21_toolchain_glibc.tar.gz"
 
 if [ "$TARGET" = "MUSL" ]; then
     TOOLCHAIN_TAR=$TOOLCHAIN_MUSL
+    TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/sjgam_m21_toolchain/m21_toolchain_musl.tar.gz"
 else
     TOOLCHAIN_TAR=$TOOLCHAIN_GLIBC
+    TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/sjgam_m21_toolchain/m21_toolchain_glibc.tar.gz"
 fi
 if [ -f "./$TOOLCHAIN_TAR" ]; then
 	echo "extracting local toolchain"
