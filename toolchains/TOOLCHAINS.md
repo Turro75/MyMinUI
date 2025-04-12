@@ -70,7 +70,7 @@ Edit the dockerfile to enable the setup-toolchain
 RUN ./setup-toolchain.sh
 
 then running 
->make clean shell
+>make shell
 
 it will download the pre made images available here: https://github.com/Turro75/MyMinUI_Toolchains/releases
 
