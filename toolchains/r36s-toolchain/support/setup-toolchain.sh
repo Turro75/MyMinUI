@@ -5,8 +5,7 @@ TARGET=$1
 TOOLCHAIN_GLIBC="r36s_toolchain_glibc.tar.gz"
 #TOOLCHAIN_GLIBC="r36s_toolchain_aarch64.tar.gz"
 
-TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/r36s_toolchain/r36s_toolchain.tar.gz"
-#TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/sjgam_m21_toolchain/m21_toolchain_glibc.tar.gz"
+TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/r36s_rg353_toolchain/r36s_toolchain_glibc.tar.gz"
 TOOLCHAIN_TAR=$TOOLCHAIN_GLIBC
 
 if [ -f "./$TOOLCHAIN_TAR" ]; then

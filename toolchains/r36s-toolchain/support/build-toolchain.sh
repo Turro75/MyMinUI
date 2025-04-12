@@ -30,7 +30,7 @@ done
 
 cd ~/buildroot
 # patches for buildroot itself
-patch -p1 < ~/sdl2-update-to-2.26.1.patch
+patch -p1 < ~/sdl2-update-to-2.30.11.patch
 patch -p1 < ~/toolchain-expose-BR2_TOOLCHAIN_EXTRA_EXTERNAL_LIBS-for-all-toolchain-types-2017.11.1.diff
 patch -p1 < ~/001-evtest-slow-site.patch
 

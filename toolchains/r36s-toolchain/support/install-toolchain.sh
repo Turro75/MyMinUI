@@ -1,6 +1,5 @@
 #!/bin/sh
 
-TARGET=$1
 mkdir -p /opt/r36s-toolchain
 if [ -d /opt/r36s-toolchain/usr ]; then
 	rm -fr /opt/r36s-toolchain/usr
