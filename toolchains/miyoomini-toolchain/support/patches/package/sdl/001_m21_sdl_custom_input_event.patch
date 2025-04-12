@@ -1,0 +1,158 @@
+diff --git a/src/video/fbcon/SDL_fbevents.c b/src/video/fbcon/SDL_fbevents.c
+index 2bb74580..3675fc55 100644
+--- a/src/video/fbcon/SDL_fbevents.c
++++ b/src/video/fbcon/SDL_fbevents.c
+@@ -231,7 +231,7 @@ void FB_LeaveGraphicsMode(_THIS)
+ 	}
+ }
+ 
+-void FB_CloseKeyboard(_THIS)
++void _FB_CloseKeyboard(_THIS)
+ {
+ 	if ( keyboard_fd >= 0 ) {
+ 		FB_LeaveGraphicsMode(this);
+@@ -242,7 +242,93 @@ void FB_CloseKeyboard(_THIS)
+ 	keyboard_fd = -1;
+ }
+ 
++
+ int FB_OpenKeyboard(_THIS)
++{
++	keyboard_fd= open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
++	if (keyboard_fd < 0) {
++		printf("failed to open /dev/input/event1 with error \n");
++		return -1;
++	}
++	FB_vgainitkeymaps(keyboard_fd);
++	return(keyboard_fd);
++}
++
++void FB_CloseKeyboard(_THIS)
++{
++	if (keyboard_fd >= 0){
++		close(keyboard_fd);
++	}
++	keyboard_fd = -1;
++}
++
++// from <linux/input.h> which has BTN_ constants that conflict with platform.h
++struct input_event {
++	struct timeval time;
++	__u16 type;
++	__u16 code;
++	__s32 value;
++};
++#define EV_KEY			0x01
++#define EV_ABS			0x03
++
++static int posted = 0;
++
++#define RAW_UP		103 //SDL_SCANCODE_UP
++#define RAW_DOWN	108 //SDL_SCANCODE_DOWN
++#define RAW_LEFT	105 //SDL_SCANCODE_LEFT
++#define RAW_RIGHT	106 //SDL_SCANCODE_RIGHT
++#define RAW_A		57  //SDL_SCANCODE_G
++#define RAW_B		29  //SDL_SCANCODE_F
++#define RAW_X		42  //SDL_SCANCODE_H
++#define RAW_Y		56  //SDL_SCANCODE_D
++#define RAW_START	28  //SDL_SCANCODE_GRAVE
++#define RAW_SELECT	97  //SDL_SCANCODE_APOSTROPHE
++#define RAW_MENU	1   //SDL_SCANCODE_RIGHTBRACKET
++#define RAW_L1		18  //SDL_SCANCODE_J
++#define RAW_L2		15  //SDL_SCANCODE_L
++#define RAW_R1		20  //SDL_SCANCODE_K
++#define RAW_R2		14  //SDL_SCANCODE_SEMICOLON
++#define RAW_PLUS	115 //SDL_SCANCODE_MINUS
++#define RAW_MINUS	114 //SDL_SCANCODE_0
++
++static void handle_keyboard(_THIS)
++{
++	int pressed;
++	SDL_keysym keysym;
++	static struct input_event event;
++		while (read(keyboard_fd, &event, sizeof(event))==sizeof(event)) {
++			//printf("key %d event: SCANCODE=%i, PRESSED=%i\n", type, code, value);system("sync");
++			if (event.type==EV_KEY) {
++				if (event.value>1) continue; // ignore repeats
++				if (event.value==0) pressed = SDL_RELEASED;
++				if (event.value==1) pressed = SDL_PRESSED;
++				keysym.scancode = -1;
++				keysym.sym = SDLK_UNKNOWN;
++				// LOG_info("key event: %i (%i)\n", code,pressed);
++				     if (event.code==RAW_UP) 		{ keysym.scancode = SCANCODE_M21_DPAD_UP;  keysym.sym = SDLK_UP; }
++				else if (event.code==RAW_DOWN)		{ keysym.scancode = SCANCODE_M21_DPAD_DOWN; keysym.sym = SDLK_DOWN; }
++				else if (event.code==RAW_LEFT)		{ keysym.scancode = SCANCODE_M21_DPAD_LEFT; keysym.sym = SDLK_LEFT; }
++				else if (event.code==RAW_RIGHT)		{ keysym.scancode = SCANCODE_M21_DPAD_RIGHT; keysym.sym = SDLK_RIGHT; }
++				else if (event.code==RAW_A)		{ keysym.scancode = SCANCODE_M21_BTN_A; keysym.sym = SDLK_LCTRL; }
++				else if (event.code==RAW_B)		{ keysym.scancode = SCANCODE_M21_BTN_B; keysym.sym = SDLK_LALT; }
++				else if (event.code==RAW_X)		{ keysym.scancode = SCANCODE_M21_BTN_X; keysym.sym = SDLK_SPACE; }
++				else if (event.code==RAW_Y)		{ keysym.scancode = SCANCODE_M21_BTN_Y; keysym.sym = SDLK_LSHIFT; }
++				else if (event.code==RAW_START)		{ keysym.scancode = SCANCODE_M21_BTN_START; keysym.sym = SDLK_RETURN; }
++				else if (event.code==RAW_SELECT)	{ keysym.scancode = SCANCODE_M21_BTN_SELECT; keysym.sym = SDLK_ESCAPE; }
++				else if (event.code==RAW_MENU)		{ keysym.scancode = SCANCODE_M21_BTN_MENU; keysym.sym = SDLK_HOME; }
++				else if (event.code==RAW_L1)		{ keysym.scancode = SCANCODE_M21_BTN_L1; keysym.sym = SDLK_PAGEUP; }
++				else if (event.code==RAW_L2)		{ keysym.scancode = SCANCODE_M21_BTN_L2; keysym.sym = SDLK_TAB; }
++				else if (event.code==RAW_R1)		{ keysym.scancode = SCANCODE_M21_BTN_R1; keysym.sym = SDLK_PAGEDOWN; }
++				else if (event.code==RAW_R2)		{ keysym.scancode = SCANCODE_M21_BTN_R2; keysym.sym = SDLK_BACKSPACE; }
++				else if (event.code==RAW_PLUS)		{ keysym.scancode = SCANCODE_M21_BTN_VOLUMEUP; keysym.sym = SDLK_PLUS; }
++				else if (event.code==RAW_MINUS)		{ keysym.scancode = SCANCODE_M21_BTN_VOLUMEDOWN; keysym.sym = SDLK_MINUS; }
++
++				posted += SDL_PrivateKeyboard(pressed, &keysym);
++			}
++		}
++}
++int _FB_OpenKeyboard(_THIS)
+ {
+ 	/* Open only if not already opened */
+  	if ( keyboard_fd < 0 ) {
+@@ -695,7 +781,7 @@ fprintf(stderr, "Using (default) MS mouse on %s\n", mousedev);
+ 	return(mouse_fd);
+ }
+ 
+-static int posted = 0;
++
+ 
+ void FB_vgamousecallback(int button, int relative, int dx, int dy)
+ {
+@@ -980,7 +1066,7 @@ static void switch_vt(_THIS, unsigned short which)
+ 	SDL_mutexV(hw_lock);
+ }
+ 
+-static void handle_keyboard(_THIS)
++static void _handle_keyboard(_THIS)
+ {
+ 	unsigned char keybuf[BUFSIZ];
+ 	int i, nread;
+diff --git a/src/video/fbcon/SDL_fbkeys.h b/src/video/fbcon/SDL_fbkeys.h
+index 2b01b6b2..905b759b 100644
+--- a/src/video/fbcon/SDL_fbkeys.h
++++ b/src/video/fbcon/SDL_fbkeys.h
+@@ -137,3 +137,27 @@
+ #define SCANCODE_RIGHTWIN		126
+ #define SCANCODE_LEFTWIN		125
+ 
++
++/* SJGAM M21 ADDITIONS */
++#define SCANCODE_M21_DPAD_UP        103
++#define SCANCODE_M21_DPAD_DOWN		108
++#define SCANCODE_M21_DPAD_LEFT		105
++#define SCANCODE_M21_DPAD_RIGHT     106
++
++#define SCANCODE_M21_BTN_A		34
++#define SCANCODE_M21_BTN_B		33
++#define SCANCODE_M21_BTN_X		35
++#define SCANCODE_M21_BTN_Y		32
++
++#define SCANCODE_M21_BTN_L1		36
++#define SCANCODE_M21_BTN_L2		38
++#define SCANCODE_M21_BTN_R1		37
++#define SCANCODE_M21_BTN_R2		39
++
++#define SCANCODE_M21_BTN_MENU    27
++#define SCANCODE_M21_BTN_SELECT     40
++#define SCANCODE_M21_BTN_START      41
++
++#define SCANCODE_M21_BTN_VOLUMEUP	12
++#define SCANCODE_M21_BTN_VOLUMEDOWN	11
++/* END SJGAM M21 ADDITIONS */
+\ No newline at end of file

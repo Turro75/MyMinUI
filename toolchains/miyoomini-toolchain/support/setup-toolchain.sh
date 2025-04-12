@@ -1,25 +1,27 @@
 #! /bin/sh
 
-TOOLCHAIN_VERSION=v0.0.3
-TOOLCHAIN_TAR="miyoomini-toolchain.tar.xz"
+TOOLCHAIN_GLIBC="miyoomini_toolchain_glibc.tar.gz"
+TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/miyoomini_toolchain/miyoomini_toolchain_glibc.tar.gz"
 
-TOOLCHAIN_ARCH=`uname -m`
-if [ "$TOOLCHAIN_ARCH" = "aarch64" ]; then
-	TOOLCHAIN_REPO=miyoomini-toolchain-buildroot-aarch64
-else
-	TOOLCHAIN_REPO=miyoomini-toolchain-buildroot
-fi
-
-TOOLCHAIN_URL="https://github.com/shauninman/$TOOLCHAIN_REPO/releases/download/$TOOLCHAIN_VERSION/$TOOLCHAIN_TAR"
+TOOLCHAIN_TAR=$TOOLCHAIN_GLIBC
 
 if [ -f "./$TOOLCHAIN_TAR" ]; then
-	cp "./$TOOLCHAIN_TAR" /opt
-	cd /opt
-	echo "extracting local toolchain ($TOOLCHAIN_ARCH)"
+	echo "extracting local toolchain"
 else
-	cd /opt
-	wget "$TOOLCHAIN_URL"
-	echo "extracting remote toolchain $TOOLCHAIN_VERSION ($TOOLCHAIN_ARCH)"
+	wget "$TOOLCHAIN_URL" -O ./$TOOLCHAIN_TAR
+	echo "extracting remote toolchain "
 fi
+cp "./$TOOLCHAIN_TAR" /opt
+cd /opt
 tar xf "./$TOOLCHAIN_TAR"
 rm -rf "./$TOOLCHAIN_TAR"
+rm -rf "/root/${TOOLCHAIN_GLIBC}"
+
+
+mv /root/hwcap.h /opt/miyoomini-toolchain/arm-buildroot-linux-gnueabihf/sysroot/usr/include/asm/
+
+# this version of buildroot doesn't have relocate-sdk.sh yet so we bring our own
+cp /root/relocate-sdk.sh /opt/miyoomini-toolchain/
+cp /root/sdk-location /opt/miyoomini-toolchain/
+/opt/miyoomini-toolchain/relocate-sdk.sh
+
