@@ -97,7 +97,7 @@ The defalt setting of the dockerfile is
 
 so You can build and setup both systems.
 
-Be aware that You cannot keep both toolchains active at the same.
+Be aware that You cannot keep both toolchains active at the same time (unless you change their name of course).
 
 After switching ensure all m21/cores/output and m21/cores/src folders are empty to rebuild all the cores from scratch.
 
