@@ -59,7 +59,7 @@ mame2003-plus_CORE = mame2003_plus_libretro.so
 fbneo_REPO = https://github.com/libretro/fbneo
 fbneo_CORE = fbneo_libretro.so
 #same version as garlicos
-fbneo_HASH = db9f7e9
+#fbneo_HASH = db9f7e9
 fbneo_BUILD_PATH = fbneo/src/burner/libretro
 
 prboom_REPO = https://github.com/libretro/libretro-prboom

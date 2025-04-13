@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom
-CORES += neocd retroarch a5200 a7800 a2600 dosbox tyrquake wonderswan #easyrpg #scummvm bmp2png
+CORES += neocd a5200 a7800 a2600 dosbox tyrquake wonderswan #easyrpg #scummvm bmp2png
 
 ###############################
 
@@ -69,7 +69,7 @@ mame2003-plus_CORE = mame2003_plus_libretro.so
 fbneo_REPO = https://github.com/libretro/fbneo
 fbneo_CORE = fbneo_libretro.so
 #same version as garlicos
-fbneo_HASH = db9f7e9
+#fbneo_HASH = db9f7e9
 fbneo_BUILD_PATH = fbneo/src/burner/libretro
 
 prboom_REPO = https://github.com/libretro/libretro-prboom

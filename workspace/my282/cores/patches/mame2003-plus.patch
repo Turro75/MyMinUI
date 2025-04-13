@@ -1,11 +1,11 @@
 diff --git a/Makefile b/Makefile
-index 21129613..eaf61b92 100644
+index 34b050e..27aff6e 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -525,6 +525,30 @@ else ifeq ($(platform), miyoo)
- 	PLATCFLAGS += -fomit-frame-pointer -march=armv5te -mtune=arm926ej-s -ffast-math
- 	CXXFLAGS += -fno-rtti -fno-exceptions
-
+@@ -541,6 +541,30 @@ else ifeq ($(platform), miyoo)
+ 	USE_CYCLONE := 1
+ 	USE_DRZ80 := 1
+ 
 +# miyoo a30
 +else ifeq ($(platform), my282)
 +	TARGET := $(TARGET_NAME)_libretro.so
