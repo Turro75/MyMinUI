@@ -35,6 +35,7 @@
 ///////////////////////////////////////
 
 struct mybackbuffer {
+	int depth;
 	int w;
 	int h;
 	int pitch;
@@ -2004,17 +2005,20 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 		LOG_info("SET RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: %i\n", *format);
 		if (*format == RETRO_PIXEL_FORMAT_0RGB1555) { // TODO: pull from platform.h?		
 			downsample = 2; 
+			backbuffer.depth = 15;
 			return true;
 		}		
 
 		if (*format == RETRO_PIXEL_FORMAT_RGB565) { // TODO: pull from platform.h?
 			/* 565 is only supported format */
 			downsample = 0;
+			backbuffer.depth = 16;
 			return true;
 		} 
 
 		if (*format == RETRO_PIXEL_FORMAT_XRGB8888) { // TODO: pull from platform.h?
 			downsample = 1; 
+			backbuffer.depth = 32;
 			return true;
 		}
 		return false;
@@ -3249,7 +3253,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	// debug
 	if (show_debug) {
 		char debug_text[128];
-		sprintf(debug_text, "%ix%i %c%.1fx %d", renderer.src_w,renderer.src_h, resizemode, renderer.scale, (downsample==1)?32:16);
+		sprintf(debug_text, "%ix%i %c%.1fx %d", renderer.src_w,renderer.src_h, resizemode, renderer.scale, backbuffer.depth);
 		blitBitmapText(debug_text,renderer.dst_x+2,renderer.dst_y+2,screen->pixels,screen->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 
 		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.dst_w,renderer.dst_h);
@@ -3295,6 +3299,7 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 	if (downsample == 1) {
 		// from 8888 to 565
 		pitch /= 2;
+		counter = pitch * height;
 		const uint32_t *input32 = data;
 		while (counter--) {
 			*output =  (*input32 & 0xF80000) >> 8;
@@ -5601,6 +5606,7 @@ int main(int argc , char* argv[]) {
 	backbuffer.w = MAX_WIDTH;
 	backbuffer.h = MAX_HEIGHT;
 	backbuffer.pitch = MAX_WIDTH*sizeof(uint16_t);
+	backbuffer.depth = 16;
 
 	renderer.rotate = 0; //set default rotation to 0 deg
 #ifdef M21 //if hdmi cable is detected the audio is routed to hdmi instead of speakers, specific for SJGAM M21.
