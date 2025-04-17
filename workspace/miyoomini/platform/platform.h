@@ -116,8 +116,8 @@ extern int is_plus;
 #define FIXED_PITCH		(FIXED_WIDTH * FIXED_BPP)
 #define FIXED_SIZE		(FIXED_PITCH * FIXED_HEIGHT)
 
-#define MAX_WIDTH 720  //for some demanding games?
-#define MAX_HEIGHT 720  //for some demanding games?
+#define MAX_WIDTH 640
+#define MAX_HEIGHT 640
 #define MAX_DEPTH 32 
 
 ///////////////////////////////
