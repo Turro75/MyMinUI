@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo prboom puae mame2003-plus neocd
-CORES += a5200 a7800 a2600 dosbox tyrquake #bmp2png 
+CORES += a5200 a7800 a2600 dosbox tyrquake wonderswan #bmp2png 
 
 
 ###############################
@@ -12,6 +12,10 @@ CORES += a5200 a7800 a2600 dosbox tyrquake #bmp2png
 # *_FLAGS=
 # *_MAKEFILE=
 # *_BUILD_PATH=
+
+wonderswan_REPO = https://github.com/libretro/beetle-wswan-libretro.git
+wonderswan_CORE = mednafen_wswan_libretro.so
+
 tyrquake_REPO = https://github.com/libretro/tyrquake
 tyrquake_CORE = tyrquake_libretro.so
 

@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom
-CORES += neocd a5200 a7800 a2600 dosbox tyrquake puae #ffmpeg #easyrpg #scummvm bmp2png 
+CORES += neocd a5200 a7800 a2600 dosbox tyrquake puae wonderswan #ffmpeg #easyrpg #scummvm bmp2png 
 
 ###############################
 
@@ -11,6 +11,9 @@ CORES += neocd a5200 a7800 a2600 dosbox tyrquake puae #ffmpeg #easyrpg #scummvm 
 # *_FLAGS=
 # *_MAKEFILE=
 # *_BUILD_PATH=
+
+wonderswan_REPO = https://github.com/libretro/beetle-wswan-libretro.git
+wonderswan_CORE = mednafen_wswan_libretro.so
 
 ffmpeg_REPO = https://github.com/libretro/ffmpeg
 ffmpeg_CORE = ffmpeg_libretro.so

@@ -1,0 +1,22 @@
+diff --git a/Makefile b/Makefile
+index ef2deca..12f450f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -79,6 +79,17 @@ ifneq (,$(findstring unix,$(platform)))
+       endif
+    endif
+    
++# M21
++else ifeq ($(platform), rg35xx)
++        TARGET := $(TARGET_NAME)_libretro.so
++        CC = $(CROSS_COMPILE)gcc
++        CXX = $(CROSS_COMPILE)g++
++        AR = $(CROSS_COMPILE)ar
++        fpic := -fPIC
++        SHARED := -shared -Wl,--version-script=link.T
++        CFLAGS += -fomit-frame-pointer -ffast-math $(MYARCH)
++        HAVE_NETWORKING=0
++
+ # (armv8 a35, hard point, neon based) ###
+ # PlayStation Classic 
+ else ifeq ($(platform), classic_armv8_a35)
