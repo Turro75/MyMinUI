@@ -1,12 +1,12 @@
 diff --git a/src/burner/libretro/Makefile b/src/burner/libretro/Makefile
-index 7d7002b3b..af4be5180 100644
+index 0b7d646..cda6694 100644
 --- a/src/burner/libretro/Makefile
 +++ b/src/burner/libretro/Makefile
-@@ -367,6 +367,26 @@ else ifeq ($(platform), classic_armv8_a35)
+@@ -363,6 +363,29 @@ else ifeq ($(platform), classic_armv8_a35)
  	CXXFLAGS += $(PLATFORM_FLAGS)
  #######################################
  
-+# MiyooMini
++# miyoo a30
 +else ifeq ($(platform), miyoomini)
 +	TARGET := $(TARGET_NAME)_libretro.so
 +   CC = $(CROSS_COMPILE)gcc
@@ -14,84 +14,21 @@ index 7d7002b3b..af4be5180 100644
 +   AR = $(CROSS_COMPILE)ar
 +   SHARED := -shared -Wl,--version-script=link.T -Wl,-no-undefined
 +	fpic := -fPIC
-+	PLATFORM_FLAGS = -Ofast $(MYARCH) -fomit-frame-pointer -flto
++	PLATFORM_FLAGS = -s -Ofast $(MYARCH) -fomit-frame-pointer -flto
 +	USE_EXPERIMENTAL_FLAGS = 1
 +	HAVE_NEON = 1
 +	USE_CYCLONE = 1
++	INCLUDE_7Z_SUPPORT = 0
 +	ARCH = arm
 +	ENDIANNESS_DEFINES := -DLSB_FIRST
-+	LDFLAGS += -s -lrt -lm -lpthread
++	LDFLAGS += -lrt -lm -lpthread
 +	CFLAGS += $(PLATFORM_FLAGS)
 +	CXXFLAGS += $(PLATFORM_FLAGS)
 +#######################################
 +
 +
++
++
  # Nintendo Game Cube / Wii / WiiU
  else ifneq (,$(filter $(platform), ngc wii wiiu))
  	TARGET := $(TARGET_NAME)_libretro_$(platform).a
-diff --git a/src/burner/libretro/libretro.cpp b/src/burner/libretro/libretro.cpp
-index 443b871b2..d55c0c85b 100644
---- a/src/burner/libretro/libretro.cpp
-+++ b/src/burner/libretro/libretro.cpp
-@@ -1752,20 +1752,21 @@ static bool retro_load_game_common()
- 			SetUguiError("This romset is known but marked as not working\nOne of its clones might work so maybe give it a try");
- 			HandleMessage(RETRO_LOG_ERROR, "[FBNeo] This romset is known but marked as not working\n");
- 			HandleMessage(RETRO_LOG_ERROR, "[FBNeo] One of its clones might work so maybe give it a try\n");
--			goto end;
-+			
-+			return false; //goto end;
- 		}
- 
- 		// If the game is a bios, let's stop here
- 		if ((BurnDrvGetFlags() & BDF_BOARDROM)) {
- 			SetUguiError("Bioses aren't meant to be launched this way");
- 			HandleMessage(RETRO_LOG_ERROR, "[FBNeo] Bioses aren't meant to be launched this way\n");
--			goto end;
-+			return false; //goto end;
- 		}
- 
- 		if ((BurnDrvGetHardwareCode() & HARDWARE_PUBLIC_MASK) == HARDWARE_SNK_NEOCD && CDEmuImage[0] == '\0') {
- 			SetUguiError("You need a disc image to launch neogeo CD\n");
- 			HandleMessage(RETRO_LOG_ERROR, "[FBNeo] You need a disc image to launch neogeo CD\n");
--			goto end;
-+			return false; //goto end;
- 		}
- 
- 		bIsNeogeoCartGame = ((BurnDrvGetHardwareCode() & HARDWARE_PUBLIC_MASK) == HARDWARE_SNK_NEOGEO);
-@@ -1836,8 +1837,7 @@ static bool retro_load_game_common()
- 			static char uguiText[4096];
- 			sprintf(uguiText, "%s%s%s\n\n%s%s", s1, s2, text_missing_files, s3, s4);
- 			SetUguiError(uguiText);
--
--			goto end;
-+			return false; //goto end;
- 		}
- 		HandleMessage(RETRO_LOG_INFO, "[FBNeo] No missing files, proceeding\n");
- 
-@@ -1870,7 +1870,7 @@ static bool retro_load_game_common()
- 			SetUguiError("Failed initializing driver\nThis is unexpected, you should probably report it.");
- 			HandleMessage(RETRO_LOG_ERROR, "[FBNeo] Failed initializing driver.\n");
- 			HandleMessage(RETRO_LOG_ERROR, "[FBNeo] This is unexpected, you should probably report it.\n");
--			goto end;
-+			return false; //goto end;
- 		}
- 
- 		// MemCard has to be inserted after emulation is started
-@@ -1916,7 +1916,7 @@ static bool retro_load_game_common()
- 
- 		if (pVidImage == NULL) {
- 			HandleMessage(RETRO_LOG_ERROR, "[FBNeo] Failed allocating framebuffer memory\n");
--			goto end;
-+			return false; //goto end;
- 		}
- 
- 		apply_cheats_from_variables();
-@@ -1937,7 +1937,7 @@ static bool retro_load_game_common()
- 		static char uguiText[4096];
- 		sprintf(uguiText, "%s%s%s", s1, s2, s3);
- 		SetUguiError(uguiText);
--		goto end;
-+		return false; //goto end;
- 	}
- 	return true;
- 
