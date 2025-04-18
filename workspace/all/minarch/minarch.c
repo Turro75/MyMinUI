@@ -35,6 +35,7 @@
 ///////////////////////////////////////
 
 struct mybackbuffer {
+	int size;
 	int depth;
 	int w;
 	int h;
@@ -3288,35 +3289,45 @@ static uint32_t last_callback_time = 0;
 static void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
 	int callback_time = SDL_GetTicks();
 //	storage_audio_timing[_x][2] = callback_time;
-//	LOG_info("\nFRAME:%d video_refresh_callback IN elapsed %lums width:%i height:%i pitch:%i ABS:%i\n",framecounter, callback_time-last_callback_time ,width,height,pitch, callback_time);fflush(stdout);
+	//LOG_info("video_refresh_callback IN elapsed %lums width:%i height:%i pitch:%i ABS:%i\n", callback_time-last_callback_time ,width,height,pitch, callback_time);fflush(stdout);
 	if (!data || show_menu) {
-//		LOG_info("FRAME:%d Empty Frame\n");fflush(stdout);
+		//LOG_info("Empty Frame\n");fflush(stdout);
 		return; //frameskip activated?
 	}
-
+	LOG_info("Video_refresh_callback A\n");fflush(stdout);
+	if (!backbuffer.pixels) {
+		//LOG_info("backbuffer.pixels not yet ready\n");fflush(stdout);	
+		return;
+	}
 	uint16_t *output = backbuffer.pixels;
+	
 	int counter = pitch * height;
+	//LOG_info("Video_refresh_callback B pitch = %d , counter = %d\n", pitch,counter);fflush(stdout);
 	if (downsample == 1) {
 		// from 8888 to 565
+		counter /= 4;
 		pitch /= 2;
-		counter = pitch * height;
+		
+		//LOG_info("Video_refresh_callback MID 1 size = %d , pitch = %d , counter = %d\n", backbuffer.size, pitch, counter);fflush(stdout);
 		const uint32_t *input32 = data;
 		while (counter--) {
-			*output =  (*input32 & 0xF80000) >> 8;
-			*output |= (*input32 & 0xFC00) >> 5;
-			*output |= (*input32 & 0xF8) >> 3;
+			*output =  (uint16_t)((*input32 & 0xF80000) >> 8);
+			*output |= (uint16_t)((*input32 & 0xFC00) >> 5);
+			*output |= (uint16_t)((*input32 & 0xF8) >> 3);
 			input32++;
 			output++;
 		}
 	} 
 
 	if (downsample == 2) {
+		//LOG_info("Video_refresh_callback MID 2\n");fflush(stdout);
 		//from 1555 to 565
+		counter /= 2;
 		const uint16_t *input16 = data;		
 		while (counter--) {
-			*output =  (*input16 & 0x7C00) << 1;
-			*output |= (*input16 & 0x3E0) << 1;
-			*output |= (*input16 & 0x1F);
+			*output =  (uint16_t)((*input16 & 0x7C00) << 1);
+			*output |= (uint16_t)((*input16 & 0x3E0) << 1);
+			*output |= (uint16_t)((*input16 & 0x1F));
 			input16++;
 			output++;
 		}
@@ -3324,11 +3335,13 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 
 	if (downsample == 0) {
 		//as is
+		//LOG_info("Video_refresh_callback MID 0\n");fflush(stdout);
 		memcpy(backbuffer.pixels, data, counter);
 	}
 	backbuffer.w = width;
 	backbuffer.h = height;
 	backbuffer.pitch = pitch;
+	//LOG_info("Video_refresh_callback MID\n");fflush(stdout);
 	if (thread_video) {		
 		pthread_mutex_lock(&flip_mx);
 		fps2_ticks++;
@@ -5571,7 +5584,7 @@ static void* coreThread(void *arg) {
 
 
 int main(int argc , char* argv[]) {
-	LOG_info("MinArch\n");
+	LOG_info("MinArch Date:%s Commit:%s\n", BUILD_DATE, BUILD_HASH);
 	cpu_set_t maint;
 
 	setOverclock(overclock); // default to normal
@@ -5602,11 +5615,13 @@ int main(int argc , char* argv[]) {
 	mutedaudiodata = calloc(2000,sizeof(uint32_t));
 
 	//backbuffer.pixels = (uint16_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint16_t));
-	backbuffer.pixels = (uint16_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint16_t));
+	
 	backbuffer.w = MAX_WIDTH;
 	backbuffer.h = MAX_HEIGHT;
-	backbuffer.pitch = MAX_WIDTH*sizeof(uint16_t);
-	backbuffer.depth = 16;
+	backbuffer.pitch = backbuffer.w*sizeof(uint16_t);
+	backbuffer.size = backbuffer.pitch*backbuffer.h*sizeof(uint16_t);
+	backbuffer.pixels = (uint16_t*)malloc(backbuffer.size);
+	backbuffer.depth = -1;
 
 	renderer.rotate = 0; //set default rotation to 0 deg
 #ifdef M21 //if hdmi cable is detected the audio is routed to hdmi instead of speakers, specific for SJGAM M21.
