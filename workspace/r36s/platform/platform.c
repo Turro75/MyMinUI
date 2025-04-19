@@ -524,7 +524,15 @@ SDL_Surface* PLAT_initVideo(void) {
 		for (int c = 0; c < conn->count_modes; c++) {
 			LOG_info("ConnectorID %i : mode %ux%u@%dHz\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
 			//found a mode
-			
+			if (conn->modes[c].vdisplay == conn->modes[c].hdisplay) {
+				LOG_info("This is an r36s_plus (1:1 screen)\n");fflush(stdout);
+				DEVICE_WIDTH=720;
+				DEVICE_HEIGHT=720;
+				DEVICE_PITCH=1440;
+				w = 720;
+				h = 720;
+				p = 1440;
+			}
 			if (conn->modes[c].vdisplay == DEVICE_HEIGHT && conn->modes[c].hdisplay == DEVICE_WIDTH && conn->modes[c].vrefresh == _HDMI_HZ) {
 				LOG_info("ConnectorID %i : mode %ux%u@%dHz found\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
 				drmModeEncoder *enc;
@@ -537,10 +545,10 @@ SDL_Surface* PLAT_initVideo(void) {
 						memcpy(&vid.mode[1], &conn->modes[c], sizeof(drmModeModeInfo));
 						vid.crtc[0] = enc->crtc_id;
 						vid.crtc[1] = enc->crtc_id;
-						LOG_info("Found CRTC %u on Connector %u\n",enc->crtc_id,conn->connector_id);						
+						LOG_info("Found CRTC %u on Connector %u\n",enc->crtc_id,conn->connector_id);fflush(stdout);						
 					}
 					else {
-						LOG_info("No CRTC found on Connector %u with error %s\n",conn->connector_id, strerror(errno));
+						LOG_info("No CRTC found on Connector %u with error %s\n",conn->connector_id, strerror(errno));fflush(stdout);	
 					}
 				}				
 				drmModeFreeEncoder(enc);				
@@ -586,7 +594,7 @@ SDL_Surface* PLAT_initVideo(void) {
 		memset(vid.fbmmap[thispage], 0, vid.screen_size[thispage]);
 		ret = drmModeSetCrtc(vid.fdfb, vid.crtc[thispage], vid.fb[thispage], 0, 0, &vid.conn[thispage], 1, &vid.mode[thispage]);
 		if (ret)
-			fprintf(stderr, "BUF%d cannot set CRTC for connector %u (%d): %m\n",thispage, vid.conn[thispage], errno);
+			fprintf(stderr, "BUF%d cannot set CRTC for connector %u (%d): %m\n",thispage, vid.conn[thispage], errno);fflush(stdout);
 		vid.linewidth[thispage] = creq.pitch / (creq.bpp/8);
 	}
 
