@@ -106,8 +106,9 @@
 #define FIXED_SCALE 	2
 #define FIXED_WIDTH		640
 #define FIXED_HEIGHT	480
-#define HDMI_WIDTH_		720 
-#define HDMI_HEIGHT_	480
+#define HDMI_WIDTH_		1280
+#define HDMI_HEIGHT_	720
+#define HDMI_HZ_        60
 #define FIXED_BPP		2
 #define FIXED_DEPTH		(FIXED_BPP * 8)
 #define FIXED_PITCH		(FIXED_WIDTH * FIXED_BPP)

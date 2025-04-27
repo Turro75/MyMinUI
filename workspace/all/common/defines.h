@@ -35,6 +35,8 @@
 #define GAMEBOXART_CFGFILE SDCARD_PATH "/Tools/" THISPLATFORM "/Convert BoxArt.pak/gameboxart.cfg"
 #define AUTO_RESUME_MODIFIER_PATH SHARED_USERDATA_PATH "/.minui/auto_resume_modifier.txt"
 
+#define CUSTOM_HDMI_SETTINGS_PATH SYSTEM_PATH "/custom_hdmi_settings.txt"
+
 #define FAUX_RECENT_PATH SDCARD_PATH "/Recently Played"
 #define COLLECTIONS_PATH SDCARD_PATH "/Collections"
 #define FAVORITE_PATH SHARED_USERDATA_PATH "/.minui/favorite.txt"
@@ -75,7 +77,7 @@
 #define SETTINGS_WIDTH 80
 
 #ifndef MAIN_ROW_COUNT
-#define MAIN_ROW_COUNT 6 // FIXED_HEIGHT / (PILL_SIZE * FIXED_SCALE) - 2 (floor and subtract 1 if not an integer)
+#define MAIN_ROW_COUNT DEVICE_HEIGHT / (PILL_SIZE * FIXED_SCALE) - 2 //(floor and subtract 1 if not an integer)
 #endif
 
 #ifndef PADDING

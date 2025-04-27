@@ -198,7 +198,12 @@ int makeBoxart(char *infilename, char *outfilename, myBoxartData mydata) {
     }
 
     SDL_RWops* out = SDL_RWFromFile(outfilename, "wb");
+#if defined (USE_SDL2)
     IMG_SavePNG_RW(mysurface, out, 1); 
+#else
+    SDL_SaveBMP_RW(mysurface, out, 1); 
+    bmp2png(outfilename);
+#endif   
     SDL_FreeSurface(scaled_myimg); 
     SDL_FreeSurface(mysurface);
     SDL_FreeSurface(image);

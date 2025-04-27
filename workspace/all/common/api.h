@@ -32,6 +32,9 @@ void LOG_note(int level, const char* fmt, ...);
 
 extern int DEVICE_WIDTH;
 extern int DEVICE_HEIGHT;
+extern int GAME_WIDTH;
+extern int GAME_HEIGHT;
+extern int GAME_PITCH;
 extern int DEVICE_PITCH;
 extern uint32_t frame_start;
 
@@ -114,14 +117,24 @@ enum {
 	EFFECT_COUNT,
 };
 
+struct mybackbuffer {
+	int size;
+	int depth;
+	int w;
+	int h;
+	int pitch;
+	uint16_t* pixels;
+};
+
 typedef struct GFX_Renderer {
 	void* src;
-	SDL_Surface* src_surface;
+	struct mybackbuffer* src_surface;
 	void* dst;
 	void* blit;
 	double aspect; // 0 for integer, -1 for fullscreen, otherwise aspect ratio, used for SDL2 accelerated scaling
 	double scale;
-	int rotate; // 0=0, 1=90, 2=180, 3=270
+	int rotate; // 0=0, 1=90, 2=180, 3=270  value set by core and screen orientation
+	int rotategame; // 0=0, 1=90, 2=180, 3=270  value set by core
 	int resize;
 	int screenscaling;
 	// TODO: document this better
@@ -167,6 +180,47 @@ void GFX_startFrame(void);
 void GFX_flip(SDL_Surface* screen);
 void GFX_sync(void); // call this to maintain 60fps when not calling GFX_flip() this frame
 void GFX_quit(void);
+void GFX_pan(void);
+
+void pixman_composite_src_8888_0565_asm_neon(int width, int height,
+	uint16_t *dst, int dst_stride_pixels, const uint32_t *src, int src_stride_pixels);
+
+void pixman_composite_src_1555_0565_asm_neon(int width, int height,
+	uint16_t *dst, int dst_stride_pixels, const uint16_t *src, int src_stride_pixels);
+
+void pixman_composite_src_0565_0565_asm_neon(int width, int height,
+	uint16_t *dst, int dst_stride_pixels, const uint16_t *src, int src_stride_pixels);
+
+
+void pixman_composite_src_0565_8888_asm_neon(int width,
+	int height,
+	uint32_t *dst,
+	int dst_stride_pixels,
+	uint16_t *src,
+	int src_stride_pixels);
+
+void pixman_composite_src_0565_8888_asm_neon_bgr(int width,
+	int height,
+	uint32_t *dst,
+	int dst_stride_pixels,
+	uint16_t *src,
+	int src_stride_pixels);
+
+void convert_rgb565_to_argb8888_flip_xy_neon(
+	const uint16_t *src,
+	uint32_t *dst,
+	int width,
+	int height,
+	int pitch);
+
+// chatgpt contributed that
+int scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(
+    const uint16_t *src_ptr, int src_w, int src_h, int src_pitch,
+    uint16_t *dst_ptr, int dst_w, int dst_h, int dst_pitch,
+    int dst_x, int dst_y, int out_w, int out_h);
+
+
+
 
 enum {
 	VSYNC_OFF = 0,
@@ -337,6 +391,7 @@ void PLAT_vsync(int remaining);
 scaler_t PLAT_getScaler(GFX_Renderer* renderer);
 void PLAT_blitRenderer(GFX_Renderer* renderer);
 void PLAT_flip(SDL_Surface* screen, int sync);
+void PLAT_pan(void);
 
 SDL_Surface* PLAT_initOverlay(void);
 void PLAT_quitOverlay(void);
@@ -357,6 +412,31 @@ int PLAT_isOnline(void);
 int PLAT_getNumProcessors(void);
 void PLAT_getAudioOutput(void);
 uint32_t PLAT_screenMemSize(void);
+
+int PLAT_getScreenRotation(int game);
+SDL_Surface* PLAT_getScreenGame(void);
+
+int FlipRotate000(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+int FlipRotate090(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+int FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+int FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+
+int FlipRotate000bgr(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+int FlipRotate090bgr(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+int FlipRotate180bgr(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+int FlipRotate270bgr(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+
+void rotateIMG(void *src, void*dst, int rotation, int srcw, int srch, int srcp);
+void convert_rgb565_to_argb8888_neon_rect(
+    const uint16_t *src,
+    uint32_t *dst,
+    int src_width,
+    int dst_pitch, // in pixels (not bytes)
+    int start_x,
+    int start_y,
+    int rect_width,
+    int rect_height
+);
 
 
 #endif

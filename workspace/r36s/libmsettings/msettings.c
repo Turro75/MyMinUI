@@ -184,7 +184,6 @@ void SetRawVolume(int val) { // 0 - 20
 	system(cmd);
 	printf("SetRawVolume(%i->%i) \"%s\"\n", val,rawval,cmd); fflush(stdout);
 }
-
 // monitored and set by thread in keymon
 int GetJack(void) {
 	return settings->jack;
@@ -207,11 +206,18 @@ int getInt(char* path) {
 
 
 int GetHDMI(void) {
+	int retvalue = 0;
+	char cmd[256];
 	if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) { 
-		return getInt("/sys/class/extcon/hdmi/cable.0/state");
+		retvalue = getInt("/sys/class/extcon/hdmi/cable.0/state");
+	} 
+	if (retvalue == 0) {		
+		sprintf(cmd, "amixer set \"Playback Path\" SPK");
 	} else {
-		return 0;
+		sprintf(cmd, "amixer set \"Playback Path\" HP");		
 	}
+	system(cmd);
+	return retvalue;
 }
 void SetHDMI(int value) {
 	// buh

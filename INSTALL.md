@@ -30,11 +30,11 @@ Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI...
 Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
 
-# SJGAM M21:
+# SJGAM M21/M22pro:
 
 Format as FAT32 (it is also supported exFAT if You like) a micro sdcard with enough space to contains all Your games, the volume name assigned to the partition doesn't matter.
 in the release file (i.e. MyMinUI-YYYYMMDDb-0-m21.zip) there is a folder called "m21" copy that folder as is in the FAT32 partition created above.
-Move (or copy) the file m21/emulationstation to the root of the FAT32 partition created above.
+Move (or copy) the file m21/emulationstation and m21/tomato to the root of the FAT32 partition created above.
 Copy also the whole release zip file (leave it zipped) in the FAT32 partition created above.
 
 Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)

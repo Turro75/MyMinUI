@@ -26,13 +26,20 @@ export LD_LIBRARY_PATH=$SYSTEM_PATH/lib:$LD_LIBRARY_PATH
 export SDL_NOMOUSE=1
 
 #######################################
-
-export CPU_SPEED_MENU=1008000
-export CPU_SPEED_POWERSAVE=1008000
-export CPU_SPEED_GAME=1200000
-export CPU_SPEED_PERF=1296000
-export CPU_SPEED_MAX=1512000
-
+if [ -e "/dev/input/by-path/platform-fe5b0000.i2c-event" ]; then
+	#rg353
+	export CPU_SPEED_MENU=1104000
+	export CPU_SPEED_POWERSAVE=1104000
+	export CPU_SPEED_GAME=1416000
+	export CPU_SPEED_PERF=1608000
+else
+	#r36s
+	export CPU_SPEED_MENU=1008000
+	export CPU_SPEED_POWERSAVE=1008000
+	export CPU_SPEED_GAME=1200000
+	export CPU_SPEED_PERF=1296000
+fi
+export CPU_SPEED_MAX=$(cat /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq) #1512000  #not on the plus?
 export GOVERNOR_PATH="/sys/devices/system/cpu/cpufreq/policy0/scaling_governor"
 export GOVERNOR_CPUSPEED_PATH="/sys/devices/system/cpu/cpufreq/policy0/scaling_setspeed"
 

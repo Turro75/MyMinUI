@@ -25,7 +25,16 @@ export SDL_NOMOUSE=1
 
 #######################################
 
-export CPU_SPEED_MENU=480000
+
+#Available frequency
+#480000
+#720000
+#912000
+#1008000
+#1104000
+#1200000
+	
+export CPU_SPEED_MENU=912000
 export CPU_SPEED_POWERSAVE=912000
 export CPU_SPEED_GAME=1008000
 export CPU_SPEED_PERF=1104000

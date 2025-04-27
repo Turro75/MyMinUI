@@ -2285,6 +2285,7 @@ int main (int argc, char *argv[]) {
 			}
 
 			GFX_flip(screen);
+			GFX_pan();
 			dirty = 0;
 		}
 		else GFX_sync();

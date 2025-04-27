@@ -34,17 +34,8 @@
 
 ///////////////////////////////////////
 
-struct mybackbuffer {
-	int size;
-	int depth;
-	int w;
-	int h;
-	int pitch;
-	uint16_t* pixels;
-};
-
-
 static SDL_Surface* screen;
+static SDL_Surface* screengame;
 
 static int quit = 0;
 static int show_menu = 0;
@@ -1822,7 +1813,7 @@ static void input_poll_callback(void) {
 	
 	if (!ignore_menu && PAD_justReleased(BTN_MENU)) {
 		show_menu = 1;
-		firstmenu = 1;
+		//firstmenu = 1;
 
 		if (thread_video) {	
 			wait_For_Thread();
@@ -1967,8 +1958,10 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 	case RETRO_ENVIRONMENT_SET_ROTATION: { // 1 wait to activate until rotation render is working
 		int *out = (int *)data;
 		if (out)
-			renderer.rotate = *out;
+			renderer.rotategame = *out;
 			LOG_info("RETRO_ENVIRONMENT_SET_ROTATION set to %i\n", renderer.rotate);
+			//faster for devices with rotated screen?
+			renderer.rotate = (renderer.rotategame + PLAT_getScreenRotation(1)) & 3;
 		return true;
 		break;
 	}
@@ -3008,52 +3001,46 @@ static uint32_t sec_start = 0;
 	static int fit = 0;
 #endif	
 
-void video_refresh_callback_rotate(int rotation, void *data, unsigned width, unsigned height, size_t pitch) {
-	int x, y, thispitch;
-//	int now = SDL_GetTicks();
+#include <arm_neon.h>
+#include <stdint.h>
+#include <stddef.h>
 
-	SDL_FreeSurface(renderer.src_surface);
-	thispitch = pitch/2;
-	if (rotation == 0) {	
-		renderer.src_surface = SDL_CreateRGBSurface(SDL_SWSURFACE,width, height, 16, RGBA_MASK_565);		
-		for (y = 0; y < height; y++) {
-			for (x = 0; x < width; x++) {	
-				*((uint16_t *)renderer.src_surface->pixels + x + y * width) = *((uint16_t *)data + x + y * thispitch);
-			}
-		}
-	}
-	if (rotation == 1) {
-		renderer.src_surface = SDL_CreateRGBSurface(SDL_SWSURFACE,height, width, 16, RGBA_MASK_565);
-		for (y = 0; y < height; y++) {
-			for (x = 0; x < width; x++) {
-				*((uint16_t *)renderer.src_surface->pixels + y + (width - x - 1) * height) = *((uint16_t *)data + x + y * thispitch);
-			}
-		}
-	}
-	if (rotation == 2) {
-		renderer.src_surface = SDL_CreateRGBSurface(SDL_SWSURFACE,width, height, 16, RGBA_MASK_565);		
-		for (y = 0; y < height; y++) {
-			for (x = 0; x < width; x++) {
-				*((uint16_t *)renderer.src_surface->pixels + (width - x - 1) + ((height - y - 1) * width)) = *((uint16_t *)data + x + y * thispitch);
-			}
-		}		
-	}
-	if (rotation == 3) {
-		renderer.src_surface = SDL_CreateRGBSurface(SDL_SWSURFACE,height, width, 16, RGBA_MASK_565);
-		for (y = 0; y < height; y++) {
-			for (x = 0; x < width; x++) {
-				*((uint16_t *)renderer.src_surface->pixels + (height - y - 1) + (x  * height)) = *((uint16_t *)data + x + y * thispitch);
-			}
-		}
-	}	
+void memcpy_rgb565_neon(uint16_t *dst, const uint16_t *src, size_t pixel_count) {
+    // Copiamo 8 pixel per volta (8 * 16bit = 128 bit)
+    while (pixel_count >= 8) {
+        uint16x8_t data = vld1q_u16(src);  // carica 8 pixel
+        vst1q_u16(dst, data);              // scrive 8 pixel
+
+        src += 8;
+        dst += 8;
+        pixel_count -= 8;
+    }
+
+    // Copia i rimanenti pixel (se < 8)
+    while (pixel_count--) {
+        *dst++ = *src++;
+    }
+}
+
+extern void memcpy_rgb565_neon_fast(uint16_t *dst, const uint16_t *src, size_t count);
+
+void video_refresh_callback_rotate(int rotation, void *data, unsigned width, unsigned height, size_t pitch) {
+	//int x, y, thispitch;
+	//struct timeval now, now1, now2, now3, now4, now5, now6;
+//	gettimeofday(&now,NULL);
+	rotateIMG(data, renderer.src_surface->pixels, rotation, width, height, pitch);
+	//gettimeofday(&now1,NULL);	
 	if (renderer.true_w != width || renderer.true_h != height || renderer.true_p != pitch){
 		LOG_info("Game Rotation of %ddeg calls RESIZE %ix%i_%i\n", rotation*90, width, height, pitch);fflush(stdout);
 		renderer.resize = 1;
 		renderer.true_w = width;
 		renderer.true_h = height;
-		renderer.true_p = pitch;		
+		renderer.true_p = pitch;	
+		renderer.src_surface->w=width * ((3 - renderer.rotate) % 2) + height * (renderer.rotate % 2);
+		renderer.src_surface->h=width * (renderer.rotate % 2) + height * ((3-renderer.rotate) % 2);
+		renderer.src_surface->pitch=renderer.src_surface->w*2;	
 	} 	
-//	LOG_info("Game Rotation of %d callback TOOK %dmsec\n", rotation*90, SDL_GetTicks() - now);
+//	LOG_info("Game Rotation of %d %dx%d_%d - rotate %dusec - freesurface %dusec - createsurface %dusec - pixman %dusec\n", rotation*90, width, height, pitch, now1.tv_usec - now.tv_usec, now1.tv_usec - now.tv_usec ,now2.tv_usec - now1.tv_usec, now3.tv_usec - now2.tv_usec);fflush(stdout);
 }
 
 char resizemode;
@@ -3063,9 +3050,9 @@ SDL_Rect video_refresh_callback_resize_native(void) {
 	SDL_Rect retvalue;
 	int scale = 6;
 	int max_xscale = 6;
-	while (max_xscale * renderer.src_surface->w > DEVICE_WIDTH) max_xscale--;
+	while (max_xscale * renderer.src_surface->w > GAME_WIDTH) max_xscale--;
 	int max_yscale = 6;
-	while (max_yscale * renderer.src_surface->h > DEVICE_HEIGHT) max_yscale--;
+	while (max_yscale * renderer.src_surface->h > GAME_HEIGHT) max_yscale--;
 	scale = MIN(max_xscale, max_yscale);
 	scale = MIN(scale, screen_max_scale+1);
 	LOG_info("MAX xscaler = %d ** MAX yscaler = %d ** MAX scaler = %d\n", max_xscale, max_yscale, scale);fflush(stdout);
@@ -3073,8 +3060,8 @@ SDL_Rect video_refresh_callback_resize_native(void) {
 	
 	int dst_w = renderer.src_surface->w * scale;
 	int dst_h = renderer.src_surface->h * scale;
-	int dst_x = (DEVICE_WIDTH - dst_w) / 2;
-	int dst_y = (DEVICE_HEIGHT - dst_h) / 2;
+	int dst_x = (GAME_WIDTH - dst_w) / 2;
+	int dst_y = (GAME_HEIGHT - dst_h) / 2;
 	retvalue.x = dst_x;
 	retvalue.y = dst_y;
 	retvalue.w = dst_w;
@@ -3088,21 +3075,21 @@ SDL_Rect video_refresh_callback_resize_aspect(void) {
 	//maximum scaling keeping original aspect ratio 
 	SDL_Rect retvalue;
 	int dst_x,dst_y,dst_w,dst_h;
-	double sysaspect = 1.0 * DEVICE_WIDTH / DEVICE_HEIGHT;
+	double sysaspect = 1.0 * GAME_WIDTH / GAME_HEIGHT;
 	double aspect = renderer.src_surface->w / (double)renderer.src_surface->h;
 	if (aspect >= sysaspect) {
 		//landscape or 1:1 -> width limited
-		dst_w = DEVICE_WIDTH;
+		dst_w = GAME_WIDTH;
 		double _dst_h = 1.0 * dst_w / aspect;
 		dst_h = (int)_dst_h;
 		dst_x = 0;
-		dst_y = (DEVICE_HEIGHT - dst_h) / 2;
+		dst_y = (GAME_HEIGHT - dst_h) / 2;
 	} else {
 		//portrait -> height limited		
-		dst_h = DEVICE_HEIGHT;
+		dst_h = GAME_HEIGHT;
 		double _dst_w = 1.0 * dst_h * aspect;
 		dst_w = (int)_dst_w;
-		dst_x = (DEVICE_WIDTH - dst_w) / 2;
+		dst_x = (GAME_WIDTH - dst_w) / 2;
 		dst_y = 0;		
 	}
 	retvalue.x = dst_x;
@@ -3120,28 +3107,28 @@ SDL_Rect video_refresh_callback_resize_extended(void) {
 	// for games that have a too narrow or too low aspect ratio (i.e. 1941 arcade) 
 	SDL_Rect retvalue;
 	int dst_x,dst_y,dst_w,dst_h;
-	double sysaspect = 1.0 * DEVICE_WIDTH / DEVICE_HEIGHT;
+	double sysaspect = 1.0 * GAME_WIDTH / GAME_HEIGHT;
 	double aspect = renderer.src_surface->w / (double)renderer.src_surface->h;
 	if (aspect >= sysaspect) {
 		//landscape or 1:1 -> width limited
-		dst_w = DEVICE_WIDTH;
+		dst_w = GAME_WIDTH;
 		double _dst_h = 1.0 * dst_w / aspect;
 		dst_h = (int)_dst_h;
 		dst_x = 0;
-		dst_y = (DEVICE_HEIGHT - dst_h) / 2;
+		dst_y = (GAME_HEIGHT - dst_h) / 2;
 		if (dst_y > 2){
 			dst_h = dst_h + dst_y;
-			dst_y = (DEVICE_HEIGHT - dst_h) / 2;
+			dst_y = (GAME_HEIGHT - dst_h) / 2;
 		}
 	} else {
 		//portrait -> height limited		
-		dst_h = DEVICE_HEIGHT;
+		dst_h = GAME_HEIGHT;
 		double _dst_w = 1.0 * dst_h * aspect;
 		dst_w = (int)_dst_w;
-		dst_x = (DEVICE_WIDTH - dst_w) / 2;
+		dst_x = (GAME_WIDTH - dst_w) / 2;
 		if (dst_x > 2){
 			dst_w = dst_w + dst_x;
-			dst_x = (DEVICE_WIDTH - dst_w) / 2;
+			dst_x = (GAME_WIDTH - dst_w) / 2;
 		}
 		dst_y = 0;		
 	}
@@ -3158,7 +3145,7 @@ void video_refresh_callback_resize(void) {
 	LOG_info("RESIZE IN\n");fflush(stdout);
 	uint32_t now = SDL_GetTicks();
 	LOG_info(" VideoResize IN %d %d %d ABS:%d\n", renderer.src_surface->w, renderer.src_surface->h, renderer.src_surface->pitch, now);fflush(stdout);
-	SDL_Rect targetarea = {0,0,DEVICE_WIDTH,DEVICE_HEIGHT};
+	SDL_Rect targetarea = {0,0,GAME_WIDTH,GAME_HEIGHT};
 	switch(screen_scaling) {
 		case SCALE_ASPECT: { 
 							targetarea = video_refresh_callback_resize_aspect();
@@ -3235,56 +3222,59 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	//if (downsample) pitch /= 2; // everything expects 16 but we're downsampling from 32
 
 	renderer.src = (void*)data;
-
-	//ok here I have renderer.src that points to the frame data to display, it is in RGB565 format
-	//quite sure it is the right moment to rotate it, before calling the select scaler.
-	video_refresh_callback_rotate(renderer.rotate, renderer.src, width, height, pitch);
-//	uint32_t now2 = SDL_GetTicks(); 
+	struct timeval now, now1, now2, now3, now4, now5, now6;
+	gettimeofday(&now,NULL);
 	
+	//ok here I have renderer.src that points to the frame data to display, it is in RGB565 format
+	//quite sure it is the right moment to rotate it, before calling the selected scaler.
+	//video_refresh_callback_rotate((renderer.rotate + PLAT_getScreenRotation()) & 3, renderer.src, width, height, pitch);
+	video_refresh_callback_rotate(renderer.rotate, (uint16_t*)data, width, height, pitch);
+	gettimeofday(&now1,NULL);
 	if (renderer.dst_p==0 || renderer.resize ==1) {
 		video_refresh_callback_resize();
 		GFX_clearAll();	
 	}
-//	LOG_info("video_refresh_callback_main dst_p=%iwidth:%i-%i height:%i-%i pitch:%i-%i\n", renderer.dst_p,width, renderer.true_w ,height, renderer.true_h,pitch,renderer.true_p);
-//	uint32_t now4 = SDL_GetTicks();
-//	LOG_info("Video_refresh_callback_main before BLIT  ABS:%d\n", SDL_GetTicks());fflush(stdout);
+	gettimeofday(&now2,NULL);
 	GFX_blitRenderer(&renderer);
-//	LOG_info("Video_refresh_callback_main after BLIT  ABS:%d\n", SDL_GetTicks());fflush(stdout);
-//	uint32_t now5 = SDL_GetTicks();
+	gettimeofday(&now3,NULL);
 	// debug
 	if (show_debug) {
 		char debug_text[128];
 		sprintf(debug_text, "%ix%i %c%.1fx %d", renderer.src_w,renderer.src_h, resizemode, renderer.scale, backbuffer.depth);
-		blitBitmapText(debug_text,renderer.dst_x+2,renderer.dst_y+2,screen->pixels,screen->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+		blitBitmapText(debug_text,renderer.dst_x+2,renderer.dst_y+2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 
 		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.dst_w,renderer.dst_h);
-		blitBitmapText(debug_text,-2,renderer.dst_y+2,screen->pixels,screen->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+		blitBitmapText(debug_text,-2,renderer.dst_y+2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 
 		sprintf(debug_text, "%.0f/%.0f", fps_double,fps2_double);
 //#ifdef M21
 #if 1
-		blitBitmapText(debug_text,renderer.dst_x+2,-2,screen->pixels,screen->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+		blitBitmapText(debug_text,renderer.dst_x+2,-2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 #else
 		blitBitmapText(debug_text,2,-21,screen->pixels,screen->pitch/2, screen->w,screen->h);
 
 		sprintf(debug_text, "%s", cpuload);
 		blitBitmapText(debug_text,2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
 #endif
-		sprintf(debug_text, "%s %i", effect_str,renderer.rotate*90);
-		blitBitmapText(debug_text,-2,-2,screen->pixels,screen->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+		sprintf(debug_text, "%s %i", effect_str,renderer.rotategame*90);
+		blitBitmapText(debug_text,-2,-2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 	}
-//	uint32_t now6 = SDL_GetTicks();
-//	LOG_info("Video_refresh_callback_main before FLIP  ABS:%d\n", SDL_GetTicks());fflush(stdout);
+
+	gettimeofday(&now4,NULL);
 	GFX_flip(screen);
-//	LOG_info("Video_refresh_callback_main after  FLIP  ABS:%d\n", SDL_GetTicks());fflush(stdout);
+	gettimeofday(&now5,NULL);
+	GFX_pan();
+	gettimeofday(&now6,NULL);
 	last_flip_time = SDL_GetTicks();
 	if (!thread_video) render = 0;
-//	LOG_info("videorefreshcallbackmain took %dmsec - softstrech took %dmsec - rotate took %dmsec - flip took %dmsec\n", last_flip_time - now, now5 - now4, now4 - now2, last_flip_time-now6 );
-//	LOG_info("Video_refresh_callback_main OUT  ABS:%i\n", last_flip_time);fflush(stdout);
+
+	//LOG_info("videorefreshcallbackmain took %dusec - rotate took %dusec - resize took %dusec - flip took %dusec - wait pan for %dusec\n", now6.tv_usec - now.tv_usec, now1.tv_usec - now.tv_usec, now3.tv_usec - now2.tv_usec, now5.tv_usec - now4.tv_usec, now6.tv_usec - now5.tv_usec);
+
 }
 
 //int storage_audio_timing[60*60*10][4] = {-1};
 //static uint32_t _x = 0;
+static uint32_t firstframe = 1;
 static uint32_t last_callback_time = 0;
 static void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
 	int callback_time = SDL_GetTicks();
@@ -3294,53 +3284,51 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 		//LOG_info("Empty Frame\n");fflush(stdout);
 		return; //frameskip activated?
 	}
-	LOG_info("Video_refresh_callback A\n");fflush(stdout);
+//	LOG_info("Video_refresh_callback A\n");fflush(stdout);
 	if (!backbuffer.pixels) {
 		//LOG_info("backbuffer.pixels not yet ready\n");fflush(stdout);	
 		return;
 	}
+
+//	if (backbuffer.size != pitch * height) {
+//		realloc(backbuffer.pixels, pitch * height);	
+//	}
+
 	uint16_t *output = backbuffer.pixels;
-	
-	int counter = pitch * height;
-	//LOG_info("Video_refresh_callback B pitch = %d , counter = %d\n", pitch,counter);fflush(stdout);
+	//struct timeval now, now2;
+	//gettimeofday(&now,NULL);
+	if (downsample == 0) {
+		//as is
+		//this is quite faster than memcpy, in the worst case of 720x720 it takes 0.6msec while memcpy takes 1.5msec.
+		pixman_composite_src_0565_0565_asm_neon(pitch/2, height, output, pitch/2, (uint16_t *)data, pitch/2);
+	}
+
 	if (downsample == 1) {
 		// from 8888 to 565
-		counter /= 4;
-		pitch /= 2;
-		
-		//LOG_info("Video_refresh_callback MID 1 size = %d , pitch = %d , counter = %d\n", backbuffer.size, pitch, counter);fflush(stdout);
-		const uint32_t *input32 = data;
-		while (counter--) {
-			*output =  (uint16_t)((*input32 & 0xF80000) >> 8);
-			*output |= (uint16_t)((*input32 & 0xFC00) >> 5);
-			*output |= (uint16_t)((*input32 & 0xF8) >> 3);
-			input32++;
-			output++;
-		}
+		pitch /= 2;	
+		// using pixman_composite allows to save up to 3msec per frame (pixman requires 2.7msec@720x720, while cycle above takes 5.8msecs)
+		pixman_composite_src_8888_0565_asm_neon(pitch/2, height, output, pitch/2, (uint32_t *)data, pitch/2);
 	} 
 
 	if (downsample == 2) {
-		//LOG_info("Video_refresh_callback MID 2\n");fflush(stdout);
 		//from 1555 to 565
-		counter /= 2;
-		const uint16_t *input16 = data;		
-		while (counter--) {
-			*output =  (uint16_t)((*input16 & 0x7C00) << 1);
-			*output |= (uint16_t)((*input16 & 0x3E0) << 1);
-			*output |= (uint16_t)((*input16 & 0x1F));
-			input16++;
-			output++;
-		}
+	//	uint32_t counter = pitch*height/2;
+	//	const uint16_t *input16 = (uint16_t *)data;		
+	//	while (counter--) {
+	//		uint16_t pixel = *input16++;
+	//		uint16_t r = (pixel & 0x7C00) << 1;  // da bit 10-14 → bit 11-15
+	//		uint16_t g = (pixel & 0x03E0) << 1;  // da bit 5-9 → bit 5-10
+	//		uint16_t b = (pixel & 0x001F);       // da bit 0-4 → bit 0-4
+	//		*output++ = r  | g  | b;
+	//	}
+		pixman_composite_src_1555_0565_asm_neon(pitch/2, height, output,pitch/2, (uint16_t *)data, pitch/2);
 	}
-
-	if (downsample == 0) {
-		//as is
-		//LOG_info("Video_refresh_callback MID 0\n");fflush(stdout);
-		memcpy(backbuffer.pixels, data, counter);
-	}
+	//gettimeofday(&now2,NULL);
+	//LOG_info("video_refresh_callback copy to backbuffer %d took %dusec %dx%d_%d\n", downsample, now2.tv_usec - now.tv_usec, width, height, pitch);fflush(stdout);
 	backbuffer.w = width;
 	backbuffer.h = height;
 	backbuffer.pitch = pitch;
+	backbuffer.size = pitch * height;
 	//LOG_info("Video_refresh_callback MID\n");fflush(stdout);
 	if (thread_video) {		
 		pthread_mutex_lock(&flip_mx);
@@ -3352,6 +3340,11 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 		pthread_cond_signal(&core_rq);		
 		pthread_mutex_unlock(&core_mx);
 		//PLAT_vsync(0);
+		if (firstframe) {
+			firstframe = 0;
+			PLAT_vsync(0);
+		}
+			//LOG_info("Video_refresh_callback first frame\n");fflush(stdout);
 	}
 	else {
 		fps2_ticks++;
@@ -3399,9 +3392,9 @@ static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) {
 #endif	
 //	storage_audio_timing[_x++][1] = SDL_GetTicks();
 //	if (_x == 60*60*10) _x=0;
-	gettimeofday(&tv,NULL);
-	microsvalue = 1000000 * tv.tv_sec + tv.tv_usec;
-	if (last_audio_time == 0) last_audio_time = microsvalue;
+//	gettimeofday(&tv,NULL);
+//	microsvalue = 1000000 * tv.tv_sec + tv.tv_usec;
+//	if (last_audio_time == 0) last_audio_time = microsvalue;
 	//LOG_info("audio_sample_batch_callback %jd/%jd/%i usec\n",(intmax_t)last_audio_time,microsvalue,frame_period_usecs);fflush(stdout);
 
 //	while ((microsvalue - last_audio_time) < frame_period_usecs) 
@@ -3410,7 +3403,7 @@ static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) {
 //			microsvalue = 1000000 * tv.tv_sec + tv.tv_usec;
 //		}
 
-	last_audio_time = microsvalue;
+//	last_audio_time = microsvalue;
 	return retvalue;
 };
 
@@ -3728,7 +3721,12 @@ int makeBoxart(SDL_Surface *image, char *filename) {
 
 
     SDL_RWops* out = SDL_RWFromFile(filename, "wb");
-    IMG_SavePNG_RW(mysurface, out, 1); 
+#if defined (USE_SDL2)
+	IMG_SavePNG_RW(mysurface, out, 1);
+#else
+	SDL_SaveBMP_RW(mysurface, out, 1);
+	bmp2png(menu.bmp_path);	
+#endif
     //SDL_BlitSurface(mysurface,NULL,screen,NULL); 
     SDL_FreeSurface(scaled_myimg); 
     //SDL_FreeSurface(unscaled_myimg);
@@ -3873,6 +3871,7 @@ static int Menu_message(char* message, char** pairs) {
 			GFX_blitMessage(font.medium, message, screen, &(SDL_Rect){0,SCALE1((PADDING - (PADDING*fancy_mode))),screen->w,screen->h-SCALE1(PILL_SIZE+(PADDING - (PADDING*fancy_mode)))});
 			GFX_blitButtonGroup(pairs, 0, screen, 1, fancy_mode);
 			GFX_flip(screen);
+			GFX_pan();
 			dirty = 0;
 		}
 		else GFX_sync();
@@ -4696,6 +4695,7 @@ static int Menu_options(MenuList* list) {
 			}
 			
 			GFX_flip(screen);
+			GFX_pan();
 			dirty = 0;
 		}
 		else GFX_sync();
@@ -4870,15 +4870,21 @@ static void Menu_saveState(void) {
 		putInt(menu.txt_path_slot, menu.disc);
 	}
 	
-	SDL_Surface* bitmap = menu.bitmap;
-	if (!bitmap) bitmap = SDL_CreateRGBSurfaceFrom(renderer.src, renderer.true_w, renderer.true_h, FIXED_DEPTH, renderer.src_p, RGBA_MASK_565);
-	SDL_RWops* out = SDL_RWFromFile(menu.bmp_path, "wb");
+	//SDL_Surface* bitmap = SDL_CreateRGBSurfaceFrom(renderer.src_surface->pixels, renderer.src_surface->w, renderer.src_surface->h, FIXED_DEPTH, renderer.src_surface->pitch, RGBA_MASK_565);
+	SDL_Surface *tmpbitmap = SDL_CreateRGBSurfaceFrom(renderer.src_surface->pixels, renderer.src_surface->w, renderer.src_surface->h, FIXED_DEPTH, renderer.src_surface->pitch, RGBA_MASK_565);
+	SDL_Surface *bitmap = rotozoomSurface(tmpbitmap, (4-PLAT_getScreenRotation(1))*90.0, 1.0, 1);
+	SDL_FreeSurface(tmpbitmap);
+	SDL_RWops* out =     SDL_RWFromFile(menu.bmp_path, "wb");
+#if defined (USE_SDL2)
 	IMG_SavePNG_RW(bitmap, out, 1);
+#else
+	SDL_SaveBMP_RW(bitmap, out, 1);
+	bmp2png(menu.bmp_path);	
+#endif
 	
 	// LOG_info("%s %ix%i\n", menu.bmp_path, bitmap->w,bitmap->h);
 	
-	if (bitmap!=menu.bitmap) SDL_FreeSurface(bitmap);
-	
+	SDL_FreeSurface(bitmap);
 	state_slot = menu.slot;
 	putInt(menu.slot_path, menu.slot);
 	State_write();
@@ -4988,14 +4994,20 @@ static void Menu_loop(void) {
 	render = 0;*/
 	if (firstmenu) PLAT_clearAll();
 	firstmenu = 0;
-
-	menu.bitmap = SDL_CreateRGBSurfaceFrom(renderer.src_surface->pixels, renderer.src_surface->w, renderer.src_surface->h, FIXED_DEPTH, renderer.src_surface->pitch, RGBA_MASK_565);
-	
-	// LOG_info("Menu_loop:menu.bitmap %ix%i\n", menu.bitmap->w,menu.bitmap->h);
-	
+	//SDL_FillRect(screengame, NULL, 0xFFFF0000);
+//	menu.bitmap = SDL_CreateRGBSurfaceFrom(screengame->pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, DEVICE_PITCH, RGBA_MASK_565);
+//	LOG_info("Create tmpbitmap\n");fflush(stdout);
+	//check if the bitmap must be rotated:
+//	int gamerot, screenrot;
+	//gamerot = PLAT_getScreenRotation(1);
+	//screenrot = PLAT_getScreenRotation(0);
+	//if (gamerot!=screenrot) {
+		//menu.bitmap must be rotated
+	//}
+	//menu.bitmap = rotateSurface90Degrees(screengame, 3);
+	menu.bitmap = rotozoomSurface(screengame, (4-PLAT_getScreenRotation(1))*90.0, 1.0, 1);
 	SDL_Surface* backing = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH,DEVICE_HEIGHT,FIXED_DEPTH,RGBA_MASK_565); 
-	Menu_scale(menu.bitmap, backing);
-	
+	SDL_BlitSurface(menu.bitmap, NULL, backing, NULL);
 	int restore_w = screen->w;
 	int restore_h = screen->h;
 	int restore_p = screen->pitch;
@@ -5171,9 +5183,8 @@ static void Menu_loop(void) {
 							restore_p = renderer.dst_p; // screen->pitch;
 							LOG_info("Menu_loop change aspect call GFX_resize %i %i %i\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH);fflush(stdout);
 							screen = GFX_resize(DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
-						
 							SDL_FillRect(backing, NULL, 0);
-							Menu_scale(menu.bitmap, backing);
+							SDL_BlitSurface(menu.bitmap, NULL, backing, NULL);
 						}
 						dirty = 1;
 					}
@@ -5379,6 +5390,7 @@ static void Menu_loop(void) {
 			}
 	
 			GFX_flip(screen);
+			GFX_pan();
 			dirty = 0;
 		}
 		else GFX_sync();
@@ -5420,6 +5432,7 @@ static void Menu_loop(void) {
 	menu.bitmap = NULL;
 	SDL_FreeSurface(backing);
 	PWR_disableAutosleep();
+	firstframe = 1;
 }
 
 // TODO: move to PWR_*?
@@ -5619,9 +5632,13 @@ int main(int argc , char* argv[]) {
 	backbuffer.w = MAX_WIDTH;
 	backbuffer.h = MAX_HEIGHT;
 	backbuffer.pitch = backbuffer.w*sizeof(uint16_t);
-	backbuffer.size = backbuffer.pitch*backbuffer.h*sizeof(uint16_t);
-	backbuffer.pixels = (uint16_t*)malloc(backbuffer.size);
+	backbuffer.size = backbuffer.pitch*backbuffer.h;
+	//backbuffer.pixels = (uint16_t*)malloc(backbuffer.size);
+	posix_memalign((void **)&backbuffer.pixels,16,backbuffer.size);
 	backbuffer.depth = -1;
+
+	renderer.src_surface = malloc(sizeof(struct mybackbuffer));//backbuffer.size);
+	posix_memalign((void **)&renderer.src_surface->pixels,16,backbuffer.size);
 
 	renderer.rotate = 0; //set default rotation to 0 deg
 #ifdef M21 //if hdmi cable is detected the audio is routed to hdmi instead of speakers, specific for SJGAM M21.
@@ -5646,6 +5663,9 @@ int main(int argc , char* argv[]) {
 	}
 
 	screen = GFX_init(MODE_MENU);
+	screengame = PLAT_getScreenGame();
+	renderer.rotate = (renderer.rotate + PLAT_getScreenRotation(1)) & 3;
+	setOverclock(overclock); // default to normal
 	PAD_init();
 	//DEVICE_WIDTH = screen->w; // yea or nay?
 	//DEVICE_HEIGHT = screen->h; // yea or nay?
@@ -5709,6 +5729,7 @@ int main(int argc , char* argv[]) {
 	// for better frame pacing?
 	GFX_clearAll();
 	GFX_flip(screen);
+	GFX_pan();
 
 	sec_start = SDL_GetTicks();
 
@@ -5782,6 +5803,7 @@ int main(int argc , char* argv[]) {
 				// for better frame pacing?
 				GFX_clearAll();
 				GFX_flip(screen);
+				GFX_pan();
 			}
 		}
 		if ((!waitforthread)&&(!config_load_done)) {
@@ -5809,6 +5831,8 @@ finish:
 	GFX_quit();
 //	save_storage_audio_timing();
 	free(backbuffer.pixels);
+	free(renderer.src_surface->pixels);
+	free(renderer.src_surface);
 	free(mutedaudiodata);
 	
 	return EXIT_SUCCESS;

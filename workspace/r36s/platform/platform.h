@@ -107,8 +107,8 @@
 #define FIXED_SCALE 	2
 #define FIXED_WIDTH		640
 #define FIXED_HEIGHT	480
-#define _HDMI_WIDTH		720
-#define _HDMI_HEIGHT	480
+#define _HDMI_WIDTH		1280
+#define _HDMI_HEIGHT	720
 #define FIXED_BPP		2
 #define FIXED_DEPTH		(FIXED_BPP * 8)
 #define FIXED_PITCH		(FIXED_WIDTH * FIXED_BPP)
@@ -116,6 +116,7 @@
 #define FIXED_SIZE		(FIXED_PITCH * FIXED_HEIGHT)
 #define _HDMI_SIZE		(_HDMI_PITCH * _HDMI_HEIGHT)
 #define _HDMI_HZ        60
+#define FIXED_HZ        60
 
 #define MAX_WIDTH _HDMI_WIDTH	
 #define MAX_HEIGHT _HDMI_WIDTH	

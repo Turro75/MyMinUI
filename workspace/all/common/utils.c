@@ -34,6 +34,11 @@ int hide(char* file_name) {
 	return result;
 }
 
+void bmp2png(char * filename){
+	char cmd[512];
+	sprintf(cmd,"bmp2png.elf -X \"%s\" && rm \"%s.bak\"", filename, filename);
+	system(cmd);
+}
 
 void getStatePath(char * gamepath, char* statepath){
 	//problem, given the full rom path how to retrieve the core used at the time of state creation? minarch knows the core but minui don't.
@@ -414,4 +419,31 @@ uint64_t getMicroseconds(void) {
     ret += (uint64_t)tv.tv_usec;
 
     return ret;
+}
+
+
+void getHdmiModeValues(char * hdmimode, int *w, int *h, int *hz){
+	// Inizializza i valori a 0
+    *w = 0;
+    *h = 0;
+    *hz = 0;
+
+    // Trova la posizione dei separatori 'x' e 'p'
+    char *x_pos = strchr(hdmimode, 'x');
+    char *p_pos = strchr(hdmimode, 'p');
+
+    if (x_pos && p_pos) {
+        // Estrai la larghezza (w)
+        *x_pos = '\0'; // Termina la stringa temporaneamente
+        *w = atoi(hdmimode);
+
+        // Estrai l'altezza (h)
+        char *height_start = x_pos + 1;
+        *p_pos = '\0'; // Termina la stringa temporaneamente
+        *h = atoi(height_start);
+
+        // Estrai la frequenza (hz)
+        char *hz_start = p_pos + 1;
+        *hz = atoi(hz_start);
+    }
 }

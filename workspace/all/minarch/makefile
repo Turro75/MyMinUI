@@ -19,14 +19,18 @@ SDL?=SDL2
 
 ###########################################################
 
+OBJDUMP = $(CROSS_COMPILE)objdump
+
 TARGET = minarch
 INCDIR = -I. -I./libretro-common/include/ -I../common/ -I../../$(PLATFORM)/platform/ $(MY_INCDIR)
-SOURCE = $(TARGET).c ../common/scaler.c ../common/utils.c ../common/$(SDL)_rotozoom.c ../common/api.c ../../$(PLATFORM)/platform/platform.c
+SOURCE = $(TARGET).c ../common/scaler.c ../common/utils.c ../common/$(SDL)_rotozoom.c ../common/api.c ../../$(PLATFORM)/platform/platform.c 
+SOURCE += ../common/pixman-arm-neon-asm.S
+SOURCE += ../common/memcpy_rgb565_neon.S
 
 CC = $(CROSS_COMPILE)gcc
-CFLAGS   = $(MYARCH) -fomit-frame-pointer
-CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL) -Ofast -std=gnu99
-CFLAGS	+= -Os -flto  $(MY_CFLAGS)
+CFLAGS   = $(MYARCH) -fomit-frame-pointer -ftree-vectorize -funroll-loops -funsafe-math-optimizations
+CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL) -O3 -std=gnu99
+CFLAGS	+=  -flto -s $(MY_CFLAGS) 
 LDFLAGS	 = -ldl $(LIBS) -lmsettings -l$(SDL) -l$(SDL)_image -l$(SDL)_ttf -lpthread -lm -lz $(MY_LDFLAGS)
 # CFLAGS  += -Wall -Wno-unused-variable -Wno-unused-function -Wno-format-overflow
 # CFLAGS  += -fsanitize=address -fno-common
@@ -42,7 +46,8 @@ PRODUCT= build/$(PLATFORM)/$(TARGET).elf
 
 all: libretro-common $(PREFIX)/include/msettings.h
 	mkdir -p build/$(PLATFORM)
-	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
+	$(CC) $(SOURCE)  $(CFLAGS) $(LDFLAGS) -o $(PRODUCT)
+#	$(OBJDUMP) -D $(PRODUCT) > $(PRODUCT).map
 clean:
 	rm -f $(PRODUCT)
 
