@@ -400,67 +400,6 @@ scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
 	return NULL;
 }
 
-#include <arm_neon.h>
-#include <stdint.h>
-#include <stdlib.h>
-
-/*
-// Nearest-neighbor RGB565 scaler con NEON e lookup table ottimizzata
-int scale_mat_nearest_lut_rgb565_neon_fast(
-    const uint16_t *src_ptr, int src_w, int src_h,
-    uint16_t *dst_ptr, int dst_w, int dst_h)
-{
-    // Calcolo incrementi in fixed-point 16.16
-    uint64_t incx = ((uint64_t)src_w << 16) / dst_w;
-    uint64_t incy = ((uint64_t)src_h << 16) / dst_h;
-
-    // Precomputazione lookup per ogni colonna (x)
-    int *x_lut = (int *)malloc(dst_w * sizeof(int));
-    if (!x_lut) return -1;
-
-    uint64_t posx = incx / 2;
-    for (int x = 0; x < dst_w; x++) {
-        x_lut[x] = (int)(posx >> 16);
-        posx += incx;
-    }
-
-    // Loop per ogni riga
-    uint64_t posy = incy / 2;
-    for (int y = 0; y < dst_h; y++) {
-        int src_y = (int)(posy >> 16);
-        const uint16_t *src_row = src_ptr + src_y * src_w;
-        uint16_t *dst_row = dst_ptr + y * dst_w;
-
-        int x = 0;
-        for (; x + 8 <= dst_w; x += 8) {
-            uint16_t tmp[8] __attribute__((aligned(16)));
-
-            tmp[0] = src_row[x_lut[x + 0]];
-            tmp[1] = src_row[x_lut[x + 1]];
-            tmp[2] = src_row[x_lut[x + 2]];
-            tmp[3] = src_row[x_lut[x + 3]];
-            tmp[4] = src_row[x_lut[x + 4]];
-            tmp[5] = src_row[x_lut[x + 5]];
-            tmp[6] = src_row[x_lut[x + 6]];
-            tmp[7] = src_row[x_lut[x + 7]];
-
-            // Scrittura NEON a 8 pixel
-            vst1q_u16(dst_row + x, vld1q_u16(tmp));
-        }
-
-        // Ultimi pixel non allineati
-        for (; x < dst_w; x++) {
-            dst_row[x] = src_row[x_lut[x]];
-        }
-
-        posy += incy;
-    }
-
-    free(x_lut);
-    return 0;
-}
-*/
-
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	if (effect_type!=next_effect) {
 		effect_type = next_effect;
@@ -485,14 +424,9 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 }
 
 void PLAT_pan(void) {
-	pan_display(vid.page);
-//	PLAT_vsync(0);
-	if (vid.numpages == 2) {
-		vid.page ^= 1;
-	}
+	
 }
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
-//	uint32_t now = SDL_GetTicks();
 
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
@@ -521,15 +455,16 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			// 270 Rotation
 			FlipRotate270(vid.screen, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
 		}
-		pan_display(vid.page);
+		pan_display(vid.page); //to avoid flickering/tearing in menu.
 	} else {
 		//the image must be rotated by 180° 
 		pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
 		//FlipRotate000(vid.screengame, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
-	}
-	vid.renderingGame = 0;	
+		vid.renderingGame = 0;	
+		pan_display(vid.page);//it waits for vsync before returning
+		vid.page ^= 1;
+	}	
 }
-
 
 // TODO:
 #define OVERLAY_WIDTH PILL_SIZE // unscaled

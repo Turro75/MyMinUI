@@ -182,6 +182,8 @@ void GFX_sync(void); // call this to maintain 60fps when not calling GFX_flip() 
 void GFX_quit(void);
 void GFX_pan(void);
 
+
+//used to convert the frame sent by the core ro the rgb565 format, the 0565_0565 acts as memcpy but faster.
 void pixman_composite_src_8888_0565_asm_neon(int width, int height,
 	uint16_t *dst, int dst_stride_pixels, const uint32_t *src, int src_stride_pixels);
 
@@ -191,7 +193,7 @@ void pixman_composite_src_1555_0565_asm_neon(int width, int height,
 void pixman_composite_src_0565_0565_asm_neon(int width, int height,
 	uint16_t *dst, int dst_stride_pixels, const uint16_t *src, int src_stride_pixels);
 
-
+//retroarch uses it in its sunxi implementation, quick way to convert and copy a buffer.
 void pixman_composite_src_0565_8888_asm_neon(int width,
 	int height,
 	uint32_t *dst,
@@ -199,6 +201,7 @@ void pixman_composite_src_0565_8888_asm_neon(int width,
 	uint16_t *src,
 	int src_stride_pixels);
 
+// same as above, I added this version that swap r and b channels 
 void pixman_composite_src_0565_8888_asm_neon_bgr(int width,
 	int height,
 	uint32_t *dst,
@@ -206,21 +209,12 @@ void pixman_composite_src_0565_8888_asm_neon_bgr(int width,
 	uint16_t *src,
 	int src_stride_pixels);
 
-void convert_rgb565_to_argb8888_flip_xy_neon(
-	const uint16_t *src,
-	uint32_t *dst,
-	int width,
-	int height,
-	int pitch);
-
-// chatgpt contributed that
+// chatgpt contributed that, this is the faster and accuratereplacement of SDL_SoftStretch, 
+//better because dedicated to rgb565 format only
 int scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(
     const uint16_t *src_ptr, int src_w, int src_h, int src_pitch,
     uint16_t *dst_ptr, int dst_w, int dst_h, int dst_pitch,
     int dst_x, int dst_y, int out_w, int out_h);
-
-
-
 
 enum {
 	VSYNC_OFF = 0,
@@ -438,5 +432,15 @@ void convert_rgb565_to_argb8888_neon_rect(
     int rect_height
 );
 
+void convert_rgb565_to_abgr8888_neon_rect(
+    const uint16_t *src,
+    uint32_t *dst,
+    int src_width,
+    int dst_pitch, // in pixels (not bytes)
+    int start_x,
+    int start_y,
+    int rect_width,
+    int rect_height
+); 
 
 #endif

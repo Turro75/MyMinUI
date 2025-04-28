@@ -218,105 +218,6 @@ void GFX_pan(void) {
 	PLAT_pan();
 }
 
-
-#include <arm_neon.h>
-#include <stdint.h>
-#include <stdlib.h>
-
-int scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(
-    const uint16_t *src_ptr, int src_w, int src_h, int src_pitch,
-    uint16_t *dst_ptr, int dst_w, int dst_h, int dst_pitch,
-    int dst_x, int dst_y, int out_w, int out_h)
-{
-    uint64_t incx = ((uint64_t)src_w << 16) / out_w;
-    uint64_t incy = ((uint64_t)src_h << 16) / out_h;
-
-    int *x_lut = (int *)malloc(out_w * sizeof(int));
-    if (!x_lut) return -1;
-
-    uint64_t posx = incx / 2;
-    for (int x = 0; x < out_w; x++) {
-        x_lut[x] = (int)(posx >> 16);
-        posx += incx;
-    }
-
-    uint64_t posy = incy / 2;
-    for (int y = 0; y < out_h; y++) {
-        int src_y = (int)(posy >> 16);
-        const uint16_t *src_row = (const uint16_t *)((const uint8_t *)src_ptr + src_y * src_pitch);
-        uint16_t *dst_row = (uint16_t *)((uint8_t *)dst_ptr + (dst_y + y) * dst_pitch) + dst_x;
-
-        int x = 0;
-        for (; x + 8 <= out_w; x += 8) {
-            uint16_t tmp[8] __attribute__((aligned(16)));
-            tmp[0] = src_row[x_lut[x + 0]];
-            tmp[1] = src_row[x_lut[x + 1]];
-            tmp[2] = src_row[x_lut[x + 2]];
-            tmp[3] = src_row[x_lut[x + 3]];
-            tmp[4] = src_row[x_lut[x + 4]];
-            tmp[5] = src_row[x_lut[x + 5]];
-            tmp[6] = src_row[x_lut[x + 6]];
-            tmp[7] = src_row[x_lut[x + 7]];
-            vst1q_u16(dst_row + x, vld1q_u16(tmp));
-        }
-
-        for (; x < out_w; x++) {
-            dst_row[x] = src_row[x_lut[x]];
-        }
-
-        posy += incy;
-    }
-
-    free(x_lut);
-    return 0;
-}
-
-void convert_rgb565_to_argb8888_flip_xy_neon(
-	const uint16_t *src,
-	uint32_t *dst,
-	int width,
-	int height,
-	int pitch)
-
-{	
-int8x8_t shift_r = vdup_n_s8(3); // 5bit << 3 = 8bit
-int8x8_t shift_g = vdup_n_s8(2); // 6bit << 2 = 8bit
-   int8x8_t shift_b = vdup_n_s8(3); // 5bit << 3 = 8bit
-for (int y = 0; y < height; y++) {
-	const uint16_t *line_src = src + y * width;
-	uint32_t *line_dst = dst + (height - 1 - y) * pitch;
-		for (int x = 0; x < width; x += 8) {
-		uint16x8_t pixels = vld1q_u16(line_src + x);
-			// Estrai componenti RGB565
-		uint8x8_t r5 = vmovn_u16(vshrq_n_u16(pixels, 11)); // 5 bit
-		uint8x8_t g6 = vmovn_u16(vshrq_n_u16(pixels, 5));  // 6 bit
-		uint8x8_t b5 = vmovn_u16(pixels);                  // 5 bit
-			// Maschera e posiziona
-		uint8x8_t r8 = vshl_u8(r5, shift_r);
-		uint8x8_t g8 = vshl_u8(g6, shift_g);
-		uint8x8_t b8 = vshl_u8(b5, shift_b);
-		uint8x8_t a8 = vdup_n_u8(0xFF);
-		 // Flip orizzontale nel blocco da 8
-		r8 = vrev64_u8(r8);
-		g8 = vrev64_u8(g8);
-		b8 = vrev64_u8(b8);
-		a8 = vrev64_u8(a8);
-		   // Interlacciamento ARGB
-		uint8x8x4_t argb;
-		argb.val[0] = b8;
-		argb.val[1] = g8;
-		argb.val[2] = r8;
-		argb.val[3] = a8;
-	
-		int dst_index = (width - x - 8);
-		vst4_u8((uint8_t *)(line_dst + dst_index), argb);
-	}
-}
-}
-
-
-
-
 void GFX_flip(SDL_Surface* screen) {
 	int should_vsync = (gfx.vsync!=VSYNC_OFF && (gfx.vsync==VSYNC_STRICT || frame_start==0 || SDL_GetTicks()-frame_start<FRAME_BUDGET));
 	PLAT_flip(screen, should_vsync);
@@ -1753,7 +1654,124 @@ int PWR_getBattery(void) { // 10-100 in 10-20% fragments
 	return pwr.charge;
 }
 
+#include <arm_neon.h>
+#include <stdint.h>
+#include <stdlib.h>
 
+//this is the replacement of SDL_SoftStretch
+int scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(
+    const uint16_t *src_ptr, int src_w, int src_h, int src_pitch,
+    uint16_t *dst_ptr, int dst_w, int dst_h, int dst_pitch,
+    int dst_x, int dst_y, int out_w, int out_h)
+{
+    uint64_t incx = ((uint64_t)src_w << 16) / out_w;
+    uint64_t incy = ((uint64_t)src_h << 16) / out_h;
+
+    int *x_lut = (int *)malloc(out_w * sizeof(int));
+    if (!x_lut) return -1;
+
+    uint64_t posx = incx / 2;
+    for (int x = 0; x < out_w; x++) {
+        x_lut[x] = (int)(posx >> 16);
+        posx += incx;
+    }
+
+    uint64_t posy = incy / 2;
+    for (int y = 0; y < out_h; y++) {
+        int src_y = (int)(posy >> 16);
+        const uint16_t *src_row = (const uint16_t *)((const uint8_t *)src_ptr + src_y * src_pitch);
+        uint16_t *dst_row = (uint16_t *)((uint8_t *)dst_ptr + (dst_y + y) * dst_pitch) + dst_x;
+
+        int x = 0;
+        for (; x + 8 <= out_w; x += 8) {
+            uint16_t tmp[8] __attribute__((aligned(16)));
+            tmp[0] = src_row[x_lut[x + 0]];
+            tmp[1] = src_row[x_lut[x + 1]];
+            tmp[2] = src_row[x_lut[x + 2]];
+            tmp[3] = src_row[x_lut[x + 3]];
+            tmp[4] = src_row[x_lut[x + 4]];
+            tmp[5] = src_row[x_lut[x + 5]];
+            tmp[6] = src_row[x_lut[x + 6]];
+            tmp[7] = src_row[x_lut[x + 7]];
+            vst1q_u16(dst_row + x, vld1q_u16(tmp));
+        }
+
+        for (; x < out_w; x++) {
+            dst_row[x] = src_row[x_lut[x]];
+        }
+
+        posy += incy;
+    }
+
+    free(x_lut);
+    return 0;
+}
+
+
+//this is used during flip frame, it converts the RGB565 to ABGR8888 then it copy it to the destination buffer for a limited rect
+//RG35XX where Red and Blue are swapped
+void convert_rgb565_to_abgr8888_neon_rect(
+    const uint16_t *src,
+    uint32_t *dst,
+    int src_width,
+    int dst_pitch, // in pixels (not bytes)
+    int start_x,
+    int start_y,
+    int rect_width,
+    int rect_height
+) {
+    uint8x8_t alpha = vdup_n_u8(0xFF); // Costante alpha
+    int8x8_t shift_r = vdup_n_s8(3);   // Shift per R e B (5 bit -> 8 bit)
+    int8x8_t shift_g = vdup_n_s8(2);   // Shift per G (6 bit -> 8 bit)
+
+    uint16x8_t r_mask = vdupq_n_u16(0xF800); // Maschera per R
+    uint16x8_t g_mask = vdupq_n_u16(0x07E0); // Maschera per G
+    uint16x8_t b_mask = vdupq_n_u16(0x001F); // Maschera per B
+
+    #pragma omp parallel for
+    for (int y = 0; y < rect_height; y++) {
+        const uint16_t *line_src = src + (start_y + y) * src_width + start_x;
+        uint32_t *line_dst = dst + (start_y + y) * dst_pitch + start_x;
+
+        for (int x = 0; x < rect_width; x += 16) {
+            uint16x8_t pixels1 = vld1q_u16(line_src + x);
+            uint16x8_t pixels2 = vld1q_u16(line_src + x + 8);
+
+            uint16x8_t r1 = vandq_u16(pixels1, r_mask);
+            uint16x8_t g1 = vandq_u16(pixels1, g_mask);
+            uint16x8_t b1 = vandq_u16(pixels1, b_mask);
+
+            uint8x8_t r5_1 = vmovn_u16(vshrq_n_u16(r1, 11));
+            uint8x8_t g6_1 = vmovn_u16(vshrq_n_u16(g1, 5));
+            uint8x8_t b5_1 = vmovn_u16(b1);
+
+            uint8x8_t r8_1 = vshl_u8(r5_1, shift_r);
+            uint8x8_t g8_1 = vshl_u8(g6_1, shift_g);
+            uint8x8_t b8_1 = vshl_u8(b5_1, shift_r);
+
+            uint8x8x4_t abgr1 = {r8_1, g8_1, b8_1, alpha};
+
+            uint16x8_t r2 = vandq_u16(pixels2, r_mask);
+            uint16x8_t g2 = vandq_u16(pixels2, g_mask);
+            uint16x8_t b2 = vandq_u16(pixels2, b_mask);
+
+            uint8x8_t r5_2 = vmovn_u16(vshrq_n_u16(r2, 11));
+            uint8x8_t g6_2 = vmovn_u16(vshrq_n_u16(g2, 5));
+            uint8x8_t b5_2 = vmovn_u16(b2);
+
+            uint8x8_t r8_2 = vshl_u8(r5_2, shift_r);
+            uint8x8_t g8_2 = vshl_u8(g6_2, shift_g);
+            uint8x8_t b8_2 = vshl_u8(b5_2, shift_r);
+
+            uint8x8x4_t abgr2 = {r8_2, g8_2, b8_2, alpha};
+
+            vst4_u8((uint8_t *)(line_dst + x), abgr1);
+            vst4_u8((uint8_t *)(line_dst + x + 8), abgr2);
+        }
+    }
+}
+
+//this is used during flip frame, it converts the RGB565 to ABGR8888 then it copy it to the destination buffer for a limited rect
 void convert_rgb565_to_argb8888_neon_rect(
     const uint16_t *src,
     uint32_t *dst,
@@ -2045,7 +2063,7 @@ void rotateIMG(void *src, void*dst, int rotation, int srcw, int srch, int srcp) 
 	if (rotation == 0) {	
 //		gettimeofday(&now2,NULL);	
 		for (y = 0; y < srch; y++) {
-			dsttmp = (uint16_t *)dst + y * thispitch;
+			dsttmp = (uint16_t *)dst + y * srcw;
 			srctmp = (uint16_t *)src + y * thispitch;
 			for (x = 0; x <  srcw; x++) {	
 				*((uint16_t *)dsttmp + x) = *((uint16_t *)srctmp + x );

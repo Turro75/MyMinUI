@@ -272,36 +272,48 @@ void pan_display(int page){
 	ioctl(vid.fdfb, FBIOPAN_DISPLAY, &vid.vinfo);
 }
 
+disp_layer_config config;
 
-// Funzione per swappare i buffer
-void swap_buffers(int page)
-{
-    disp_layer_config config;
-    memset(&config, 0, sizeof(config));
+void swap_buffers_init(void){
+	
+	memset(&config, 0, sizeof(config));
 
     config.channel = 0;
     config.layer_id = 0; // Layer 0
     config.enable = 1;
-
+	config.info.fb.align[0] = 4;//bytes
     config.info.mode = LAYER_MODE_BUFFER;
     config.info.zorder = 0; // In primo piano
     config.info.alpha_mode = 1;
     config.info.alpha_value = 0xff;
-    config.info.fb.addr[0] = (uintptr_t)vid.fbmmap[page];
     config.info.fb.format = DISP_FORMAT_ARGB_8888;
-    config.info.fb.size->width = DEVICE_WIDTH;
-    config.info.fb.size->height = DEVICE_HEIGHT;
+	config.info.fb.flags = DISP_BF_NORMAL;
+	config.info.fb.scan = DISP_SCAN_PROGRESSIVE;
+    config.info.fb.size[0].width = DEVICE_WIDTH;
+    config.info.fb.size[0].height = DEVICE_HEIGHT;
     config.info.fb.crop.x = 0;
     config.info.fb.crop.y = 0;
-    config.info.fb.crop.width = 0;//(unsigned long)(DEVICE_WIDTH) << 32;
-    config.info.fb.crop.height = 0;//(unsigned long)(DEVICE_HEIGHT) << 32;
+    config.info.fb.crop.width = (unsigned long long)(DEVICE_WIDTH) << 32;
+    config.info.fb.crop.height = (unsigned long long)(DEVICE_HEIGHT) << 32;
 
     config.info.screen_win.x = 0;
     config.info.screen_win.y = 0;
     config.info.screen_win.width = DEVICE_WIDTH;
-    config.info.screen_win.height = DEVICE_HEIGHT;
+    config.info.screen_win.height = DEVICE_HEIGHT;	
+}
 
-    ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, &config);
+// Funzione per swappare i buffer
+void swap_buffers(int page)
+{
+    unsigned long arg[3];
+    
+    config.info.fb.addr[0] = (uintptr_t)vid.fbmmap[page];
+
+    arg[0] = 0;//screen 0
+	arg[1] = (unsigned long)&config;
+	arg[2] = 1; //one layer
+	int ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, (void*)arg);
+//	LOG_info("Swap_buffers retvalue = %d\n", ret);fflush(stdout);
 }
 
 
@@ -363,6 +375,7 @@ SDL_Surface* PLAT_initVideo(void) {
 
 	vid.page = 0;
 //	pan_display(vid.page);
+	swap_buffers_init();
 	swap_buffers(vid.page);
 	vid.renderingGame = 0;
 
@@ -504,16 +517,16 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			FlipRotate270(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
 		}
 		swap_buffers(vid.page);
+		pan_display(0); //to avoid tearing/flickering in the menu
 	} else {
 		pixman_composite_src_0565_8888_asm_neon(vid.screengame->w,vid.screengame->h, vid.fbmmap[vid.page], vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
 		//FlipRotate000(vid.screengame, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
-
-	}
-	vid.renderingGame = 0;
-	swap_buffers(vid.page);
-	vid.page ^= 1;
-	if (sync) {
-		pan_display(0);
+		vid.renderingGame = 0;
+		if (sync) {
+			pan_display(0);
+		}
+		swap_buffers(vid.page);
+		vid.page ^= 1;	
 	}
 }
 
