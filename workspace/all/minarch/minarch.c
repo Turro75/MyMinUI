@@ -3001,29 +3001,6 @@ static uint32_t sec_start = 0;
 	static int fit = 0;
 #endif	
 
-#include <arm_neon.h>
-#include <stdint.h>
-#include <stddef.h>
-
-void memcpy_rgb565_neon(uint16_t *dst, const uint16_t *src, size_t pixel_count) {
-    // Copiamo 8 pixel per volta (8 * 16bit = 128 bit)
-    while (pixel_count >= 8) {
-        uint16x8_t data = vld1q_u16(src);  // carica 8 pixel
-        vst1q_u16(dst, data);              // scrive 8 pixel
-
-        src += 8;
-        dst += 8;
-        pixel_count -= 8;
-    }
-
-    // Copia i rimanenti pixel (se < 8)
-    while (pixel_count--) {
-        *dst++ = *src++;
-    }
-}
-
-extern void memcpy_rgb565_neon_fast(uint16_t *dst, const uint16_t *src, size_t count);
-
 void video_refresh_callback_rotate(int rotation, void *data, unsigned width, unsigned height, size_t pitch) {
 	//int x, y, thispitch;
 	//struct timeval now, now1, now2, now3, now4, now5, now6;
