@@ -14,6 +14,75 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+## Release 28/04/2025
+
+A lot of new things in this release. I tried to make it more efficient and easy to use.
+
+# All:
+
+  - Updated all the cores to the current github repos, this broke back compatibility of saved state on several systems (I faced problems in fbneo, pcsx_rearmed and mame) In case You want to continue to use previous saved states simply backup the .so files in .system/\<PLATFORM\>/cores/*.so then restore them once upgraded, I noticed that many fbneo games are now able to keep hiscore working. Also mame added the support to several games. If you miss to backup/restore the core files, no problem just download Your previously working release then get the so files from there.
+
+  - Optimized the rendering process, it has been reduced from 13/15msec down to 5msecs. This happened thanks to the substitution of several (not so good) c code snippet to a more efficient (but for sure not enough good) neon intrinsics/asm code able to do fast image processing allowing all the desired frame handlings within a short timing. The neon algos were taken from libpixman, implemented by me and got a lot of help from AI, it hasn't a straightforward process, a lot of trial and error but in the end we learned together.
+  
+  - Replaced the frame image scaler from SDL_SoftStrecth to a custom made (AI did the most) neon scaler made to handle only rgb565 images, my feeling is that the resulting image is better than before, I've seen several posts related to MyMinUI poor quality images, I'll never reach the image quality of MinUI on rg35xx and Miyoomini because these were always integer scaling. I left that approach as there were a lot of compatibility issues in many cores non provided by MinUI.
+  
+  - Improved the screen rotation handling, this will allow me a lot easier adding support for devices with a rotated screen (such as the miyoo a30) I suspect than many widescreen devices use vertical smartphone screens. In case of port to one of them it will be now an easy task. Moreover for the devices with hdmi out is will be easy change the device setting to let the user connecting a vertical or even flipped monitor. Why is so important? Screen rotation is always a bottleneck for performances, pixel by pixel rotation is one of the worst time consuming tasks, and rotating the whole screen takes usually 5 to 10msecs and it grows quickly when the resolution arises affecting the achievable fps.
+  Now I rotate the frame only once when generated (when is in his smallest size) this allows the following display drawing loop much faster and able to take gain from neon intrinsics functions.
+  
+  - All the three changes above allowed to reach a huge performance boost or, when the boost were not needed to reduce the cpu clock extending the battery life. As an example tekken3 ps1 on hdmi is able to run at 60fps on all hdmi devices (including the sjgam m21/m22) set to 1280x720p. That doesn't mean that every game will run at 60fps, some game are core limited i.e. Bloody Roar2 ps1 needs a high cpu clock (>1.6GHz) to generate the frame within 60fps. Most entry level devices simply don't have enough power to run them full speed.
+
+  - Added the support for all three pixel format provided by libretro (RGB565, ARGB1555, ARGB8888), no need to set anything anymore it is fully automatic now (removed Frontend->Allow32bit setting).
+
+  - Now the menu automatically adapt the number of items shown according to the current screen resolution. 
+
+  
+
+# R36S/RG353/R36PLUS
+
+  - improved the rg353 family support, I played tekken3 ps1 @ 60fps with hdmi out set to 1080p.
+
+  - rg353 fixed a bug that randomly muted the audio.
+
+  - added the support for the R36PLUS (1:1 720x720 4Inch screen), no changes in installation instructions.
+
+  - increased the menu cpu clock to make it more snappier when used at high screen resolution.
+
+  - added the file ./system/r36s/custom_hdmi_settings.txt which contains the mode string 1280x720p60, edit this file to match Your monitor/TV, reading any log file in .userdata/r36s/logs/*.txt will give You all the available modes.
+
+
+# RG35XX  
+
+  - restored prevent_tearing setting
+
+  - hdmi out now can handle 1280x720p
+
+  - added the file ./system/m21/custom_hdmi_settings.txt which contains the mode string 1280x720p60, edit this file to match Your monitor/TV I suggest something like 856x480p60 to get exactly the same perfromances as the onboard screen other valid modes are 720x480p60, 1024x576p60 , some tv allows any value, some other don't,
+
+  - increased the menu cpu clock to make it faster when used at higher screen resolutions.
+
+
+# Miyoomini
+
+  - Reverted back to SDL1, seems better on audio handling. IMPORTANT: If You upgrade from a previous release You have to manually delete the file .system/miyoomini/lib/LIBSDL-1.2.so.0 or the games won't run.
+
+
+# Miyoo A30
+
+  - this little beast is always painful, anyway I changed the double buffering from frambuffer memory swap to a layer memory swap, similar results, the second one allows to work with prevent_tearing set to Off allowing better performances in some games.
+
+  - this device has the screen rotated, it is probably the one that got the more significant performances boost. Tekken 3 ps1 needed the max overclock available (1.4GHz on mine) to run at decent speed 55-58fps, now it runs 60fps with cpu speed set to normal and most games in powersave mode. This is helpful in terms of battery life and keeping the heating effect lower.
+
+
+# SJGAM M21/M22pro STILL UNDER TEST TO DETERMINE THE CORRECT SCREEN ORIENTATION ON M22PRO
+
+  - sometimes my M21 decide to be able to read the sdcard, it happens for few times, I don't know which kind of damage but at least I can test stuffs.
+
+  - As per the miyoo A30 the m22pro is a rotated screen device, so the above is valid here. Consider that these devices are capped at 1.2GHz, so performances were always critical.
+
+  - As the miyoo A30 the soc here is allwinner so I was able to use the Layer memory swap allowing a doublebuffering that should be much better in terms of screen tearing effect. Unfortunately on these devices we can't use the vsync event to avoid tearing, it is available but I didn't find a way to adjust it (50fps max). 
+
+  - added the file ./system/m21/custom_hdmi_settings.txt which contains the mode string 1280x720p60, edit this file to match Your monitor/TV I suggest something like 856x480p60 to get exactly the same perfromances as the onboard screen other valid modes are 720x480p60, 1024x576p60 , some tv allows any value, some other don't,
+
 ## Release 02/04/2025
 
 not fancy features this time, just a huge "under the hood" rework to improve performances and stability. 
