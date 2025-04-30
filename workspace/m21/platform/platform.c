@@ -271,7 +271,7 @@ static struct VID_Context {
 } vid;
 
 void pan_display(int page){
-	vid.vinfo.yoffset = (vid.vinfo.yres_virtual/2) * page;
+	vid.vinfo.yoffset = vid.vinfo.yres * page;
 	ioctl(vid.fdfb, FBIOPAN_DISPLAY, &vid.vinfo);
 }
 
@@ -376,26 +376,26 @@ int swap_buffers_init(void){
     config.info.alpha_mode = 1;
     config.info.alpha_value = 0xff;
 	config.info.fb.format = DISP_FORMAT_ARGB_8888;
-    config.info.fb.size[0].width = DEVICE_WIDTH;
-    config.info.fb.size[0].height = DEVICE_HEIGHT;
+    config.info.fb.size[0].width = GAME_WIDTH;
+    config.info.fb.size[0].height = GAME_HEIGHT;
 	config.info.fb.align[0] = 4;//bytes
     config.info.fb.crop.x = 0;
     config.info.fb.crop.y = 0;
-    config.info.fb.crop.width =  ((unsigned long long)DEVICE_WIDTH) << 32;
-    config.info.fb.crop.height = ((unsigned long long)DEVICE_HEIGHT) << 32;
+    config.info.fb.crop.width =  ((unsigned long long)GAME_WIDTH) << 32;
+    config.info.fb.crop.height = ((unsigned long long)GAME_HEIGHT) << 32;
 	config.info.fb.flags = DISP_BF_NORMAL;
 	config.info.fb.scan = DISP_SCAN_PROGRESSIVE;
 	config.info.id = 0;
     config.info.screen_win.x = 0;
     config.info.screen_win.y = 0;
-    config.info.screen_win.width = DEVICE_WIDTH;
-    config.info.screen_win.height = DEVICE_HEIGHT;
+    config.info.screen_win.width = GAME_WIDTH;
+    config.info.screen_win.height = GAME_HEIGHT;
 }
 // Funzione per swappare i buffer
 void swap_buffers(int page)
 {
 	unsigned long arg[3];
-    
+    swap_buffers_init();
     config.info.fb.addr[0] = (uintptr_t)vid.fbmmap[page];
 
     arg[0] = 0;//screen 0
@@ -425,20 +425,23 @@ SDL_Surface* PLAT_initVideo(void) {
 	if (exists(ISM22_PATH)) {
 		ism22 = 1;
 	}
-//	system("cat /sys/class/disp/disp/attr/sys > /mnt/SDCARD/sys0.txt");
-//	system("cat /sys/class/graphics/fb0/mode > /mnt/SDCARD/mode.txt");
-//	system("cat /sys/class/graphics/fb0/modes > /mnt/SDCARD/modes.txt");
-//	system ("/usr/sbin/fbset -i > /mnt/SDCARD/fbset.txt");
-//	system(" /usr/sbin/fbset -g 35242 64 96 35 12 112 2 ");
-//	system ("/usr/sbin/fbset -i >> /mnt/SDCARD/fbset.txt");
-
 
 	vid.fdfb = open("/dev/fb0", O_RDWR);
+	if (vid.fdfb < 0) {
+		LOG_info("Error opening /dev/fb0\n");
+		fflush(stdout);
+		return NULL;
+	}
 	vid.dispfd = open("/dev/disp", O_RDWR);
+	if (vid.dispfd < 0) {
+		LOG_info("Error opening /dev/disp\n");
+		fflush(stdout);
+		return NULL;
+	}
+
 	
 	//system("cat /sys/class/disp/disp/attr/sys > /mnt/SDCARD/sysA.txt");
 	int w,h,p,hz;
-	int behavior = 0;
 	if (getHDMIStatus() || (ism22)) {
 		char hdmimode[64];
 		w = _HDMI_WIDTH;
@@ -453,7 +456,9 @@ SDL_Surface* PLAT_initVideo(void) {
 			//the first run write the default values to the custom file.
 			sprintf(hdmimode, "%dx%dp%d", _HDMI_WIDTH, _HDMI_HEIGHT, _HDMI_HZ);
 			putFile(CUSTOM_HDMI_SETTINGS_PATH,hdmimode);
+			LOG_info("Writing default HDMI Mode %dx%dp%d\n", w, h, hz);fflush(stdout);
 		}
+		system("sync");
 	} else {
 		//is an m21
 		w = FIXED_WIDTH;
@@ -466,22 +471,32 @@ SDL_Surface* PLAT_initVideo(void) {
 	DEVICE_PITCH = p;
 	GAME_WIDTH = w;
 	GAME_HEIGHT = h;
-	vid.rotate = ism22 * (1 - getHDMIStatus());   //m21 always 0, m22 is 0 on HDMI and 1 on display
 
+	LOG_info("DEVICE_WIDTH = %d, DEVICE_HEIGHT = %d, DEVICE_PITCH = %d, GAME_WIDTH = %d, GAME_HEIGHT = %d\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH, GAME_WIDTH, GAME_HEIGHT);fflush(stdout);
+	vid.rotate = ism22 * (1 - getHDMIStatus());   //m21 always 0, m22 is 0 on HDMI and 1 on display
+	LOG_info("ism22 = %d, HDMI = %d, rotate = %d\n", ism22, getHDMIStatus(), vid.rotate);fflush(stdout);
+	
+	if (vid.rotate & ism22) {
+		//is the m22 so the screen is rotated if not HDMI
+		GAME_WIDTH = h;
+		GAME_HEIGHT = w;
+	}
 	get_fbinfo();	
 
 	if (exists( ROTATE_SYSTEM_PATH )) {
 		vid.rotate = getInt( ROTATE_SYSTEM_PATH ) & 3;
+		LOG_info("Detected custom screen orientation: Rotation = %d\n", vid.rotate);fflush(stdout);
+	} else {
+		//if the file does not exist, we create it with the default value.
+		putInt(ROTATE_SYSTEM_PATH, vid.rotate);
 	}
-	vid.rotategame = vid.rotate;
-	vid.vinfo.xres=w;
-	vid.vinfo.yres=h;
-	
+	vid.rotategame = (4-vid.rotate) & 3;
 
-	if (vid.rotate % 2 == 1) {
-		vid.vinfo.xres=h;
-		vid.vinfo.yres=w;
-	}
+	LOG_info("Use screen orientation: Rotation = %d, Game rotation = %d, ism22 = %d, HDMI = %d, rotate = %d\n", vid.rotate*90, vid.rotategame*90, ism22, getHDMIStatus(), vid.rotate);fflush(stdout);
+
+	vid.vinfo.xres=GAME_WIDTH;
+	vid.vinfo.yres=GAME_HEIGHT;
+	
 	vid.vinfo.xoffset=0;
 	vid.vinfo.yoffset=0;
 	/////for m22
@@ -503,17 +518,10 @@ SDL_Surface* PLAT_initVideo(void) {
 	
 	
 	vid.vinfo.bits_per_pixel=32;
-
-//	int m = vid.vinfo.xres>vid.vinfo.yres?vid.vinfo.xres:vid.vinfo.yres;
-	//at the beginning set the screen size to 640x480
 	vid.vinfo.xres_virtual=vid.vinfo.xres;
 	vid.vinfo.yres_virtual=vid.vinfo.yres*2;
-//	vid.vinfo.pixclock = 20250;
-//	vid.vinfo.right_margin = 0;
     set_fbinfo();
 	get_fbinfo();
-
-	
 
 	unsigned int arg[3];
 	arg[0] = 0;
@@ -524,11 +532,6 @@ SDL_Surface* PLAT_initVideo(void) {
 	printf("ABILITAZIONE VSYNC RESULT = %d\n",ioctl(vid.fdfb, DISP_VSYNC_EVENT_EN, (void*)arg)); fflush (stdout);	
 
 //	system("cat /sys/class/disp/disp/attr/sys > /mnt/SDCARD/sys1.txt");
-//	if (getInt(HDMI_STATE_PATH)) {
-//		w = HDMI_WIDTH;
-//		h = HDMI_HEIGHT;
-//		p = HDMI_PITCH;
-//	}
 
 	vid.page = 0;
 	pan_display(vid.page);
@@ -539,6 +542,10 @@ SDL_Surface* PLAT_initVideo(void) {
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
 	vid.screengame = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
+	LOG_info("vid.screen: %ix%i\n", vid.screen->w, vid.screen->h);fflush(stdout);
+	LOG_info("vid.screengame: %ix%i\n", vid.screengame->w, vid.screengame->h);fflush(stdout);
+	LOG_info("vid.screen2: %ix%i\n", vid.screen2->w, vid.screen2->h);fflush(stdout);
+
 	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
     vid.fbmmap[0] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 	if (vid.fbmmap[0] == MAP_FAILED) {
@@ -550,6 +557,8 @@ SDL_Surface* PLAT_initVideo(void) {
 		LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
 		//return NULL;
 	}
+	LOG_info("Address vid.fbmmap[0]: %p\n", vid.fbmmap[0]);fflush(stdout);
+	LOG_info("Address vid.fbmmap[1]: %p\n", vid.fbmmap[1]);fflush(stdout);
 	swap_buffers_init();
 	swap_buffers(vid.page);
 	vid.sharpness = SHARPNESS_SOFT;

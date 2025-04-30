@@ -258,7 +258,7 @@ void set_fbinfo(void){
 
 
 void pan_display(int page){
-	vid.vinfo.yoffset = (vid.vinfo.yres_virtual/2) * page;
+	vid.vinfo.yoffset = vid.vinfo.yres * page;
 	ioctl(vid.fdfb, FBIOPAN_DISPLAY, &vid.vinfo);
 }
 
@@ -279,24 +279,24 @@ void swap_buffers_init(void){
     config.info.fb.format = DISP_FORMAT_ARGB_8888;
 	config.info.fb.flags = DISP_BF_NORMAL;
 	config.info.fb.scan = DISP_SCAN_PROGRESSIVE;
-    config.info.fb.size[0].width = DEVICE_WIDTH;
-    config.info.fb.size[0].height = DEVICE_HEIGHT;
+    config.info.fb.size[0].width = GAME_WIDTH;
+    config.info.fb.size[0].height = GAME_HEIGHT;
     config.info.fb.crop.x = 0;
     config.info.fb.crop.y = 0;
-    config.info.fb.crop.width = (unsigned long long)(DEVICE_WIDTH) << 32;
-    config.info.fb.crop.height = (unsigned long long)(DEVICE_HEIGHT) << 32;
+    config.info.fb.crop.width = (unsigned long long)(GAME_WIDTH) << 32;
+    config.info.fb.crop.height = (unsigned long long)(GAME_HEIGHT) << 32;
 
     config.info.screen_win.x = 0;
     config.info.screen_win.y = 0;
-    config.info.screen_win.width = DEVICE_WIDTH;
-    config.info.screen_win.height = DEVICE_HEIGHT;	
+    config.info.screen_win.width = GAME_WIDTH;
+    config.info.screen_win.height = GAME_HEIGHT;	
 }
 
 // Funzione per swappare i buffer
 void swap_buffers(int page)
 {
     unsigned long arg[3];
-    
+    swap_buffers_init();
     config.info.fb.addr[0] = (uintptr_t)vid.fbmmap[page];
 
     arg[0] = 0;//screen 0
@@ -324,32 +324,83 @@ SDL_Surface* PLAT_initVideo(void) {
 	LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
 
 	vid.fdfb = open("/dev/fb0", O_RDWR);
+	if (vid.fdfb < 0) {
+		LOG_info("Error opening /dev/fb0\n");
+		fflush(stdout);
+		return NULL;
+	}
 	vid.dispfd = open("/dev/disp", O_RDWR);
-	int w = FIXED_HEIGHT;
-	int h = FIXED_WIDTH;	
+	if (vid.dispfd < 0) {
+		LOG_info("Error opening /dev/disp\n");
+		fflush(stdout);
+		return NULL;
+	}
+	int w = FIXED_WIDTH;
+	int h = FIXED_HEIGHT;	
 	int p = FIXED_PITCH;
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
 	DEVICE_PITCH = p;
-	GAME_WIDTH = w;
-	GAME_HEIGHT = h;
-	vid.rotate = 3; //no reasons to change it.
+	GAME_WIDTH = h;  //this is when the screen is rotated
+	GAME_HEIGHT = w; //this is when the screen is rotated
+	vid.rotate = 3; //default rotation, no reasons to change it.
 
 	get_fbinfo();	
 
 	if (exists(ROTATE_SYSTEM_PATH)) {
 		vid.rotate = getInt(ROTATE_SYSTEM_PATH) &3;
+	} else {
+		//if the file does not exist, we create it with the default value.
+		putInt(ROTATE_SYSTEM_PATH, vid.rotate);
 	}
 
-	if (vid.rotate % 2 == 1) {
-		DEVICE_WIDTH = h;
-		DEVICE_HEIGHT = w;
-	}
-	//device specific
 	vid.rotategame = (4-vid.rotate)&3;
 
-    vid.vinfo.xres=w;
-    vid.vinfo.yres=h;
+	if (vid.rotate % 2 == 0) {
+		DEVICE_WIDTH = h;
+		DEVICE_HEIGHT = w;
+		vid.rotategame = vid.rotate;
+	}
+	//device specific
+/*
+	DEVICE_WIDTH = 640;
+	DEVICE_HEIGHT = 480;
+	DEVICE_PITCH = DEVICE_WIDTH*2;
+	GAME_WIDTH = 480;
+	GAME_HEIGHT = 640;
+	vid.rotate = 3; //no reasons to change it.
+	vid.rotategame = 1;
+/*
+	DEVICE_WIDTH = 640;
+	DEVICE_HEIGHT = 480;
+	DEVICE_PITCH = DEVICE_WIDTH*2;
+	GAME_WIDTH = 480;
+	GAME_HEIGHT = 640;
+	vid.rotate = 1; //no reasons to change it.
+	vid.rotategame = 3;
+
+	DEVICE_WIDTH = 480;
+	DEVICE_HEIGHT = 640;
+	DEVICE_PITCH = DEVICE_WIDTH*2;
+	GAME_WIDTH = 480;
+	GAME_HEIGHT = 640;
+	vid.rotate = 0; //no reasons to change it.
+	vid.rotategame = 0;
+
+	DEVICE_WIDTH = 480;
+	DEVICE_HEIGHT = 640;
+	DEVICE_PITCH = DEVICE_WIDTH*2;
+	GAME_WIDTH = 480;
+	GAME_HEIGHT = 640;
+	vid.rotate = 2; //no reasons to change it.
+	vid.rotategame = 2;
+
+*/	
+	
+	vid.vinfo.xres=GAME_WIDTH;
+	vid.vinfo.yres=GAME_HEIGHT;
+	vid.vinfo.xoffset=0;
+	vid.vinfo.yoffset=0;
 	vid.vinfo.xres_virtual=vid.vinfo.xres;
 	vid.vinfo.yres_virtual=vid.vinfo.yres*2;
 	vid.vinfo.bits_per_pixel=32;	
@@ -361,25 +412,33 @@ SDL_Surface* PLAT_initVideo(void) {
 	vid.screengame =  SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
 	LOG_info("vid.screen: %ix%i\n", vid.screen->w, vid.screen->h);fflush(stdout);
-	//LOG_info("vid.screengame: %ix%i\n", vid.screengame->w, vid.screengame->h);fflush(stdout);
+	LOG_info("vid.screengame: %ix%i\n", vid.screengame->w, vid.screengame->h);fflush(stdout);
+	LOG_info("vid.screen2: %ix%i\n", vid.screen2->w, vid.screen2->h);fflush(stdout);
 
 	vid.page = 0;
-//	pan_display(vid.page);
+	pan_display(vid.page);
 	swap_buffers_init();
 	swap_buffers(vid.page);
 	vid.renderingGame = 0;
 
-//	if(vid.vinfo.yres_virtual >= vid.vinfo.yres*2) {
-//		vid.numpages=2;
-//	} else {
-//		vid.numpages=1;
-//	}
-	vid.offset = vid.vinfo.yres_virtual/2 * vid.finfo.line_length;
+	vid.offset = vid.vinfo.yres * vid.finfo.line_length;
 	vid.screen_size = vid.offset;
 	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
-    vid.fbmmap[0] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
-	vid.fbmmap[1] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
-	LOG_info("mmapped fbmmap\n");fflush(stdout);
+   //create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
+   vid.fbmmap[0] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+   if (vid.fbmmap[0] == MAP_FAILED) {
+	   LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
+	   //return NULL;
+   }
+   vid.fbmmap[1] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+   if (vid.fbmmap[1] == MAP_FAILED) {
+	   LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
+	   //return NULL;
+   }
+   LOG_info("Address vid.fbmmap[0]: %p\n", vid.fbmmap[0]);fflush(stdout);
+   LOG_info("Address vid.fbmmap[1]: %p\n", vid.fbmmap[1]);fflush(stdout);
+   swap_buffers_init();
+   swap_buffers(vid.page);
 	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
 }
