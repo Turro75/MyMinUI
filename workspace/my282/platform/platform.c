@@ -190,16 +190,6 @@ static struct VID_Context {
 	int renderingGame;
 } vid;
 
-static int device_width;
-static int device_height;
-static int device_pitch;
-
-static int lastw=0;
-static int lasth=0;
-static int lastp=0;
-
-static int finalrotate=0;
-
 void get_fbinfo(void){
     ioctl(vid.fdfb, FBIOGET_FSCREENINFO, &vid.finfo);
     ioctl(vid.fdfb, FBIOGET_VSCREENINFO, &vid.vinfo);

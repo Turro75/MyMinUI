@@ -2084,7 +2084,7 @@ void rotateIMG(void *src, void*dst, int rotation, int srcw, int srch, int srcp) 
 	if (rotation == 2) {
 	//	gettimeofday(&now2,NULL);		
 		for (y = 0; y < srch; y++) {
-			dsttmp = (uint16_t *)dst +(height_minus_1 - y) *  srcw;
+			dsttmp = (uint16_t *)dst +(height_minus_1 - y) * srcw + width_minus_1;
 			srctmp = (uint16_t *)src + y * thispitch;
 			for (x = 0; x < srcw; x++) {
 				*((uint16_t *)dsttmp - x) = *((uint16_t *)srctmp + x);

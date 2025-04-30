@@ -458,11 +458,13 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		pan_display(vid.page); //to avoid flickering/tearing in menu.
 	} else {
 		//the image must be rotated by 180° 
-		pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
+		pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset*sync, vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
 		//FlipRotate000(vid.screengame, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
 		vid.renderingGame = 0;	
-		pan_display(vid.page);//it waits for vsync before returning
-		vid.page ^= 1;
+		if (sync) {
+			pan_display(vid.page);
+			vid.page ^= 1;
+		}
 	}	
 }
 
