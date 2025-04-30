@@ -31,15 +31,15 @@ else
     THISRUN=${6}
 fi
 
-#export SDL_AUDIODRIVER=mmiyoo
+export SDL_AUDIODRIVER=mmiyoo
 
 #audioserver must be killed to let sdl2 taking control of audio 
 
-#if $IS_PLUS; then
-#    killall -9 audioserver
-#else
-#    killall -9 audioserver.mod
-#fi
+if $IS_PLUS; then
+    killall -9 audioserver
+else
+    killall -9 audioserver.mod
+fi
 
 EMU_EXE=${8}
 
