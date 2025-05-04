@@ -21,7 +21,6 @@
 #include "scaler.h"
 #include "sunxi_display2.h"
 
-void Main_Flip(void);
 ///////////////////////////////
 
 #define RAW_UP		103
@@ -565,8 +564,8 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			// 270 Rotation
 			FlipRotate270(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
 		}
-		swap_buffers(vid.page);
 		pan_display(0); //to avoid tearing/flickering in the menu
+		swap_buffers(vid.page);		
 	} else {
 		pixman_composite_src_0565_8888_asm_neon(vid.screengame->w,vid.screengame->h, vid.fbmmap[vid.page], vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
 		//FlipRotate000(vid.screengame, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);

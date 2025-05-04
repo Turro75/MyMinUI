@@ -37,6 +37,7 @@ extern int GAME_HEIGHT;
 extern int GAME_PITCH;
 extern int DEVICE_PITCH;
 extern uint32_t frame_start;
+int TARGET_FPS;
 
 //////////////////////////////
 // TODO: these only seem to be used by a tmp.pak in trimui (model s)
@@ -53,7 +54,9 @@ extern uint32_t frame_start;
 #define RGBA_MASK_AUTO	0x0, 0x0, 0x0, 0x0
 #define RGBA_MASK_565	0xF800, 0x07E0, 0x001F, 0x0000
 #define RGBA_MASK_8888	0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
-
+#ifndef SCREEN_FPS
+#define SCREEN_FPS 60.0
+#endif
 ///////////////////////////////
 
 extern uint32_t RGB_WHITE;
@@ -61,6 +64,15 @@ extern uint32_t RGB_BLACK;
 extern uint32_t RGB_LIGHT_GRAY;
 extern uint32_t RGB_GRAY;
 extern uint32_t RGB_DARK_GRAY;
+extern float currentratio;
+extern int currentbufferfree;
+extern int currentframecount;
+extern double currentfps;
+extern double currentreqfps;
+extern float currentbufferms;
+extern int currentbuffersize;
+extern int currentsampleratein;
+extern int currentsamplerateout;
 
 enum {
 	ASSET_WHITE_PILL,
@@ -177,8 +189,14 @@ int GFX_hdmiChanged(void);
 #define GFX_clearAll PLAT_clearAll // (void)
 
 void GFX_startFrame(void);
+void audioFPS(void);
 void GFX_flip(SDL_Surface* screen);
+void PLAT_flipHidden();
+void GFX_flip_fixed_rate(SDL_Surface* screen, double target_fps); // if target_fps is 0, then use the native screen FPS
+#define GFX_supportsOverscan PLAT_supportsOverscan // (void)
 void GFX_sync(void); // call this to maintain 60fps when not calling GFX_flip() this frame
+void GFX_sync_fixed_rate(double target_fps);
+void GFX_delay(void); // gfx_sync() is only for everywhere where there is no audio buffer to rely on for delaying, stupid so doing gfx_delay() for like waiting for input loop in binding menu. Need to remove gfx_sync() everwhere eventually
 void GFX_quit(void);
 void GFX_pan(void);
 
@@ -264,7 +282,10 @@ typedef struct {
 
 void SND_init(double sample_rate, double frame_rate);
 size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count);
+size_t SND_batchSamples_fixed_rate(const SND_Frame* frames, size_t frame_count);
 void SND_quit(void);
+void SND_resetAudio(double sample_rate, double frame_rate);
+void SND_setQuality(int quality);
 
 ///////////////////////////////
 

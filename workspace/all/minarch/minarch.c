@@ -57,6 +57,7 @@ static int coreDiscManaged = 0;
 static int config_load_done = 0;
 static int waitforthread = 0;
 static int loadgamesuccess = 0;
+static int can_dupe = false;
 uint32_t *mutedaudiodata;
 
 static pthread_t		core_pt, flip_pt;
@@ -80,6 +81,7 @@ static int screen_max_scale = 5; //6x
 static int screen_effect = EFFECT_NONE;
 static int screen_sharpness = SHARPNESS_SOFT;
 static int prevent_tearing = 1; // lenient
+static int sync_ref = 0;
 static int show_debug = 0;
 static int max_ff_speed = 3; // 4x
 static int fast_forward = 0;
@@ -731,6 +733,12 @@ static char* tearing_labels[] = {
 	"Strict",
 	NULL
 };
+static char* sync_ref_labels[] = {
+	"Auto",
+	"Screen",
+	"Native",
+	NULL
+};
 static char* max_ff_labels[] = {
 	"None",
 	"2x",
@@ -751,11 +759,18 @@ enum {
 	FE_OPT_EFFECT,
 	FE_OPT_SHARPNESS,
 	FE_OPT_TEARING,
+	FE_OPT_SYNC_REFERENCE,
 	FE_OPT_OVERCLOCK,
 	FE_OPT_THREAD,
 	FE_OPT_DEBUG,
 	FE_OPT_MAXFF,
 	FE_OPT_COUNT,
+};
+
+enum {
+	SYNC_SRC_AUTO,
+	SYNC_SRC_SCREEN,
+	SYNC_SRC_CORE
 };
 
 enum {
@@ -973,6 +988,16 @@ static struct Config {
 				.values = tearing_labels,
 				.labels = tearing_labels,
 			},
+			[FE_OPT_SYNC_REFERENCE] = {
+				.key	= "minarch_sync_reference",
+				.name	= "Core Sync",
+				.desc	= "Choose what should be used as a\nreference for the frame rate.\n\"Native\" uses the emulator frame rate,\n\"Screen\" uses the frame rate of the screen.",
+				.default_value = SYNC_SRC_AUTO,
+				.value = SYNC_SRC_AUTO,
+				.count = 3,
+				.values = sync_ref_labels,
+				.labels = sync_ref_labels,
+			},
 			[FE_OPT_OVERCLOCK] = {
 				.key	= "minarch_cpu_speed",
 				.name	= "CPU Speed",
@@ -1108,6 +1133,10 @@ static void Config_syncFrontend(char* key, int value) {
 	else if (exactMatch(key,config.frontend.options[FE_OPT_TEARING].key)) {
 		prevent_tearing = value;
 		i = FE_OPT_TEARING;
+	}
+	else if (exactMatch(key,config.frontend.options[FE_OPT_SYNC_REFERENCE].key)) {
+		sync_ref = value;
+		i = FE_OPT_SYNC_REFERENCE;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_THREAD].key)) {
 		int old_value = thread_video;
@@ -1974,7 +2003,7 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 	case RETRO_ENVIRONMENT_GET_CAN_DUPE: { /* 3 */
 		bool *out = (bool *)data;
 		if (out)
-			*out = true;
+			*out = can_dupe;
 		break;
 	}
 	case RETRO_ENVIRONMENT_SET_MESSAGE: { /* 6 */
@@ -1983,7 +2012,7 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 		break;
 	}
 	case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL: { /* 8 */
-		// puts("RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL");
+		LOG_info("RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL does nothing\n");
 		// TODO: used by fceumm at least
 	}
 	case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY: { /* 9 */
@@ -2103,6 +2132,21 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 			*out = core.saves_dir; // save_dir;
 		break;
 	}
+	case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO: { /* 32 */
+		struct retro_system_av_info *info = (struct retro_system_av_info *)data;
+		if (info) {
+		/*	info->timing.fps = core.fps;
+			info->timing.sample_rate = core.sample_rate;
+			info->geometry.base_width = core.width;
+			info->geometry.base_height = core.height;
+			info->geometry.max_width = core.width;
+			info->geometry.max_height = core.height;
+			info->geometry.aspect_ratio = 1.0f; // TODO: aspect ratio*/
+			LOG_info("RETRO_ENVIRONMENT_GET_SYSTEM_AV_INFO fps:%f samplerate:%f width:%f height:%f aspectratio:%f\n", info->timing.fps, info->timing.sample_rate, info->geometry.base_width, info->geometry.base_height, info->geometry.aspect_ratio);
+		}
+		break;
+	}
+
 	case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO: { /* 35 */
 		// LOG_info("RETRO_ENVIRONMENT_SET_CONTROLLER_INFO\n");
 		const struct retro_controller_info *infos = (const struct retro_controller_info *)data;
@@ -2188,8 +2232,9 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 	}
 	// TODO: RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION 59
 	// TODO: used by mgba, (but only during frameskip?)
-	// case RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK: { /* 62 */
-	// 	LOG_info("RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK\n");
+	
+	case RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK: { /* 62 */
+	 	LOG_info("RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK does nothing\n");
 	// 	const struct retro_audio_buffer_status_callback *cb = (const struct retro_audio_buffer_status_callback *)data;
 	// 	if (cb) {
 	// 		LOG_info("has audo_buffer_status callback\n");
@@ -2198,11 +2243,11 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 	// 		LOG_info("no audo_buffer_status callback\n");
 	// 		core.audio_buffer_status = NULL;
 	// 	}
-	// 	break;
-	// }
+	 	break;
+	}
 	// TODO: used by mgba, (but only during frameskip?)
-	// case RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY: { /* 63 */
-	// 	LOG_info("RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY\n");
+	case RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY: { /* 63 */
+	 	LOG_info("RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY does nothing\n");
 	//
 	// 	const unsigned *latency_ms = (const unsigned *)data;
 	// 	if (latency_ms) {
@@ -2213,8 +2258,8 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 	// 		else
 	// 			LOG_info("Audio buffer change out of range (%d), ignored\n", frames);
 	// 	}
-	// 	break;
-	// }
+	 	break;
+	 }
 
 	// TODO: RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE 64
 	case RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE: { /* 65 */
@@ -3032,7 +3077,7 @@ SDL_Rect video_refresh_callback_resize_native(void) {
 	while (max_yscale * renderer.src_surface->h > GAME_HEIGHT) max_yscale--;
 	scale = MIN(max_xscale, max_yscale);
 	scale = MIN(scale, screen_max_scale+1);
-	LOG_info("MAX xscaler = %d ** MAX yscaler = %d ** MAX scaler = %d\n", max_xscale, max_yscale, scale);fflush(stdout);
+	LOG_info("width %d height %d / screenwidth %d screenheight %d -> scale %d max_xscale %d max_yscale %d\n", renderer.src_surface->w, renderer.src_surface->h, GAME_WIDTH, GAME_HEIGHT, scale, max_xscale, max_yscale);fflush(stdout);
 	//calculate offsets
 	
 	int dst_w = renderer.src_surface->w * scale;
@@ -3171,6 +3216,8 @@ void video_refresh_callback_resize(void) {
 	LOG_info("VideoResize OUT %d %d %d %d TOOK %dms ABS:%d\n", renderer.dst_w , renderer.dst_h, renderer.dst_x , renderer.dst_y ,  SDL_GetTicks()-now, SDL_GetTicks());fflush(stdout);
 }
 
+
+static int use_core_fps = 1;
 static uint32_t last_flip_time = 0;
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
 //	uint32_t now = SDL_GetTicks();
@@ -3238,7 +3285,12 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	}
 
 	gettimeofday(&now4,NULL);
-	GFX_flip(screen);
+	if (use_core_fps) {
+		GFX_flip_fixed_rate(screen, core.fps);
+	}
+	else {
+	  	GFX_flip(screen);
+	}
 	gettimeofday(&now5,NULL);
 	GFX_pan();
 	gettimeofday(&now6,NULL);
@@ -3251,9 +3303,18 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 
 //int storage_audio_timing[60*60*10][4] = {-1};
 //static uint32_t _x = 0;
+static uint32_t currentframenum = 0;
 static uint32_t firstframe = 1;
 static uint32_t last_callback_time = 0;
+static unsigned long long last_video_time = 0;
 static void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
+
+//	struct timeval now;
+//	gettimeofday(&now, NULL);
+//	unsigned long long now_usec = now.tv_sec * 1000000 + now.tv_usec;
+//	LOG_info("FRAME: %d (Video)             %05lluusec elasped, %lluusec absolute\n\n", currentframenum++,now_usec - last_video_time, now_usec);fflush(stdout); //LOG_info("Audio sample batch callback %d frames\n", frames);fflush(stdout);
+//	last_video_time = now_usec;
+
 	int callback_time = SDL_GetTicks();
 //	storage_audio_timing[_x][2] = callback_time;
 	//LOG_info("video_refresh_callback IN elapsed %lums width:%i height:%i pitch:%i ABS:%i\n", callback_time-last_callback_time ,width,height,pitch, callback_time);fflush(stdout);
@@ -3343,30 +3404,47 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 // NOTE: sound must be disabled for fast forward to work...
 static void audio_sample_callback(int16_t left, int16_t right) {
 	if (fast_forward) return;
+	SND_Frame frame;
+	frame.left = left;
+	frame.right = right;
 #ifdef M21
-	if (GetVolume()) SND_batchSamples(&(const SND_Frame){left,right}, 1);
-	else SND_batchSamples(&(const SND_Frame){0,0}, 1);
-#else
-	SND_batchSamples(&(const SND_Frame){left,right}, 1);
+	if (!GetVolume()) {frame.left = 0; frame.right = 0; } 
 #endif
+	if (use_core_fps) {
+		SND_batchSamples_fixed_rate(&frame, 1);
+	}
+	else {
+		SND_batchSamples(&frame, 1);
+	}
 }
 
 struct timeval tv;
 static uint64_t last_audio_time = 0;
 static uint64_t microsvalue = 0;
 static uint32_t frame_period_usecs = 0;
-
 static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) { 
 	if (fast_forward) return frames;
+//	struct timeval now;
+//	gettimeofday(&now, NULL);
+//	unsigned long long now_usec = now.tv_sec * 1000000 + now.tv_usec;
+//	LOG_info("FRAME: %d (Audio )%d frames, %05lluusec elasped, %lluusec absolute\n", currentframenum, frames, now_usec - last_audio_time, now_usec);fflush(stdout); //LOG_info("Audio sample batch callback %d frames\n", frames);fflush(stdout);
+//	last_audio_time = now_usec;
+
 //	storage_audio_timing[_x][0] = SDL_GetTicks();
 //	storage_audio_timing[_x][3] = frames;
 	int retvalue;
+	SND_Frame *tmpdata = (SND_Frame *)data;
 #ifdef M21	
-	if (GetVolume()) retvalue = SND_batchSamples((const SND_Frame*)data, frames);
-	else retvalue = SND_batchSamples((const SND_Frame*)mutedaudiodata, frames);
-#else
-    retvalue = SND_batchSamples((const SND_Frame*)data, frames);
-#endif	
+	if (!GetVolume()) { tmpdata = (SND_Frame*)mutedaudiodata; }
+#endif
+
+if (use_core_fps) {
+	retvalue = SND_batchSamples_fixed_rate((const SND_Frame*)tmpdata, frames);
+}
+else {
+	retvalue = SND_batchSamples((const SND_Frame*)tmpdata, frames);
+}
+
 //	storage_audio_timing[_x++][1] = SDL_GetTicks();
 //	if (_x == 60*60*10) _x=0;
 //	gettimeofday(&tv,NULL);
@@ -3381,6 +3459,10 @@ static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) {
 //		}
 
 //	last_audio_time = microsvalue;
+
+//	gettimeofday(&now, NULL);
+//	now_usec = now.tv_sec * 1000000 + now.tv_usec;
+//	LOG_info("FRAME: %d (Audio) %d frames, %05lluusec elasped, %lluusec absolute RETURN\n", currentframenum, frames, now_usec - last_audio_time, now_usec);fflush(stdout);
 	return retvalue;
 };
 
@@ -3454,6 +3536,10 @@ void Core_open(const char* core_path, const char* tag_name) {
 	core.get_system_info(&info);
 	
 	Core_getName((char*)core_path, (char*)core.name);
+	if (strcmp(core.name, "gambatte") == 0) {
+		//detected core gambatte, it needs a workaround to enable can_dupe otherwise don't start.
+		can_dupe = true;
+	}
 	sprintf((char*)core.version, "%s (%s)", info.library_name, info.library_version);
 	strcpy((char*)core.tag, tag_name);
 	strcpy((char*)core.extensions, info.valid_extensions);
@@ -3479,6 +3565,26 @@ void Core_open(const char* core_path, const char* tag_name) {
 	set_input_poll_callback(input_poll_callback);
 	set_input_state_callback(input_state_callback);
 }
+
+int Core_updateAVInfo(void) {
+	struct retro_system_av_info av_info = {};
+	core.get_system_av_info(&av_info);
+
+	double a = av_info.geometry.aspect_ratio;
+	if (a<=0) a = (double)av_info.geometry.base_width / av_info.geometry.base_height;
+
+	int changed = (core.fps != av_info.timing.fps || core.sample_rate != av_info.timing.sample_rate || core.aspect_ratio != a);
+
+	core.fps = av_info.timing.fps;
+	core.sample_rate = av_info.timing.sample_rate;
+	core.aspect_ratio = a;
+
+	if (changed) LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);
+
+	return changed;
+}
+
+
 void Core_init(void) {
 	LOG_info("Core_init\n");
 	core.init();
@@ -3525,6 +3631,7 @@ void Core_load(void) {
 	}
 
 	LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);fflush(stdout);
+	Core_updateAVInfo();
 }
 void Core_reset(void) {
 	core.reset();
@@ -5471,6 +5578,26 @@ void getCPUusage(char * data) {
 	fclose(fp);
 }
 
+
+static void chooseSyncRef(void) {
+#if defined(NO_VSYNC)
+	use_core_fps = 1;
+#else
+	switch (sync_ref) {
+		case SYNC_SRC_AUTO:   use_core_fps = (core.get_region() == RETRO_REGION_PAL); break;
+		case SYNC_SRC_SCREEN: use_core_fps = 0; break;
+		case SYNC_SRC_CORE:   use_core_fps = 1; break;
+	}
+#endif
+	LOG_info("%s: sync_ref is set to %s, game region is %s, use core fps = %s\n",
+		  __FUNCTION__,
+		  sync_ref_labels[sync_ref],
+		  core.get_region() == RETRO_REGION_NTSC ? "NTSC" : "PAL",
+		  use_core_fps ? "yes" : "no");
+
+}
+
+
 static void trackFPS(void) {
 	if (!show_debug) return;
 
@@ -5573,6 +5700,13 @@ static void* coreThread(void *arg) {
 }
 
 
+static void resetFPSCounter() {
+	sec_start = SDL_GetTicks();
+	fps_ticks = 0;
+	fps2_ticks = 0;
+}
+
+
 int main(int argc , char* argv[]) {
 	LOG_info("MinArch Date:%s Commit:%s\n", BUILD_DATE, BUILD_HASH);
 	cpu_set_t maint;
@@ -5603,6 +5737,7 @@ int main(int argc , char* argv[]) {
 	int resume_slot;
 
 	mutedaudiodata = calloc(2000,sizeof(uint32_t));
+	int has_pending_opt_change = 0;
 
 	//backbuffer.pixels = (uint16_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint16_t));
 	
@@ -5723,7 +5858,15 @@ int main(int argc , char* argv[]) {
 	LOG_info("MAIN THREAD MOVED TO CPU %i\n", currentmaincpu);
 	while (!quit) {
 		GFX_startFrame();
-
+		if (has_pending_opt_change) {
+			has_pending_opt_change = 0;
+			if (Core_updateAVInfo()) {
+				LOG_info("AV info changed, reset sound system");
+				SND_resetAudio(core.sample_rate, core.fps);
+			}
+			resetFPSCounter();
+			chooseSyncRef();
+		}
 		if ((!thread_video)&&(config_load_done)&&(!waitforthread)) {
 			core.run();
 			limitFF();
@@ -5749,7 +5892,12 @@ int main(int argc , char* argv[]) {
 #endif
 		}
 		
-		if (show_menu) Menu_loop();
+		if (show_menu) { 
+			Menu_loop();
+			has_pending_opt_change = config.core.changed;
+			resetFPSCounter();
+			chooseSyncRef();
+		}
 		
 		//trackFPS();
 		if (toggle_thread) {
