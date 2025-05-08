@@ -77,7 +77,7 @@ int fancy_mode;
 
 // default frontend options
 static int screen_scaling = SCALE_ASPECT;
-static int screen_max_scale = 5; //6x
+//static int screen_max_scale = 5; //6x
 static int screen_effect = EFFECT_NONE;
 static int screen_sharpness = SHARPNESS_SOFT;
 static int prevent_tearing = 1; // lenient
@@ -755,7 +755,7 @@ static char* max_ff_labels[] = {
 
 enum {
 	FE_OPT_SCALING,
-	FE_OPT_MAX_SCALE,
+//	FE_OPT_MAX_SCALE,
 	FE_OPT_EFFECT,
 	FE_OPT_SHARPNESS,
 	FE_OPT_TEARING,
@@ -948,7 +948,7 @@ static struct Config {
 				.values = scaling_labels,
 				.labels = scaling_labels,
 			},
-			[FE_OPT_MAX_SCALE] = {
+		/*	[FE_OPT_MAX_SCALE] = {
 				.key	= "minarch_screen_max_scale",
 				.name	= "Max Upscale",
 				.desc	= "Select the maximum upscale factor.",
@@ -957,7 +957,7 @@ static struct Config {
 				.count = 6,
 				.values = max_scaling_labels,
 				.labels = max_scaling_labels,
-			},
+			},*/
 			[FE_OPT_EFFECT] = {
 				.key	= "minarch_screen_effect",
 				.name	= "Screen Effect",
@@ -1105,11 +1105,11 @@ static void Config_syncFrontend(char* key, int value) {
 		renderer.dst_p = 0;
 		i = FE_OPT_SCALING;
 	}
-	else if (exactMatch(key,config.frontend.options[FE_OPT_MAX_SCALE].key)) {
+/*else if (exactMatch(key,config.frontend.options[FE_OPT_MAX_SCALE].key)) {
 		screen_max_scale = value;
 		renderer.dst_p = 0;
 		i = FE_OPT_MAX_SCALE;
-	}
+	}*/
 	else if (exactMatch(key,config.frontend.options[FE_OPT_EFFECT].key)) {
 		screen_effect = value;
 		GFX_setEffect(value);
@@ -3076,7 +3076,7 @@ SDL_Rect video_refresh_callback_resize_native(void) {
 	int max_yscale = 6;
 	while (max_yscale * renderer.src_surface->h > GAME_HEIGHT) max_yscale--;
 	scale = MIN(max_xscale, max_yscale);
-	scale = MIN(scale, screen_max_scale+1);
+	//scale = MIN(scale, screen_max_scale+1);
 	LOG_info("width %d height %d / screenwidth %d screenheight %d -> scale %d max_xscale %d max_yscale %d\n", renderer.src_surface->w, renderer.src_surface->h, GAME_WIDTH, GAME_HEIGHT, scale, max_xscale, max_yscale);fflush(stdout);
 	//calculate offsets
 	
