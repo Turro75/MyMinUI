@@ -1,5 +1,5 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
-CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom puae
+CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom #puae
 CORES += neocd a5200 a7800 a2600 dosbox tyrquake wonderswan #bmp2png
 #CORES = pcsx_rearmed bmp2png retroarch fbneo gambatte gpsp prboom fceumm fake-08 mednafen_supafaust mgba snes9x2005_plus beetle-vb beetle-pce-fast race pokemini neocd mame2003-plus picodrive
 

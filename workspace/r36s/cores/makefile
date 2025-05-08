@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom
-CORES += neocd a5200 a7800 a2600 dosbox tyrquake puae wonderswan #ffmpeg #easyrpg #scummvm bmp2png 
+CORES += neocd a5200 a7800 a2600 dosbox tyrquake  wonderswan #ffmpeg #easyrpg #scummvm bmp2png puae
 
 ###############################
 
