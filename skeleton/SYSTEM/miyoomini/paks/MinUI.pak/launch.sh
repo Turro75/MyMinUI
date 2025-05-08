@@ -64,6 +64,31 @@ overclock.elf $CPU_SPEED_PERF
 MIYOO_VERSION=`/etc/fw_printenv miyoo_version`
 export MIYOO_VERSION=${MIYOO_VERSION#miyoo_version=}
 
+########################################
+
+max_attempts=5
+attempt=0
+IS_MMV4=false
+while [ "$attempt" -lt "$max_attempts" ]; do
+    screen_resolution=$(grep 'Current TimingWidth=' /proc/mi_modules/fb/mi_fb0 | sed 's/Current TimingWidth=\([0-9]*\),TimingWidth=\([0-9]*\),.*/\1x\2/')
+    if [ -n "$screen_resolution" ]; then
+        echo "get_screen_resolution: success, resolution: $screen_resolution"
+		if [ "$screen_resolution" = "752x560" ]; then
+			IS_MMV4=true  
+			break
+		fi        
+		if [ "$screen_resolution" = "640x480" ]; then
+			IS_MMV4=false
+			break   
+		fi
+    fi
+    attempt=$((attempt + 1))
+    sleep 0.3
+done
+
+export IS_MMV4
+
+
 #######################################
 
 # killall tee # NOTE: killing tee is somehow responsible for audioserver crashes

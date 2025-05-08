@@ -5710,6 +5710,7 @@ static void resetFPSCounter() {
 int main(int argc , char* argv[]) {
 	LOG_info("MinArch Date:%s Commit:%s\n", BUILD_DATE, BUILD_HASH);
 	cpu_set_t maint;
+	IS_MINARCH=1;
 
 	setOverclock(overclock); // default to normal
 	// force a stack overflow to ensure asan is linked and actually working

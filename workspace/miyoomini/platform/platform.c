@@ -29,6 +29,7 @@
 #include <mi_gfx.h>
 
 int is_plus = 0;
+int is_miniv4 = 0;
 
 
 #define RAW_UP		103
@@ -271,11 +272,23 @@ SDL_Surface* PLAT_initVideo(void) {
 
 
 	is_plus = exists("/customer/app/axp_test");
-
+	char *tmpvar = getenv("IS_MMV4");
+	is_miniv4 = (strncmp(tmpvar, "true", 4) == 0);
+  
 	vid.fdfb = open("/dev/fb0", O_RDWR);
+	int p = FIXED_PITCH;
 	int w = FIXED_WIDTH;
 	int h = FIXED_HEIGHT;
-	int p = FIXED_PITCH;
+	if (IS_MINARCH) {
+		LOG_info("Is Minarch runnning\n");
+		if (is_miniv4) {
+			LOG_info("Miyoomini 2.8 v4 Found!, set the screen to 752x560\n");
+			w = 752;
+			h = 560;
+			p = w * FIXED_BPP;
+		}		
+	}
+  
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
 	DEVICE_PITCH = p;
