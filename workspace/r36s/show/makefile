@@ -12,7 +12,5 @@ FLAGSFB = -Os -lm -lrt -ldl -lz -Wl,--gc-sections
 
 all:
 	$(CC) $(TARGET).c SDL2_rotozoom.c  -o $(PRODUCT) $(FLAGSSDL2)
-	$(CC) showinfo2.c SDL2_rotozoom.c  -o showinfo2.elf $(FLAGSSDL2)
-	$(CC) -o drmmodeset drmmodeset.c `pkg-config --cflags --libs libdrm` -Wall -O0 -g
 clean:
 	rm -rf $(PRODUCT)

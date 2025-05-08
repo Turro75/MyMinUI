@@ -30,6 +30,7 @@ RUN mkdir -p /root/workspace
 WORKDIR /root
 
 COPY support .
+#RUN ./build-toochain.sh
 RUN ./setup-toolchain.sh
 RUN cat setup-env.sh >> .bashrc
 
