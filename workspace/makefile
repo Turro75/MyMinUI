@@ -27,6 +27,7 @@ all:
 		cd ./all/minput/ && make
 		cd ./all/clear_recent/ && make
 		cd ./all/convertboxart/ && make
+		cd ./all/Commander/ && make clean && make
 
 clean:
 	cd ./$(PLATFORM)/libmsettings && make clean
@@ -39,4 +40,5 @@ clean:
 	cd ./all/minput/ && make clean
 	cd ./all/clear_recent/ && make clean
 	cd ./all/convertboxart/ && make clean
+	cd ./all/Commander/ && make clean
 

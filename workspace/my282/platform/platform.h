@@ -7,6 +7,27 @@
 
 #include "sdl.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+SDL_Surface* PLAT_initVideo(void);
+void PLAT_initInput(void);
+void PLAT_quitInput(void);
+void PLAT_pollInput(void);
+void PLAT_flip(SDL_Surface* screen, int sync);
+void PLAT_quitVideo(void);
+void PLAT_clearVideo(SDL_Surface* screen);
+void PLAT_clearAll(void);
+void PLAT_setVsync(int vsync);
+void PLAT_setCPUSpeed(int speed);
+int PLAT_getNumProcessors(void);
+uint32_t PLAT_screenMemSize(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #define PAD_poll PLAT_pollInput
 #define PAD_wake PLAT_shouldWake
 

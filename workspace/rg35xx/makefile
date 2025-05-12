@@ -12,21 +12,23 @@ endif
 
 ###########################################################
 
-REQUIRES_COMMANDER=other/DinguxCommander
+#REQUIRES_COMMANDER=other/DinguxCommander
 
 all: readmes
 	cd ./overclock && make
 	cd ./boot && ./build.sh
 
-early: $(REQUIRES_COMMANDER)
-	cd other/DinguxCommander && make -j
+#early: $(REQUIRES_COMMANDER)
+#	cd other/DinguxCommander && make -j
+early: 
+	# early
 
 clean:
 	cd ./overclock && make clean
 	cd ./boot && rm -rf ./output/*
-	cd other/DinguxCommander && make clean
+#	cd other/DinguxCommander && make clean
 	
-$(REQUIRES_COMMANDER):
-	git clone --depth 1 --branch minui-rg35xx https://github.com/shauninman/DinguxCommander.git $(REQUIRES_COMMANDER)
+#$(REQUIRES_COMMANDER):
+#	git clone --depth 1 --branch minui-rg35xx https://github.com/shauninman/DinguxCommander.git $(REQUIRES_COMMANDER)
 
 include ../all/readmes/makefile

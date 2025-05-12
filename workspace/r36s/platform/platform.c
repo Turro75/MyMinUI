@@ -513,6 +513,7 @@ SDL_Surface* PLAT_initVideo(void) {
 		if (ret)
 			fprintf(stderr, "BUF%d cannot set CRTC for connector %u (%d): %m\n",thispage, vid.conn[thispage], errno);fflush(stdout);
 		vid.linewidth[thispage] = creq.pitch / (creq.bpp/8);
+		LOG_info("BUF%d: %d %d %d %d %d\n", thispage, creq.width, creq.height, creq.bpp, creq.pitch, creq.handle);fflush(stdout);fflush(stdout);
 	}
 
 	vid.page = 0;

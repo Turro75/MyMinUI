@@ -38,7 +38,7 @@ extern int GAME_PITCH;
 extern int DEVICE_PITCH;
 extern int IS_MINARCH;
 extern uint32_t frame_start;
-int TARGET_FPS;
+extern int TARGET_FPS;
 
 //////////////////////////////
 // TODO: these only seem to be used by a tmp.pak in trimui (model s)
@@ -290,6 +290,10 @@ void SND_setQuality(int quality);
 
 ///////////////////////////////
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct PAD_Axis {
 		int x;
 		int y;
@@ -332,6 +336,10 @@ int PAD_justReleased(int btn);
 int PAD_justRepeated(int btn);
 
 int PAD_tappedMenu(uint32_t now); // special case, returns 1 on release of BTN_MENU within 250ms if BTN_PLUS/BTN_MINUS haven't been pressed
+
+#ifdef __cplusplus
+}
+#endif
 
 ///////////////////////////////
 

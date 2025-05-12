@@ -20,10 +20,10 @@ all: readmes
 	cd show && make
 	cd overclock && make
 
-early: $(REQUIRES_SDL) $(REQUIRES_COMMANDER)
+early: $(REQUIRES_SDL) 
 	cd other/sdl && ./make.sh
 	cd other/latency_reduction && make
-	cd other/DinguxCommander && make -j
+#	cd other/DinguxCommander && make -j
 
 clean:
 	cd blank && make clean
@@ -32,7 +32,7 @@ clean:
 	cd show && make clean
 	cd other/sdl && make distclean
 	cd other/latency_reduction && make clean
-	cd other/DinguxCommander && make clean
+#	cd other/DinguxCommander && make clean
 
 ###########################################################
 

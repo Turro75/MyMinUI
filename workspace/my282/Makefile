@@ -18,7 +18,7 @@ REQUIRES_LIBSAMPLERATE=other/libsamplerate
 all: readmes
 	cd show && make
 	cd overclock && make
-	cd other/DinguxCommander && make
+#	cd other/DinguxCommander && make
 #   cd other/squashfs && make
 
 early: $(REQUIRES_UNZIP60) $(REQUIRES_LIBSAMPLERATE)
@@ -31,7 +31,7 @@ clean:
 	cd show && make clean
 	cd overclock && make clean
 #	cd other/squashfs && make clean
-	cd other/DinguxCommander && make clean
+#	cd other/DinguxCommander && make clean
 	cd other/unzip60 && make -f unix/Makefile.trimuismart clean
 	cd other/libsamplerate && make clean
 	

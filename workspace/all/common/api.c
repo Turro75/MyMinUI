@@ -26,6 +26,7 @@ int DEVICE_HEIGHT;
 int GAME_WIDTH;
 int GAME_HEIGHT;
 int DEVICE_PITCH;
+int TARGET_FPS;
 int IS_MINARCH = 0;
 
 void LOG_note(int level, const char* fmt, ...) {

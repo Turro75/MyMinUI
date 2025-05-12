@@ -49,6 +49,8 @@ system:
 	cp ./workspace/all/minput/build/$(PLATFORM)/minput.elf ./build/EXTRAS/Tools/$(PLATFORM)/Input.pak/
 	cp ./workspace/all/clear_recent/build/$(PLATFORM)/clear_recent.elf "./build/EXTRAS/Tools/$(PLATFORM)/Clear Recently Played.pak/"
 	cp ./workspace/all/convertboxart/build/$(PLATFORM)/convertboxart.elf "./build/EXTRAS/Tools/$(PLATFORM)/Convert BoxArt.pak/"
+	cp ./workspace/all/Commander/build/$(PLATFORM)/MyCommander.elf "./build/EXTRAS/Tools/$(PLATFORM)/Files.pak/"
+	cp -r ./workspace/all/Commander/res "./build/EXTRAS/Tools/$(PLATFORM)/Files.pak/"
 
 cores:
 	cp ./workspace/$(PLATFORM)/cores/output/* ./build/SYSTEM/$(PLATFORM)/cores/
