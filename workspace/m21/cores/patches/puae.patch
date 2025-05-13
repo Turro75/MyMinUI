@@ -8,7 +8,7 @@ index 4c0dffc..91e33bc 100644
  
 +# (armv7 a7, hard point, neon based) ### 
 +# NESC, SNESC, C64 mini 
-+else ifeq ($(platform), r36s)
++else ifeq ($(platform), m21)
 +	   TARGET := puae2021_libretro.so
 +    CC = ${CROSS_COMPILE}gcc
 +    CXX = ${CROSS_COMPILE}g++
@@ -27,15 +27,15 @@ index 4c0dffc..91e33bc 100644
 +	CXXFLAGS += $(CFLAGS)
 +	CPPFLAGS += $(CFLAGS)
 +	ASFLAGS += $(CFLAGS)
-+#	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
-+#	  CFLAGS += -march=armv7-a
-+#	else
-+#	  CFLAGS += -march=armv7ve
-+#	  # If gcc is 5.0 or later
-+#	  ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
-+#	    LDFLAGS += -static-libgcc -static-libstdc++
-+#	  endif
-+#	endif
++	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
++	  CFLAGS += -march=armv7-a
++	else
++	  CFLAGS += -march=armv7ve
++	  # If gcc is 5.0 or later
++	  ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
++	    LDFLAGS += -static-libgcc -static-libstdc++
++	  endif
++	endif
 +
 +
  # (armv8 a35, hard point, neon based) ###

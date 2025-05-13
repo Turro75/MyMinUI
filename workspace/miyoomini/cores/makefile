@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo prboom mame2003-plus neocd
-CORES += a5200 a7800 a2600 dosbox tyrquake wonderswan # bmp2png puae
+CORES += a5200 a7800 a2600 dosbox tyrquake wonderswan puae #mesen # bmp2png 
 
 
 ###############################
@@ -12,6 +12,15 @@ CORES += a5200 a7800 a2600 dosbox tyrquake wonderswan # bmp2png puae
 # *_FLAGS=
 # *_MAKEFILE=
 # *_BUILD_PATH=
+
+mesen_REPO = https://github.com/libretro/Mesen.git
+mesen_CORE = mesen_libretro.so
+mesen_BUILD_PATH = mesen/Libretro
+
+#saturn_REPO = https://github.com/libretro/beetle-saturn-libretro.git
+saturn_REPO = https://github.com/libretro/yabause.git
+saturn_CORE = yabause_libretro.so
+saturn_BUILD_PATH = saturn/yabause/src/libretro
 
 wonderswan_REPO = https://github.com/libretro/beetle-wswan-libretro.git
 wonderswan_CORE = mednafen_wswan_libretro.so
@@ -85,8 +94,10 @@ retroarch_CORE = retroarch
 #retroarch_MAKEFILE = Makefile.miyoo
 
 puae_REPO = https://github.com/libretro/libretro-uae
+#puae_REPO = https://github.com/KMFDManic/libretro-uae
 puae_BR = 2.6.1
 puae_CORE = puae2021_libretro.so
+puae_HASH = c68404c
 
 neocd_REPO = https://github.com/libretro/neocd_libretro
 neocd_CORE = neocd_libretro.so
