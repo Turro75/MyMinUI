@@ -5471,6 +5471,10 @@ static void Menu_loop(void) {
 					if (i==menu.slot)GFX_blitAsset(ASSET_PAGE, NULL, screen, &(SDL_Rect){ox+SCALE1((i-1)*16),oy});
 					else GFX_blitAsset(ASSET_DOT, NULL, screen, &(SDL_Rect){ox+SCALE1((i-1)*16)+4,oy+SCALE1(2)});
 				}
+				if (menu.slot == 0){
+					ox -= SCALE1(16);		
+					GFX_blitAsset(ASSET_RED_PAGE, NULL, screen, &(SDL_Rect){ox,oy});
+				}
 			}
 	
 			GFX_flip(screen);

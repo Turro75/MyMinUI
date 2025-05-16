@@ -106,6 +106,8 @@ enum {
 	ASSET_SCROLL_DOWN,
 	
 	ASSET_WIFI,
+	ASSET_RED_DOT,
+	ASSET_RED_PAGE,
 };
 
 typedef struct GFX_Fonts {

@@ -59,6 +59,7 @@ void LOG_note(int level, const char* fmt, ...) {
 ///////////////////////////////
 
 uint32_t RGB_WHITE;
+uint32_t RGB_RED;
 uint32_t RGB_BLACK;
 uint32_t RGB_LIGHT_GRAY;
 uint32_t RGB_GRAY;
@@ -103,6 +104,8 @@ static SDL_Rect asset_rects[] = {
 
 	[ASSET_WIFI]			= {SCALE4(95,39,14,10)},
 	[ASSET_HOLE]			= {SCALE4( 1,63,20,20)},
+	[ASSET_RED_DOT]			= {SCALE4( 33,54, 2, 2)},
+	[ASSET_RED_PAGE] 		= {SCALE4( 92,64, 6, 6)},
 };
 static uint32_t asset_rgbs[ASSET_COLORS];
 GFX_Fonts font;
@@ -166,6 +169,7 @@ SDL_Surface* GFX_init(int mode) {
 	gfx.mode = mode;
 	
 	RGB_WHITE		= SDL_MapRGB(gfx.screen->format, TRIAD_WHITE);
+	RGB_RED			= SDL_MapRGB(gfx.screen->format, TRIAD_RED);
 	RGB_BLACK		= SDL_MapRGB(gfx.screen->format, TRIAD_BLACK);
 	RGB_LIGHT_GRAY	= SDL_MapRGB(gfx.screen->format, TRIAD_LIGHT_GRAY);
 	RGB_GRAY		= SDL_MapRGB(gfx.screen->format, TRIAD_GRAY);
@@ -185,6 +189,8 @@ SDL_Surface* GFX_init(int mode) {
 	asset_rgbs[ASSET_UNDERLINE]		= RGB_GRAY;
 	asset_rgbs[ASSET_DOT]			= RGB_LIGHT_GRAY;
 	asset_rgbs[ASSET_HOLE]			= RGB_BLACK;
+	asset_rgbs[ASSET_RED_DOT]		= RGB_RED;
+	asset_rgbs[ASSET_RED_PAGE] 		= RGB_RED;
 	
 	char asset_path[MAX_PATH];
 	sprintf(asset_path, RES_PATH "/assets@%ix.png", FIXED_SCALE);

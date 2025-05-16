@@ -1621,6 +1621,10 @@ int drawStatePreview(SDL_Surface* _screen, char* bmpPath, int stateIndex){
 		if (i==stateIndex) GFX_blitAsset(ASSET_PAGE, NULL, _screen, &(SDL_Rect){ox+SCALE1((i-1)*16),oy});
 		else GFX_blitAsset(ASSET_DOT, NULL, _screen, &(SDL_Rect){ox+SCALE1((i-1)*16)+4,oy+SCALE1(2)});
 	}
+	if (stateIndex == 0){
+		ox -= SCALE1(16);		
+		GFX_blitAsset(ASSET_RED_PAGE, NULL, _screen, &(SDL_Rect){ox,oy});
+	}
     return 1;
 }
 
