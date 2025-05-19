@@ -61,6 +61,11 @@ struct input_event {
 #define EV_KEY			0x01
 #define EV_ABS			0x03
 
+#define NOMENU_PATH SYSTEM_PATH "/menumissing.txt"
+int menumissing = 0;
+int selectstartstatus = 0; 
+int selectstartlaststatus = 0; 
+
 static int PWR_Pressed = 0;
 static int PWR_Actions = 0;
 static uint32_t PWR_Tick = 0;
@@ -80,6 +85,11 @@ long map(int x, int in_min, int in_max, int out_min, int out_max) {
 }
 
 void PLAT_initInput(void) {
+
+	if (exists(NOMENU_PATH)) {
+		menumissing = 1;
+	}
+
 	inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 	if (inputs[0]<0) {
 		LOG_info("/dev/input/event0 open failed"); // volume +/-
@@ -179,9 +189,26 @@ void PLAT_pollInput(void) {
 			
 				pressed = value;
 
-				if 		(code==_START_RAW)	{ btn = BTN_START; 		id = BTN_ID_START; } 
-			    else if (code==_SELECT_RAW)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
-				else if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
+				if (menumissing == 1) { //some r36 variant which don't have the menu button
+				//let's find a way to simulate menu button when select+start is detected
+					if (code==_START_RAW)	{ btn = BTN_START; 		id = BTN_ID_START; pressed ? selectstartstatus++ : selectstartstatus--; } 
+				    if (code==_SELECT_RAW)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; pressed ? selectstartstatus++ : selectstartstatus--;}
+					if (selectstartstatus == 2) {
+							btn = BTN_MENU;  id = BTN_ID_MENU; 
+							selectstartlaststatus=1; 
+							pad.is_pressed		&= ~BTN_SELECT; // unset
+							pad.just_repeated	&= ~BTN_SELECT; // unset	
+							pad.is_pressed		&= ~BTN_START; // unset
+							pad.just_repeated	&= ~BTN_START; // unset						
+							}
+					if ((selectstartstatus == 1) && (selectstartlaststatus == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus=0;}
+				}
+				else {
+					if 		(code==_START_RAW)	{ btn = BTN_START; 		id = BTN_ID_START; } 
+			    	else if (code==_SELECT_RAW)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
+				}
+
+				if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
 				else if (code==RAW_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
 
 				//LOG_info("key event: %i (%i)\n", code,pressed);fflush(stdout);
