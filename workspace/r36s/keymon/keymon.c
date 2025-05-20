@@ -15,6 +15,10 @@
 // uses different codes from SDL
 #define CODE_MENU		708 //event2
 #define CODE_MENU_353 	316 //event4
+#define RAW_START	 	705 
+#define RAW_START_353 	315 
+#define RAW_SELECT	 	704
+#define RAW_SELECT_353	314
 #define CODE_PLUS		115 //event3
 #define CODE_MINUS		114 //event3
 #define CODE_PWR		116 //event0
@@ -34,6 +38,8 @@ int main (int argc, char *argv[]) {
 	int is353v = 0;
 	int isg350 = 0;
 	int _MENU_RAW = CODE_MENU;
+	int _START_RAW = RAW_START;
+	int _SELECT_RAW = RAW_SELECT;
 	// TODO: will require two inputs
 	// input_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
@@ -45,6 +51,8 @@ int main (int argc, char *argv[]) {
 	if (is353v) {
 		inputs[1] = open("/dev/input/event4", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		_MENU_RAW = CODE_MENU_353;
+		_START_RAW = RAW_START_353;
+		_SELECT_RAW = RAW_SELECT_353;
 	} else if (isg350) {
 		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 	} else {
@@ -62,6 +70,8 @@ int main (int argc, char *argv[]) {
 	uint32_t input;
 	uint32_t val;
 	uint32_t menu_pressed = 0;
+	uint32_t select_pressed = 0;
+	uint32_t start_pressed = 0;
 	
 	uint32_t up_pressed = 0;
 	uint32_t up_just_pressed = 0;	
@@ -94,6 +104,12 @@ int main (int argc, char *argv[]) {
 				if (( ev.type != EV_KEY ) || ( val > REPEAT )) continue;
 				if (ev.code == _MENU_RAW) {
 					menu_pressed = val;
+				}
+				if (ev.code == _SELECT_RAW) {
+					select_pressed = val;
+				}
+				if (ev.code == _START_RAW) {
+					start_pressed = val;
 				}
 				if (ev.code == CODE_PLUS) {
 					up_pressed = up_just_pressed = val;
@@ -133,7 +149,7 @@ int main (int argc, char *argv[]) {
 		}
 		
 		if (up_just_pressed || (up_pressed && now>=up_repeat_at)) {
-			if (menu_pressed) {
+			if ((menu_pressed) || ((select_pressed) && (start_pressed))) {
 				//printf("brightness up\n"); fflush(stdout);
 				val = GetBrightness();
 				if (val<BRIGHTNESS_MAX) SetBrightness(++val);
@@ -149,7 +165,7 @@ int main (int argc, char *argv[]) {
 		}
 		
 		if (down_just_pressed || (down_pressed && now>=down_repeat_at)) {
-			if (menu_pressed) {
+			if ((menu_pressed) || ((select_pressed) && (start_pressed))) {
 				//printf("brightness down\n"); fflush(stdout);
 				val = GetBrightness();
 				if (val>BRIGHTNESS_MIN) SetBrightness(--val);
