@@ -74,6 +74,9 @@ int main(int argc , char* argv[]) {
 		if (PAD_isPressed(BTN_SELECT) && PAD_isPressed(BTN_START)) {
 			quit = 1;
 		}
+		if ((PAD_isPressed(BTN_MENU)) && exists(SYSTEM_PATH "/menumissing.txt") ) {
+			quit = 1;
+		}
 		// PWR_update(&dirty, NULL, NULL,NULL);
 		
 		// int is_online = PLAT_isOnline();
