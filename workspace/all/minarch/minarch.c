@@ -81,7 +81,7 @@ static int screen_scaling = SCALE_ASPECT;
 static int screen_effect = EFFECT_NONE;
 static int screen_sharpness = SHARPNESS_SOFT;
 static int prevent_tearing = 1; // lenient
-static int sync_ref = 0;
+static int sync_ref = 1;
 static int show_debug = 0;
 static int max_ff_speed = 3; // 4x
 static int fast_forward = 0;
@@ -734,9 +734,10 @@ static char* tearing_labels[] = {
 	NULL
 };
 static char* sync_ref_labels[] = {
+	"NoFix",
 	"Auto",
 	"Screen",
-	"Native",
+	"Core",
 	NULL
 };
 static char* max_ff_labels[] = {
@@ -768,6 +769,7 @@ enum {
 };
 
 enum {
+	SYNC_SRC_NOFIX,
 	SYNC_SRC_AUTO,
 	SYNC_SRC_SCREEN,
 	SYNC_SRC_CORE
@@ -994,7 +996,7 @@ static struct Config {
 				.desc	= "Choose what should be used as a\nreference for the frame rate.\n\"Native\" uses the emulator frame rate,\n\"Screen\" uses the frame rate of the screen.",
 				.default_value = SYNC_SRC_AUTO,
 				.value = SYNC_SRC_AUTO,
-				.count = 3,
+				.count = 4,
 				.values = sync_ref_labels,
 				.labels = sync_ref_labels,
 			},
@@ -3218,6 +3220,7 @@ void video_refresh_callback_resize(void) {
 
 
 static int use_core_fps = 1;
+static int use_nofix = 0;
 static uint32_t last_flip_time = 0;
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
 //	uint32_t now = SDL_GetTicks();
@@ -3285,11 +3288,15 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	}
 
 	gettimeofday(&now4,NULL);
-	if (use_core_fps) {
-		GFX_flip_fixed_rate(screen, core.fps);
-	}
-	else {
-	  	GFX_flip(screen);
+	if (use_nofix) {
+		GFX_flipNoFix(screen);
+	} else {
+		if (use_core_fps) {
+			GFX_flip_fixed_rate(screen, core.fps);
+		}
+		else {
+		  	GFX_flip(screen);
+		}
 	}
 	gettimeofday(&now5,NULL);
 	GFX_pan();
@@ -3410,11 +3417,14 @@ static void audio_sample_callback(int16_t left, int16_t right) {
 #ifdef M21
 	if (!GetVolume()) {frame.left = 0; frame.right = 0; } 
 #endif
-	if (use_core_fps) {
-		SND_batchSamples_fixed_rate(&frame, 1);
-	}
-	else {
-		SND_batchSamples(&frame, 1);
+	if (use_nofix) {
+		SND_batchSamplesNoFix(&frame, 1);
+	} else {
+		if (use_core_fps) {
+			SND_batchSamples_fixed_rate(&frame, 1);
+		} else {
+			SND_batchSamples(&frame, 1);
+		}
 	}
 }
 
@@ -3438,11 +3448,14 @@ static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) {
 	if (!GetVolume()) { tmpdata = (SND_Frame*)mutedaudiodata; }
 #endif
 
-if (use_core_fps) {
-	retvalue = SND_batchSamples_fixed_rate((const SND_Frame*)tmpdata, frames);
-}
-else {
-	retvalue = SND_batchSamples((const SND_Frame*)tmpdata, frames);
+if (use_nofix) {
+	retvalue = SND_batchSamplesNoFix((const SND_Frame*)tmpdata, frames);
+} else {
+	if (use_core_fps) {
+		retvalue = SND_batchSamples_fixed_rate((const SND_Frame*)tmpdata, frames);
+	} else {
+		retvalue = SND_batchSamples((const SND_Frame*)tmpdata, frames);
+	}
 }
 
 //	storage_audio_timing[_x++][1] = SDL_GetTicks();
@@ -3539,6 +3552,10 @@ void Core_open(const char* core_path, const char* tag_name) {
 	if (strcmp(core.name, "gambatte") == 0) {
 		//detected core gambatte, it needs a workaround to enable can_dupe otherwise don't start.
 		can_dupe = true;
+	}
+	if (strcmp(core.name, "pcsx_rearmed") == 0) {
+		//detected core pcsx_rearmed, at the moment it seems that duplicated frames can be omitted.
+		//can_dupe = true;
 	}
 	sprintf((char*)core.version, "%s (%s)", info.library_name, info.library_version);
 	strcpy((char*)core.tag, tag_name);
@@ -5588,16 +5605,19 @@ static void chooseSyncRef(void) {
 	use_core_fps = 1;
 #else
 	switch (sync_ref) {
-		case SYNC_SRC_AUTO:   use_core_fps = (core.get_region() == RETRO_REGION_PAL); break;
-		case SYNC_SRC_SCREEN: use_core_fps = 0; break;
-		case SYNC_SRC_CORE:   use_core_fps = 1; break;
+		case SYNC_SRC_AUTO:   use_core_fps = (core.get_region() == RETRO_REGION_PAL); use_nofix = 0; break;
+		case SYNC_SRC_SCREEN: use_core_fps = 0; use_nofix = 0; break;
+		case SYNC_SRC_CORE:   use_core_fps = 1; use_nofix = 0; break;
+		case SYNC_SRC_NOFIX:  use_core_fps = 0; use_nofix = 1; break;
 	}
 #endif
-	LOG_info("%s: sync_ref is set to %s, game region is %s, use core fps = %s\n",
+	LOG_info("%s: sync_ref is set to %s, game region is %s, use core fps = %s, use_nofix = %s\n",
 		  __FUNCTION__,
 		  sync_ref_labels[sync_ref],
 		  core.get_region() == RETRO_REGION_NTSC ? "NTSC" : "PAL",
-		  use_core_fps ? "yes" : "no");
+		  use_core_fps ? "yes" : "no",
+		  use_nofix ? "yes" : "no"
+		  );
 
 }
 

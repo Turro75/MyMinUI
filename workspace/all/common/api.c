@@ -132,6 +132,9 @@ static struct PWR_Context {
 	SDL_Surface* overlay;
 } pwr = {0};
 
+#define BATCH_SIZE_NOFIX 400
+
+typedef int (*SND_Resampler)(const SND_Frame frame);
 
 static struct SND_Context {
 	int initialized;
@@ -140,6 +143,7 @@ static struct SND_Context {
 	int sample_rate_in;
 	int sample_rate_out;
 	
+	int buffer_seconds;     // current_audio_buffer_size
 	SND_Frame* buffer;		// buf
 	size_t frame_count; 	// buf_len
 	
@@ -147,6 +151,7 @@ static struct SND_Context {
 	int frame_out;    // buf_r
 	int frame_filled; // max_buf_w
 	
+	SND_Resampler resample;
 } snd = {0};
 
 ///////////////////////////////
@@ -266,6 +271,12 @@ void GFX_startFrame(void) {
 void GFX_pan(void) {
 	PLAT_pan();
 }
+
+void GFX_flipNoFix(SDL_Surface* screen) {
+	int should_vsync = (gfx.vsync!=VSYNC_OFF && (gfx.vsync==VSYNC_STRICT || frame_start==0 || SDL_GetTicks()-frame_start<FRAME_BUDGET));
+	PLAT_flip(screen, should_vsync);
+}
+
 
 void GFX_flip(SDL_Surface* screen) {
 	
@@ -1159,6 +1170,39 @@ static void SND_resizeBuffer(void) { // plat_sound_resize_buffer
 
 	SDL_UnlockAudio();
 }
+
+static int SND_resampleNone(SND_Frame frame) { // audio_resample_passthrough
+	snd.buffer[snd.frame_in++] = frame;
+	if (snd.frame_in >= snd.frame_count) snd.frame_in = 0;
+	return 1;
+}
+static int SND_resampleNear(SND_Frame frame) { // audio_resample_nearest
+	static int diff = 0;
+	int consumed = 0;
+
+	if (diff < snd.sample_rate_out) {
+		snd.buffer[snd.frame_in++] = frame;
+		if (snd.frame_in >= snd.frame_count) snd.frame_in = 0;
+		diff += snd.sample_rate_in;
+	}
+
+	if (diff >= snd.sample_rate_out) {
+		consumed++;
+		diff -= snd.sample_rate_out;
+	}
+
+	return consumed;
+}
+
+static void SND_selectResampler(void) { // plat_sound_select_resampler
+	if (snd.sample_rate_in==snd.sample_rate_out) {
+		snd.resample =  SND_resampleNone;
+	}
+	else {
+		snd.resample = SND_resampleNear;
+	}
+}
+
 static int soundQuality = 2;
 static int resetSrcState = 0;
 void SND_setQuality(int quality) {
@@ -1310,6 +1354,35 @@ float currentratio = 0.0;
 int currentbufferfree = 0;
 int currentframecount = 0;
 static double ratio = 1.0;
+
+size_t SND_batchSamplesNoFix(const SND_Frame* frames, size_t frame_count) { // plat_sound_write / plat_sound_write_resample
+	if (snd.frame_count==0) return 0;
+	
+	SDL_LockAudio();
+	int progress = 0;
+	int consumed = 0;
+	while (frame_count > 0) {
+		int tries = 0;
+		int amount = MIN(BATCH_SIZE_NOFIX, frame_count);
+
+		while (tries < 10 && snd.frame_in==snd.frame_filled) {
+			tries++;
+			SDL_UnlockAudio();
+			SDL_Delay(1);
+			SDL_LockAudio();
+		}
+
+		while (amount && snd.frame_in != snd.frame_filled) {
+			consumed = snd.resample(*frames);
+			frames += consumed;
+			amount -= consumed;
+			frame_count -= consumed;
+			progress += consumed;
+		}
+	}
+	SDL_UnlockAudio();
+	return progress;
+}
 
 size_t SND_batchSamples(const SND_Frame *frames, size_t frame_count) {
 	
@@ -1519,8 +1592,10 @@ void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 	currentsampleratein = snd.sample_rate_in;
 	currentsamplerateout = snd.sample_rate_out;
 	
-	SND_resizeBuffer();
+	snd.buffer_seconds = 5;
+	SND_selectResampler();
 	
+	SND_resizeBuffer();
 	SDL_PauseAudio(0);
 
 	LOG_info("sample rate: %i (req) %i (rec) [samples %i]\n", snd.sample_rate_in, snd.sample_rate_out, SAMPLES);

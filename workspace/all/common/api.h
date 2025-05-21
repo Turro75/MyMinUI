@@ -194,6 +194,7 @@ int GFX_hdmiChanged(void);
 void GFX_startFrame(void);
 void audioFPS(void);
 void GFX_flip(SDL_Surface* screen);
+void GFX_flipNoFix(SDL_Surface* screen);
 void PLAT_flipHidden();
 void GFX_flip_fixed_rate(SDL_Surface* screen, double target_fps); // if target_fps is 0, then use the native screen FPS
 #define GFX_supportsOverscan PLAT_supportsOverscan // (void)
@@ -284,6 +285,7 @@ typedef struct {
 } ResampledFrames;
 
 void SND_init(double sample_rate, double frame_rate);
+size_t SND_batchSamplesNoFix(const SND_Frame* frames, size_t frame_count);
 size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count);
 size_t SND_batchSamples_fixed_rate(const SND_Frame* frames, size_t frame_count);
 void SND_quit(void);
