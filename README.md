@@ -14,6 +14,51 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+## Release 22/05/2025
+
+# All:
+
+Fixed the multidisc handling, now both m3u and pbp are fully supported and properly handle the save states as well as autoresume
+
+Restored the Amiga core (puae2021), after some researches I found that the commit used by onionos seems quite useable, it still needs a bit of tinkering to properly balance execution speed but at least the 50/60fps seems easy to achieve.
+
+Restored the minui audio code for Playstation, due to the continuous frame rate change the nextui audio fix has been deactivated.
+All others cores can continue to use the nextui audio fix. The frame duplication has been disabled so now the pcsx_rearmed is running at full speed.
+
+The Core Sync option has now 4 items: NoFix, Auto, Screen, Native. Deafult setting to Auto for all but PS1 which must be NoFix.
+In the PS1 core settings the Core Sync param is hidden and forced to NoFix.
+
+# r36s:
+
+Added support for arkos devices which has missing menu button (i.e. R36H), if exists the file .system/r36s/menumissing.txt then Select+Start is acting as menu.
+
+
+## release 12/05/2025
+
+# All:
+
+the Files tool (aka DinguxCommander) is now a common tool and uses the platform screen and input drivers instead of libSDL.
+Now it is coherent across all the devices and automatically adapt to the screen and the current video output.
+renamed to MyCommander. The code is not yet polished.
+
+removed the max scale setting, now useless.
+
+removed residual Amiga puae2021 files from all platforms
+
+set the prevent_tearing default setting to Lenient
+
+updated all the Toolchains to add libsamplerate support needed by nextui audio sync engine.
+
+# Miyoomini:
+
+now the Miyoo Mini v4 screen is detected and set to the real screen resolution which is 752x560 instead of 640x480. The detection method is taken from OnionOS (Thanks Lemonzest for help and testing)
+
+# A30:
+
+added missing atari2600 folders
+
+
+
 ## Release 28/04/2025
 
 A lot of new things in this release. I tried to make it more efficient and easy to use.
@@ -73,7 +118,7 @@ A lot of new things in this release. I tried to make it more efficient and easy 
   - this device has the screen rotated, it is probably the one that got the more significant performances boost. Tekken 3 ps1 needed the max overclock available (1.4GHz on mine) to run at decent speed 55-58fps, now it runs 60fps with cpu speed set to normal and most games in powersave mode. This is helpful in terms of battery life and keeping the heating effect lower.
 
 
-# SJGAM M21/M22pro STILL UNDER TEST TO DETERMINE THE CORRECT SCREEN ORIENTATION ON M22PRO
+# SJGAM M21/M22pro STILL UNDER TEST TO DETERMINE THE CORRECT SCREEN ORIENTATION ON M22PRO WAITING FOR TESTER FEEDBACK
 
   - sometimes my M21 decide to be able to read the sdcard, it happens for few times, I don't know which kind of damage but at least I can test stuffs.
 
