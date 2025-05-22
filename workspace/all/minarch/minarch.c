@@ -450,7 +450,7 @@ static void Game_changeDisc(int index,  char* path) {
 			//LOG_info("3ChangeDisc: disk_control_ext.set_eject_state(false) SUCCESS!!!!\n");
 			}
 	}	
-	putFile(CHANGE_DISC_PATH, path); // MinUI still needs to know this to update recents.txt
+	//putFile(CHANGE_DISC_PATH, path); // MinUI still needs to know this to update recents.txt
 	//putInt(CHANGE_DISC_INDEX_PATH, _index);
 	//Game_close();
 	//core.reset();
@@ -3913,7 +3913,12 @@ void Menu_beforeSleep(void) {
 	SRAM_write();
 	RTC_write();
 	State_autosave();
-	putFile(AUTO_RESUME_PATH, game.path + strlen(SDCARD_PATH));
+	//LOG_info("Saving state to %s\nData are: PATH:%s \nM3U_PATH:%s\n TMP_PATH:%s\n FULLNAME:%s\n BASENAME:%s\n ", AUTO_RESUME_PATH, game.path, game.m3u_path, game.tmp_path, game.fullname, game.basename);
+	if (game.m3u_path[0]) {
+		putFile(AUTO_RESUME_PATH, game.m3u_path + strlen(SDCARD_PATH));
+	} else	{
+		putFile(AUTO_RESUME_PATH, game.path + strlen(SDCARD_PATH));
+	}
 	PWR_setCPUSpeed(CPU_SPEED_MENU);
 }
 void Menu_afterSleep(void) {
@@ -4967,7 +4972,11 @@ static void Menu_saveState(void) {
 	
 	if (menu.total_discs) {
 		char* disc_path = menu.disc_paths[menu.disc];
-		putFile(menu.txt_path, disc_path + strlen(menu.base_path));
+		if (game.m3u_path[0]) {
+			putFile(menu.txt_path, game.m3u_path);
+		} else {
+			putFile(menu.txt_path, disc_path + strlen(menu.base_path));
+		}
 		putInt(menu.txt_path_slot, menu.disc);
 	}
 	

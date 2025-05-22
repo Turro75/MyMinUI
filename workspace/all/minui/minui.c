@@ -1381,9 +1381,9 @@ static void openRom(char* path, char* last) {
 	char recent_path[256];
 	strcpy(recent_path, has_m3u ? m3u_path : sd_path);
 	
-	if (has_m3u && suffixMatch(".m3u", sd_path)) {
-		getFirstDisc(m3u_path, sd_path);
-	}
+//	if (has_m3u && suffixMatch(".m3u", sd_path)) {
+//		getFirstDisc(m3u_path, sd_path);
+//	}
 
 	char emu_name[256];
 	getEmuName(sd_path, emu_name);
@@ -1395,7 +1395,7 @@ static void openRom(char* path, char* last) {
 		should_resume = 0;
 		loadslot=last_selected_slot;
 
-		if (has_m3u) {
+/*		if (has_m3u) {
 			char rom_file[256];
 			strcpy(rom_file, strrchr(m3u_path, '/') + 1);
 			
@@ -1414,8 +1414,8 @@ static void openRom(char* path, char* last) {
 					strcpy(tmp, disc_path);
 				}
 			}
-		}
-	}
+		}*/
+	} 
 	//else
 	 //putInt(RESUME_SLOT_PATH,AUTO_RESUME_SLOT); // resume hidden default state
 	// loadslot=-1;	
