@@ -14,7 +14,15 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
-## Release 22/05/2025
+## Release 22/05/2025 fix
+
+EDIT - Last minute fix:
+
+Fixed the multidisc behavior, now m3u is fully supported and is now able to show boxart and state preview as well as all other roms.
+
+previously the save state selected is the more recent, this don't work well on devices without rtc or in case of shared sdcard across devices, now it selects the last saved state.
+
+/EDIT
 
 # All:
 
