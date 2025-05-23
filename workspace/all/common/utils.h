@@ -31,7 +31,7 @@ void getParentFolderName(const char* in_name, char* out_name);
 void getDisplayParentFolderName(const char* in_name, char* out_name);
 int readBoxartcfg(char *, myBoxartData *);
 void getStatePath(char * gamepath, char* statepath);
-int canResume(char * rompath);
+int canResume(char * rompath, int last_known_slot);
 // end boxarts
 
 void normalizeNewline(char* line);

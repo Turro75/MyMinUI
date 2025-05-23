@@ -323,7 +323,7 @@ static void Directory_index(Directory* self) {
 static Array* getRoot(void);
 static Array* getRecents(void);
 static Array* getCollection(char* path);
-static Array* getDiscs(char* path);
+//static Array* getDiscs(char* path);
 static Array* getEntries(char* path);
 static Array* getFavorites(void);
 
@@ -351,9 +351,9 @@ static Directory* Directory_new(char* path, int selected) {
 	else if (!exactMatch(path, COLLECTIONS_PATH) && prefixMatch(COLLECTIONS_PATH, path) && suffixMatch(".txt", path)) {
 		self->entries = getCollection(path);
 	}
-	else if (suffixMatch(".m3u", path)) {
-		self->entries = getDiscs(path);
-	}
+//	else if (suffixMatch(".m3u", path)) {
+//		self->entries = getDiscs(path);
+//	}
 	else {
 		self->entries = getEntries(path);
 	}
@@ -672,7 +672,7 @@ static int hasRecents(void) {
 	int has = 0;
 	
 	Array* parent_paths = Array_new();
-	if (exists(CHANGE_DISC_PATH)) {
+/*	if (exists(CHANGE_DISC_PATH)) {
 		char sd_path[256];
 		getFile(CHANGE_DISC_PATH, sd_path, 256);
 		if (exists(sd_path)) {
@@ -688,7 +688,7 @@ static int hasRecents(void) {
 			Array_push(parent_paths, strdup(parent_path));
 		}
 		unlink(CHANGE_DISC_PATH);
-	}
+	} */
 	
 	FILE* file = fopen(RECENT_PATH, "r"); // newest at top
 	if (file) {
@@ -1079,6 +1079,7 @@ static Array* getCollection(char* path) {
 	}
 	return entries;
 }
+/*
 static Array* getDiscs(char* path){
 	
 	// TODO: does path have SDCARD_PATH prefix?
@@ -1142,7 +1143,7 @@ static int getFirstDisc(char* m3u_path, char* disc_path) { // based on getDiscs(
 	}
 	return found;
 }
-
+*/
 static void addEntries(Array* entries, char* path) {
 	DIR *dh = opendir(path);
 	if (dh!=NULL) {
@@ -1304,15 +1305,22 @@ static void readyResumePath(char* rom_path, int type) {
 	//tmp = strrchr(path, '/') + 1;
 	//strcpy(rom_file, tmp);
 	getDisplayNameParens(path,rom_file);
-	sprintf(slot_path, "%s/.minui/%s/%s.txt", SHARED_USERDATA_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>
+	sprintf(slot_path, "%s/.minui/%s/%s.txt", SHARED_USERDATA_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>.txt
 	//sprintf(slot_path_rom, "%s/%s/%s", MYSAVESTATE_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>.ext
 	//sprintf(slot_path, "%s.txt", slot_path_rom); // /.userdata/.minui/<EMU>/<romname>.ext.txt
-	
+	int last_know_slot = 0;
 	//can_resume = exists(slot_path);
-	last_selected_slot = canResume(path);
+	if (exists(slot_path)) {
+		char slot[16];
+		getFile(slot_path, slot, 16);
+		if (slot[0]!='\0') {
+			last_know_slot = atoi(slot);
+		}		
+	}
+	last_selected_slot = canResume(path, last_know_slot);
 	if (last_selected_slot) can_resume = 1;
-
 }
+
 static void readyResume(Entry* entry) {
 	readyResumePath(entry->path, entry->type);
 }
@@ -1448,14 +1456,24 @@ static void openDirectory(char* path, int auto_launch) {
 	strcpy(m3u_path, auto_path);
 	char* tmp = strrchr(m3u_path, '.') + 1; // extension
 	strcpy(tmp, "m3u"); // replace with m3u
+//	LOG_info("OpenDirectory: %s\n", path);
+	//int ism3u = hasM3u(path, m3u_path);
+//	int ism3u=exists(m3u_path);
+//	LOG_info("OpenDirectory: %s - auto_path %s - M3U %d: %s\n", path, auto_path, ism3u, m3u_path);
 	if (exists(m3u_path) && auto_launch) {
-		auto_path[0] = '\0';
-		if (getFirstDisc(m3u_path, auto_path)) {
-			openRom(auto_path, path);
-			return;
-		}
-		// TODO: doesn't handle empty m3u files
+//		LOG_info("hasM3u %s\n", m3u_path);
+//			auto_path[0] = '\0';
+		openRom(m3u_path, path);
+		return;
 	}
+
+//	if (hasM3u(path, m3u_path) && auto_launch) {
+//		if (getFirstDisc(m3u_path, auto_path)) {
+//			openRom(auto_path, path);
+//			return;
+//		}
+		// TODO: doesn't handle empty m3u files
+//	}
 	
 	int selected = 0;
 	int start = selected;
@@ -1471,7 +1489,6 @@ static void openDirectory(char* path, int auto_launch) {
 	top = Directory_new(path, selected);
 	top->start = start;
 	top->end = end ? end : ((top->entries->count < ( MAIN_ROW_COUNT + fancy_mode )) ? top->entries->count : ( MAIN_ROW_COUNT + fancy_mode ));
-
 	Array_push(stack, top);
 }
 static void closeDirectory(void) {
@@ -1838,7 +1855,16 @@ int main (int argc, char *argv[]) {
 				}
 				if (PAD_justPressed(state_left)) {
 					Entry *myentry = top->entries->items[top->selected];
-					if (myentry->type == ENTRY_ROM){
+					int ism3u = 0;
+					if (myentry->type == ENTRY_DIR){
+						//check if m3u
+						char tmpname[256];
+						char tmpname2[256];
+						sprintf(tmpname, "%s/%s.m3u", myentry->path, myentry->name);
+						ism3u = hasM3u(tmpname, tmpname2);
+						//LOG_info("HASM3U: %d of %s\n", blb, myentry->path);
+					}
+					if ((myentry->type == ENTRY_ROM) || ism3u){
 						if (can_resume) {
 							//int curSaveIndex = getInt(slot_path);
 							int curSaveIndex = last_selected_slot;
@@ -1853,7 +1879,16 @@ int main (int argc, char *argv[]) {
 				}
 				if (PAD_justPressed(state_right)) {
 					Entry *myentry = top->entries->items[top->selected];
-					if (myentry->type == ENTRY_ROM){
+					int ism3u = 0;
+					if (myentry->type == ENTRY_DIR){
+						//check if m3u
+						char tmpname[256];
+						char tmpname2[256];
+						sprintf(tmpname, "%s/%s.m3u", myentry->path, myentry->name);
+						ism3u = hasM3u(tmpname, tmpname2);
+						//LOG_info("HASM3U: %d of %s\n", blb, myentry->path);
+					}
+					if ((myentry->type == ENTRY_ROM) || ism3u){
 						if (can_resume) {
 							//int curSaveIndex = getInt(slot_path);
 							int curSaveIndex = last_selected_slot;
@@ -2076,9 +2111,6 @@ int main (int argc, char *argv[]) {
 				// list
 				if (total>0) {
 					int selected_row = top->selected - top->start;
-
-
-
 						/*  start entry for boxart and save state preview window*/
 					if (fancy_mode) {  //only when fancy_mode is active
 						Entry* myentry = top->entries->items[top->selected];
@@ -2091,6 +2123,7 @@ int main (int argc, char *argv[]) {
 						char myEmuName[256];
 						char myslot_name[256];
 						int myslotint;
+						int ism3u = 0;
 						//readyResume(entry);
 						if (myentry->type == ENTRY_ROM){
 							getStatePath(myentry->path,slot_path_rom);
@@ -2106,17 +2139,46 @@ int main (int argc, char *argv[]) {
 							//LOG_info("CIAO\n\n\n\n\n\n%s\n\n\n\n\n\n\n\n",myslot_name);
 						}
 						
+						if (myentry->type == ENTRY_DIR){
+							//check if it is a m3u present
+						//	LOG_info("I'm inside the DIR %s, check if it an m3u\n", myentry->path);
+							char m3upath[256];
+							char tmpname[256];
+							//char tmpname2[256];
+							//sprintf(tmpname, "%s/%s.m3u", myentry->path, myentry->name);
+							//int blb = hasM3u(tmpname, tmpname2);
+							//LOG_info("HASM3U: %d of %s\n", blb, myentry->path);
+							//tmpname[0] = '\0';
+							getDisplayNameParens(myentry->path,tmpname);
+							sprintf(m3upath, "%s/%s.m3u", myentry->path, tmpname);
+							//LOG_info("tmpname: %s - m3upath %s\n", tmpname, m3upath);
+							if (exists(m3upath)){
+							//	LOG_info("It is a m3u\n");
+								getStatePath(myentry->path,slot_path_rom);
+								myslotint = last_selected_slot;
+							//	LOG_info("myslotint %d - slot_path_rom %s\n", myslotint, slot_path_rom);
+								if (myslotint){
+									sprintf(myslot_path, "%s/%s.state%d.png",slot_path_rom, tmpname, myslotint);
+								} else {
+									sprintf(myslot_path, "%s/%s.state.png",slot_path_rom,tmpname);
+								}
+							//	LOG_info("myslotint %d - myslot_path %s\n", myslotint, myslot_path);fflush(stdout);
+								ism3u = 1;
+							}
+						}
+
 						
 						//top->path;
 						getParentFolderName(myentry->path, myEmuName);
 						getDisplayNameParens(myentry->path, myRomName);
-						if ( myentry->type == ENTRY_ROM) {
+						if (( myentry->type == ENTRY_ROM)|| (ism3u)) {
 							sprintf(myBoxart_path, ROMS_PATH "/%s/Imgs/%s.png", myEmuName , myRomName);
-						} else if ( myentry->type == ENTRY_DIR ) {
+						} else if (( myentry->type == ENTRY_DIR ) && (!ism3u)) {
 							sprintf(myBoxart_path,  "%s/Imgs/%s.png", myentry->path, myEmuName);
 						} else { //pak
 							sprintf(myBoxart_path, "%s/Imgs/%s.png", myentry->path, myentry->name);
 						}
+						//LOG_info("%s - IMMAGINE = %s\n",myentry->name, myBoxart_path);
 						/*
 						printf("\n\nCurrent item name = %s\nCurrent Item path = %s\nCurrent Item Type = %d\nCurrent Item Save present = %d\nCurrent Item Last Save Slot = %d\nCurrent Item Slot bmp file = %s\nCurrent Item boxart Img = %s\n", 
 										myentry->name, myentry->path, myentry->type, can_resume, (can_resume) ? getInt(slot_path) : -1, myslot_path, myBoxart_path);
@@ -2127,7 +2189,7 @@ int main (int argc, char *argv[]) {
 						//check if a save state should be painted
 						int showstate = 0;
 						int showboxart = 1;
-						if (can_resume && (myentry->type == ENTRY_ROM) && (!(hide_state))) {
+						if (can_resume && ((myentry->type == ENTRY_ROM) || ism3u) && (!(hide_state))) {
 							showstate = 1;
 							if (hide_boxartifstate) {
 								showboxart = 0;
@@ -2238,8 +2300,19 @@ int main (int argc, char *argv[]) {
 						}
 						if (fancy_mode){		
 								//sprintf(tmpName,"                 ");	
-								Entry * entry =top->entries->items[top->selected];			
-								if (entry->type == ENTRY_ROM) {								
+								Entry * entry =top->entries->items[top->selected];	
+								
+								int ism3u = 0;
+								if (entry->type == ENTRY_DIR){
+									//check if m3u
+									char tmpname[256];
+									char tmpname2[256];
+									sprintf(tmpname, "%s/%s.m3u", entry->path, entry->name);
+									ism3u = hasM3u(tmpname, tmpname2);
+									//LOG_info("HASM3U: %d of %s\n", blb, myentry->path);
+								}
+
+								if ((entry->type == ENTRY_ROM)|| ism3u) {								
 									getDisplayParentFolderName(entry->path, tmpName);
 									//getEmuName(entry->path, tmpName);
 								} else if (entry->type == ENTRY_PAK){

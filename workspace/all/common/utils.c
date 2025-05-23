@@ -51,28 +51,38 @@ void getStatePath(char * gamepath, char* statepath){
 	sprintf(statepath, MYSAVESTATE_PATH "/%s/States",emuname);
 }
 
-int canResume(char * gamepath){
+int canResume(char * gamepath, int last_known_slot){
 	//check if exists at least one saved state for the currently selected items then return the slot number
 	// the target is removing the need of the file slot_path
 	char statepath[256];
 	char checkpath[256];
+	//char slot_path[256];
 	struct stat buffer;
 	//char checkpath2[256];
 	char romname[256];
 	getStatePath(gamepath,statepath);
 	getDisplayNameParens(gamepath,romname);
+	//sprintf(slot_path, "%s/%s.txt",  gamepath);
+	
 	//ok now checkpath contains the full path of the state file to check if exists regardless of the slotnumber.
 	int result = 0;
 	uint64_t latest = 0;
 	for (int i=1;i<9;i++){
 		sprintf(checkpath,"%s/%s.state%d",statepath,romname,i);
 		if (exists(checkpath)){
+			if (i == last_known_slot) {
+				//found the last known slot, return it
+				result = i;
+				break;
+			}
+			result = i;
 			//ok the saved state exists, check how old it is.
-			stat(checkpath,&buffer);
-				if (buffer.st_mtime > latest){
-					latest=buffer.st_mtime;
-					result = i;
-				}
+			//stat(checkpath,&buffer);
+			//	if (buffer.st_mtime > latest){
+			//		latest=buffer.st_mtime;
+			//		result = i;
+			//	}  not all devices have rtc so we can't do this
+			//instead let's check if the last stored slot number is present 
 		}
 	} 
 	return result;

@@ -402,19 +402,8 @@ static void Game_close(void) {
 
 static struct retro_disk_control_callback disk_control;
 static struct retro_disk_control_ext_callback disk_control_ext;
-static void Game_changeDisc(int index,  char* path) {
-	LOG_info("Game_changeDisc start gamepath=%s -> path=%s\n", game.path, path);
-	if (!coreDiscManaged){
-		if (exactMatch(game.path, path)) return;
-	}
-	if (!exists(path)) return;
-	
-	if (!coreDiscManaged) {
-		LOG_info("Game_changeDisc 2a\n");
-		Game_close();
-		LOG_info("Game_changeDisc 2b\n");
-		Game_open(path);
-	}	
+static void Game_changeDisc(int index) {
+	LOG_info("Game_changeDisc start gamepath=%s -> index %d\n", game.path, index);
 
 		struct retro_game_info game_info = {};
 		game_info.path = game.path;
@@ -3699,7 +3688,7 @@ static struct {
 	SDL_Surface* bitmap;
 	SDL_Surface* overlay;
 	char* items[MENU_ITEM_COUNT];
-	char* disc_paths[9]; // up to 9 paths, Arc the Lad Collection is 7 discs
+//	char* disc_paths[9]; // up to 9 paths, Arc the Lad Collection is 7 discs
 	char minui_dir[256];
 	char slot_path[256];
 	char base_path[256];
@@ -3854,13 +3843,13 @@ void Menu_init(void) {
 
 	if (coreDiscManaged){  //the core has detected multidisc pbp game
 		menu.total_discs = NumDiscsDetected;	//set the num of discs detected
-		for (int i = 0; i < menu.total_discs; i++) {
-			menu.disc_paths[i] = strdup(game.path); //copy the game path for each disc path, in this case all are the same
-		}
+	//	for (int i = 0; i < menu.total_discs; i++) {
+	//		menu.disc_paths[i] = strdup(game.path); //copy the game path for each disc path, in this case all are the same
+	//	}
 		menu.disc = disk_control_ext.get_image_index();  //get the current disc index
 	}
 
-	if (game.m3u_path[0]) {  //in case of m3u file the core doesn't detects it so coreDiscManaged is not set
+/*	if (game.m3u_path[0]) {  //in case of m3u file the core doesn't detects it so coreDiscManaged is not set
 		char* tmp;
 		strcpy(menu.base_path, game.m3u_path);
 		tmp = strrchr(menu.base_path, '/') + 1;
@@ -3903,7 +3892,7 @@ void Menu_init(void) {
 				}
 			}
 		}
-	}
+	}*/
 }
 
 void Menu_quit(void) {
@@ -4957,7 +4946,7 @@ static void Menu_updateState(void) {
 	} 
 	//sprintf(menu.bmp_path, "%s/%s.state%spng", menu.minui_dir, game.basename, slotstr);
 	sprintf(menu.bmp_path, "%s/%s.state%spng", core.states_dir, game.fullname, slotstr);
-	sprintf(menu.txt_path, "%s/%s%stxt", menu.minui_dir, game.fullname, slotstr);
+	//sprintf(menu.txt_path, "%s/%s%stxt", menu.minui_dir, game.fullname, slotstr);
 	
 	menu.save_exists = exists(save_path);
 	menu.preview_exists = menu.save_exists && exists(menu.bmp_path);
@@ -4970,15 +4959,15 @@ static void Menu_saveState(void) {
 
 	Menu_updateState();
 	
-	if (menu.total_discs) {
-		char* disc_path = menu.disc_paths[menu.disc];
-		if (game.m3u_path[0]) {
-			putFile(menu.txt_path, game.m3u_path);
-		} else {
-			putFile(menu.txt_path, disc_path + strlen(menu.base_path));
-		}
-		putInt(menu.txt_path_slot, menu.disc);
-	}
+//	if (menu.total_discs) {
+//		char* disc_path = menu.disc_paths[menu.disc];
+//		if (game.m3u_path[0]) {
+//			putFile(menu.txt_path, game.m3u_path);
+//		} else {
+//			putFile(menu.txt_path, disc_path + strlen(menu.base_path));
+//		}
+//		putInt(menu.txt_path_slot, menu.disc);
+//	}
 	
 	//SDL_Surface* bitmap = SDL_CreateRGBSurfaceFrom(renderer.src_surface->pixels, renderer.src_surface->w, renderer.src_surface->h, FIXED_DEPTH, renderer.src_surface->pitch, RGBA_MASK_565);
 	SDL_Surface *tmpbitmap = SDL_CreateRGBSurfaceFrom(renderer.src_surface->pixels, renderer.src_surface->w, renderer.src_surface->h, FIXED_DEPTH, renderer.src_surface->pitch, RGBA_MASK_565);
@@ -5006,7 +4995,7 @@ static void Menu_loadState(void) {
 	
 	//now useless as state loads right disk on its own?
 
-	if (menu.save_exists && menu.total_discs) {  
+/*	if (menu.save_exists && menu.total_discs) {  
 		char slot_disc_name[256];
 		getFile(menu.txt_path, slot_disc_name, 256);
 		
@@ -5025,9 +5014,9 @@ static void Menu_loadState(void) {
 			Game_changeDisc(next_index,slot_disc_path);
 		}
 	}
-	
+*/	
 	state_slot = menu.slot;
-	putInt(menu.slot_path, menu.slot);
+	//putInt(menu.slot_path, menu.slot);
 	State_read();
 }
 
@@ -5245,12 +5234,12 @@ static void Menu_loop(void) {
 		else if (PAD_justPressed(BTN_A)) {
 			switch(selected) {
 				case ITEM_CONT:
-				LOG_info("MENU: Num discs=%d Changing disc from %d to %d - %s\n", menu.total_discs,rom_disc, menu.disc, menu.disc_paths[menu.disc]);
+				LOG_info("MENU: Num discs=%d Changing disc from %d to %d\n", menu.total_discs,rom_disc, menu.disc); //, menu.disc_paths[menu.disc]);
 				if (menu.total_discs && rom_disc!=menu.disc) {
 						status = STATUS_DISC;
-						char* disc_path = menu.disc_paths[menu.disc];
-						LOG_info("MENU: Changing disc from %d to %d - %s\n", rom_disc, menu.disc, disc_path);
-						Game_changeDisc(menu.disc,disc_path);
+						//char* disc_path = menu.disc_paths[menu.disc];
+						//LOG_info("MENU: Changing disc from %d to %d - %s\n", rom_disc, menu.disc, disc_path);
+						Game_changeDisc(menu.disc);
 						sleep(2);
 						core.reset();
 					}
