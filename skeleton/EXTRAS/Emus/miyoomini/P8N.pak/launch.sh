@@ -52,8 +52,12 @@ export EGL_VIDEODRIVER=mmiyoo
 #audioserver must be killed to let sdl2 taking control of audio 
 curvol=$(get_curvol)
 #killall -9 keymon.elf
-killall -9 audioserver
-sleep 0.1
+if $IS_PLUS; then
+    killall -9 audioserver
+else
+    killall -9 audioserver.mod
+fi
+sleep 0.2
 set_snd_level "${curvol}" &
 cd "${progdir}" 2&> "${thisdir}/log.txt"
 echo $(pwd) >> "${thisdir}/log.txt"
@@ -62,6 +66,10 @@ HOME="${progdir}" "${BIOS_PATH}/P8/pico8_dyn" -v -run "${1}"  &> $LOGS_PATH/P8N.
 
 #killall -9 keymon.elf
 sleep 0.1
-/customer/app/audioserver -60 &
+if $IS_PLUS; then
+    /customer/app/audioserver -60 &
+else
+    ${SDCARD_PATH}/.system/miyoomini/bin/audioserver.mod -60 &
+fi
 wait_for_device &
 overclock.elf $CPU_SPEED_MENU
