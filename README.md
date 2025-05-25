@@ -14,7 +14,43 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
-## Release 22/05/2025 fix
+# Release 25/05/2025
+
+## All:
+
+  - Minui improvements on multidisc handling, now even hidden and favorites can handle m3u
+
+  - Temporary fix for a glitch with RGB1555 games (i.e. mslug2 on mame2003+) where the first 8 pixels on left side of the screen were repeated.
+    I switched back to a basic for cycle instead of a faster assembly solution, I'll try to restore the faster one, one day.
+
+
+## Miyoomini:
+
+  - fix audio muted after playing native pico8 games.
+
+
+## M21/M22:
+
+  - reintroduced full support for m21/m22, all common features are available
+
+  - since the m22 doesn't have the  menu button the menu is emulated by select+start
+
+  - since there is no power button but a physical power switch, keep pressing select+start for at least 2 secs to perform a shutdown.
+
+  - the m22 buttons layout is BAYX instrad of the more common ABXY, so the buttons are hardcoded with B and A swapped as well as X and Y, this allow me to use the same button layout as the other miyoo and anbernic devices I play with. For those who prefer real layout, just remap the buttons in the default.cfg files present in Emus/m21/xxx.pak folders. 
+
+  - now when the device enter sleep the screen is blank, use SELECT to wake up, if SELECT does nothing it means 2 minutes are elapsed and the device shutdown. You still need to manually switch off the device.
+
+  - the default screen resolution for HDMI and M22 is 1280x720, as the other devices with HDMI output You can edit the file .system/m21/custom_hdmi_settings.txt to adapt it to other resolutions, it is suggested to use the value 854x480p60 to improve readability and having better performances. I left 1280x720 as the tool Files doesn't work with other screen res.
+
+  - Implemented the layer double buffering (the same as miyoo a30) as screen drawing technique, unfortunately due to hardcoded limitations there is no way to get the vsync working without seriously affecting performances (max 50fps on m21, max 38fps on m22) so the vsync is disabled. I didn't notice any screen tearing as the double buffering is usually enough to reduce the effect, but it is still possible to see it on some games.  
+
+  - the m22 has a rotated screen while the hdmi output don't, this is automatically handled even on native pico8.
+
+  
+
+
+# Release 22/05/2025 fix
 
 EDIT - Last minute fix:
 
@@ -24,7 +60,7 @@ previously the save state selected is the more recent, this don't work well on d
 
 /EDIT
 
-# All:
+## All:
 
 Fixed the multidisc handling, now both m3u and pbp are fully supported and properly handle the save states as well as autoresume
 
@@ -36,14 +72,14 @@ All others cores can continue to use the nextui audio fix. The frame duplication
 The Core Sync option has now 4 items: NoFix, Auto, Screen, Native. Deafult setting to Auto for all but PS1 which must be NoFix.
 In the PS1 core settings the Core Sync param is hidden and forced to NoFix.
 
-# r36s:
+## r36s:
 
 Added support for arkos devices which has missing menu button (i.e. R36H), if exists the file .system/r36s/menumissing.txt then Select+Start is acting as menu.
 
 
-## release 12/05/2025
+# release 12/05/2025
 
-# All:
+## All:
 
 the Files tool (aka DinguxCommander) is now a common tool and uses the platform screen and input drivers instead of libSDL.
 Now it is coherent across all the devices and automatically adapt to the screen and the current video output.
@@ -57,11 +93,11 @@ set the prevent_tearing default setting to Lenient
 
 updated all the Toolchains to add libsamplerate support needed by nextui audio sync engine.
 
-# Miyoomini:
+## Miyoomini:
 
 now the Miyoo Mini v4 screen is detected and set to the real screen resolution which is 752x560 instead of 640x480. The detection method is taken from OnionOS (Thanks Lemonzest for help and testing)
 
-# A30:
+## A30:
 
 added missing atari2600 folders
 
