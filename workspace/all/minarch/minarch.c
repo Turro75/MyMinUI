@@ -3346,16 +3346,16 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 
 	if (downsample == 2) {
 		//from 1555 to 565
-	//	uint32_t counter = pitch*height/2;
-	//	const uint16_t *input16 = (uint16_t *)data;		
-	//	while (counter--) {
-	//		uint16_t pixel = *input16++;
-	//		uint16_t r = (pixel & 0x7C00) << 1;  // da bit 10-14 → bit 11-15
-	//		uint16_t g = (pixel & 0x03E0) << 1;  // da bit 5-9 → bit 5-10
-	//		uint16_t b = (pixel & 0x001F);       // da bit 0-4 → bit 0-4
-	//		*output++ = r  | g  | b;
-	//	}
-		pixman_composite_src_1555_0565_asm_neon(pitch/2, height, output,pitch/2, (uint16_t *)data, pitch/2);
+		uint32_t counter = pitch*height/2;
+		const uint16_t *input16 = (uint16_t *)data;		
+		while (counter--) {
+			uint16_t pixel = *input16++;
+			uint16_t r = (pixel & 0x7C00) << 1;  // da bit 10-14 → bit 11-15
+			uint16_t g = (pixel & 0x03E0) << 1;  // da bit 5-9 → bit 5-10
+			uint16_t b = (pixel & 0x001F);       // da bit 0-4 → bit 0-4
+			*output++ = r  | g  | b;
+		}
+	//	pixman_composite_src_1555_0565_asm_neon(pitch/2, height, output,pitch/2, (uint16_t *)data, pitch/2);
 	}
 	//gettimeofday(&now2,NULL);
 	//LOG_info("video_refresh_callback copy to backbuffer %d took %dusec %dx%d_%d\n", downsample, now2.tv_usec - now.tv_usec, width, height, pitch);fflush(stdout);
