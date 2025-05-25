@@ -618,25 +618,6 @@ static void toggleFavorite(char* path) {
 	saveFavorites();
 }
 
-static int isFavorite(char *path) {
-	path += strlen(SDCARD_PATH); // makes paths platform agnostic
-	int id = FavoriteArray_indexOf(favorites, path);
-	return ++id;
-}
-
-static int hasEmu(char* emu_name) {
-	char pak_path[256];
-	sprintf(pak_path, "%s/Emus/%s.pak/launch.sh", PAKS_PATH, emu_name);
-	if (exists(pak_path)) return 1;
-
-	sprintf(pak_path, "%s/Emus/%s/%s.pak/launch.sh", SDCARD_PATH, PLATFORM, emu_name);
-	return exists(pak_path);
-}
-static int hasCue(char* dir_path, char* cue_path) { // NOTE: dir_path not rom_path
-	char* tmp = strrchr(dir_path, '/') + 1; // folder name
-	sprintf(cue_path, "%s/%s.cue", dir_path, tmp);
-	return exists(cue_path);
-}
 static int hasM3u(char* rom_path, char* m3u_path) { // NOTE: rom_path not dir_path
 	char* tmp;
 	
@@ -665,6 +646,28 @@ static int hasM3u(char* rom_path, char* m3u_path) { // NOTE: rom_path not dir_pa
 	strcpy(tmp, ".m3u");
 	
 	return exists(m3u_path);
+}
+
+
+
+static int isFavorite(char *path) {
+	path += strlen(SDCARD_PATH); // makes paths platform agnostic
+	int id = FavoriteArray_indexOf(favorites, path);
+	return ++id;
+}
+
+static int hasEmu(char* emu_name) {
+	char pak_path[256];
+	sprintf(pak_path, "%s/Emus/%s.pak/launch.sh", PAKS_PATH, emu_name);
+	if (exists(pak_path)) return 1;
+
+	sprintf(pak_path, "%s/Emus/%s/%s.pak/launch.sh", SDCARD_PATH, PLATFORM, emu_name);
+	return exists(pak_path);
+}
+static int hasCue(char* dir_path, char* cue_path) { // NOTE: dir_path not rom_path
+	char* tmp = strrchr(dir_path, '/') + 1; // folder name
+	sprintf(cue_path, "%s/%s.cue", dir_path, tmp);
+	return exists(cue_path);
 }
 
 static int hasRecents(void) {
@@ -819,7 +822,7 @@ static int isHidden(char * parentpath, char *path) {
 
 static int hasFavorites(void) {
 	int has = 0;
-
+	Array* parent_paths = Array_new();
 	FILE* file = fopen(FAVORITE_PATH, "r"); // newest at top
 	if (file) {
 		char line[256];
@@ -831,18 +834,39 @@ static int hasFavorites(void) {
 			char sd_path[256];
 			sprintf(sd_path, "%s%s", SDCARD_PATH, line);
 			if (exists(sd_path)) {
-					Favorite* favorite = Favorite_new(line);
+					char m3u_path[256];
+					if (hasM3u(sd_path, m3u_path)) { // TODO: this might tank launch speed
+						char parent_path[256];
+						strcpy(parent_path, line);
+						char* tmp = strrchr(parent_path, '/') + 1;
+						tmp[0] = '\0';
+						
+						int found = 0;
+						for (int i=0; i<parent_paths->count; i++) {
+							char* path = parent_paths->items[i];
+							if (prefixMatch(path, parent_path)) {
+								found = 1;
+								break;
+							}
+						}
+						if (found) continue;
+						
+						Array_push(parent_paths, strdup(parent_path));
+					} else {
+						strcpy(m3u_path ,line);
+					}
+					Favorite* favorite = Favorite_new(m3u_path);
 					if (favorite->available) has += 1;
 					Array_push(favorites, favorite);
 			}
 		}
 		fclose(file);
 	}
-
+	StringArray_free(parent_paths);
 	saveFavorites();
 
-	//return has>0;
-	return 1; // Always show directory, even if empty.
+	return has>0;
+	//return 1; // Always show directory, even if empty.
 }
 
 static int hasCollections(void) {
@@ -1384,15 +1408,15 @@ static void openRom(char* path, char* last) {
 	int loadslot=-1;
 	
 	char m3u_path[256];
-	int has_m3u = hasM3u(sd_path, m3u_path);
-	
 	char recent_path[256];
-	strcpy(recent_path, has_m3u ? m3u_path : sd_path);
-	
-//	if (has_m3u && suffixMatch(".m3u", sd_path)) {
-//		getFirstDisc(m3u_path, sd_path);
-//	}
-
+	if (hasM3u(sd_path, m3u_path)) {
+		//the m3u path must be reduced to the folder path.
+		char* tmp = strrchr(m3u_path, '/');
+		tmp[0] = '\0'; // remove m3u file name
+		strcpy(recent_path, m3u_path);
+	} else {
+		strcpy(recent_path, sd_path);
+	}
 	char emu_name[256];
 	getEmuName(sd_path, emu_name);
 
@@ -1402,31 +1426,7 @@ static void openRom(char* path, char* last) {
 		putFile(RESUME_SLOT_PATH, slot);
 		should_resume = 0;
 		loadslot=last_selected_slot;
-
-/*		if (has_m3u) {
-			char rom_file[256];
-			strcpy(rom_file, strrchr(m3u_path, '/') + 1);
-			
-			// get disc for state
-			char disc_path_path[256];
-			sprintf(disc_path_path, "%s/.minui/%s/%s.%s.txt", SHARED_USERDATA_PATH, emu_name, rom_file, slot); // /.userdata/arm-480/.minui/<EMU>/<romname>.ext.0.txt
-
-			if (exists(disc_path_path)) {
-				// switch to disc path
-				char disc_path[256];
-				getFile(disc_path_path, disc_path, 256);
-				if (disc_path[0]=='/') strcpy(sd_path, disc_path); // absolute
-				else { // relative
-					strcpy(sd_path, m3u_path);
-					char* tmp = strrchr(sd_path, '/') + 1;
-					strcpy(tmp, disc_path);
-				}
-			}
-		}*/
 	} 
-	//else
-	 //putInt(RESUME_SLOT_PATH,AUTO_RESUME_SLOT); // resume hidden default state
-	// loadslot=-1;	
 	char emu_path[256];
 	getEmuPath(emu_name, emu_path);
 	
@@ -1516,7 +1516,16 @@ static void Entry_open(Entry* self) {
 			sprintf(last_path, "%s/%s", top->path, filename);
 			last = last_path;
 		}
-		openRom(self->path, last);
+		// check if it is actually a folder with an m3u file inside, it could be a favorite.
+		char m3upath[256];
+		char tmpname[256];
+		getDisplayNameParens(self->path,tmpname);
+		sprintf(m3upath, "%s/%s.m3u", self->path, tmpname);
+		if (exists(m3upath)){		
+			openDirectory(self->path, 1);
+		} else {
+			openRom(self->path, last);
+		}		
 	}
 	else if (self->type==ENTRY_PAK) {
 		openPak(self->path);
@@ -1999,11 +2008,21 @@ int main (int argc, char *argv[]) {
 					quit = 1;
 				}
 			}*/
-			else if (total>0 && PAD_justPressed(BTN_START)) {
+
+			else if (total>0 && PAD_justPressed(BTN_Y)) {
 				if (selected_modifier){
 					//SELECT pressed so toggle Hidden
 					Entry* myentry = top->entries->items[top->selected];
-					if (myentry->type == ENTRY_ROM) {
+					int ism3u = 0;
+					if (myentry->type == ENTRY_DIR){
+						//check if m3u
+						char tmpname[256];
+						char tmpname2[256];
+						sprintf(tmpname, "%s/%s.m3u", myentry->path, myentry->name);
+						ism3u = hasM3u(tmpname, tmpname2);
+						//LOG_info("HASM3U: %d of %s\n", blb, myentry->path);
+					}
+					if ((myentry->type == ENTRY_ROM) || ism3u){
 						toggleHidden(myentry->path);
 						if (selected>0) {
 							selected--;
@@ -2013,14 +2032,31 @@ int main (int argc, char *argv[]) {
 						dirty = 1;
 						//quit = 1;
 					}
-				} else { 
-					//SELECT NOT PRESSED so toggle Favorites
-					Entry* myentry = top->entries->items[top->selected];
-					if (myentry->type == ENTRY_ROM) {
-						toggleFavorite(myentry->path);
-						quit = 1;
-					}
-				}				
+				}
+			}
+			else if (total>0 && PAD_justPressed(BTN_START)) {
+				
+				//toggle Favorites
+				Entry* myentry = top->entries->items[top->selected];
+				int ism3u = 0;
+				if (myentry->type == ENTRY_DIR){
+					//check if m3u
+					char tmpname[256];
+					//char tmpname2[256];
+					char* tmpname2 = strrchr(myentry->path, '/') + 1; // get name
+					sprintf(tmpname, "%s/%s.m3u", myentry->path, tmpname2 );
+					ism3u = exists(tmpname);
+				//	LOG_info("TOGGLE FAVORITES HASM3U: %d on %s but checked for %s\n", ism3u, myentry->path, tmpname);
+				//	if (ism3u) {
+				//		toggleFavorite(tmpname);
+				//		quit = 1;
+				//	}
+				}
+				if ((myentry->type == ENTRY_ROM ) || ism3u) {
+					toggleFavorite(myentry->path);
+					quit = 1;
+				}
+								
 			} else if (PAD_justPressed(BTN_B) && stack->count>1) {
 				closeDirectory();
 				total = top->entries->count;
@@ -2332,12 +2368,12 @@ int main (int argc, char *argv[]) {
 			
 				// buttons
 				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting, fancy_mode);
-				else if (can_resume) GFX_blitButtonGroup((char*[]){ "X","RSM","START",selected_modifier?"HIDE":"FAV",  NULL }, 0, screen, 0, fancy_mode);
+				else if (can_resume) GFX_blitButtonGroup((char*[]){ "X","RSM",selected_modifier?"Y":"START",selected_modifier?"HIDE":"FAV",  NULL }, 0, screen, 0, fancy_mode);
 				else {
 					if (stack->count>1){
 						GFX_blitButtonGroup((char*[]){ 
 						BTN_SLEEP==BTN_POWER?"PWR":"MENU",
-						BTN_SLEEP==BTN_POWER||simple_mode?pwractionstr:"INFO", "START", (selected_modifier?"HIDE":"FAV"), 
+						BTN_SLEEP==BTN_POWER||simple_mode?pwractionstr:"INFO", selected_modifier?"Y":"START", (selected_modifier?"HIDE":"FAV"), 
 						NULL }, 0, screen, 0, fancy_mode);
 					} else { 
 						GFX_blitButtonGroup((char*[]){ 
