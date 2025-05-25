@@ -13,5 +13,5 @@ $(PLATFORM):
 	cp ./workspace/$@/boot/update.sh ./build/SYSTEM/$@/bin/install.sh
 #	mkdir -p ./build/BOOT/common/$@/
 	# extras
-	cp ./workspace/$@/other/DinguxCommander/output/DinguxCommander ./build/EXTRAS/Tools/$@/Files.pak/
-	cp -r ./workspace/$@/other/DinguxCommander/res ./build/EXTRAS/Tools/$@/Files.pak/
+	#cp ./workspace/$@/other/DinguxCommander/output/DinguxCommander ./build/EXTRAS/Tools/$@/Files.pak/
+	#cp -r ./workspace/$@/other/DinguxCommander/res ./build/EXTRAS/Tools/$@/Files.pak/

@@ -12,6 +12,7 @@
 
 //#include "sunxi_display2.h"
 #include "msettings.h"
+#define ISM22_PATH "/mnt/SDCARD/m21/thisism22"
 
 ///////////////////////////////////////
 
@@ -41,6 +42,7 @@ static int disp_fd = -1;
 static int is_host = 0;
 static int shm_size = sizeof(Settings);
 static int preinitialized = 0;
+static int this_ism22 = 0;
 
 void preInitSettings(void) {
 	//printf("InitSettings\n");system("sync");
@@ -72,6 +74,10 @@ void preInitSettings(void) {
 		// these shouldn't be persisted
 		// settings->jack = 0;
 		// settings->hdmi = 0;
+	}
+	
+	if (access(ISM22_PATH, F_OK)==0) {
+		this_ism22 = 1;
 	}
 	preinitialized = 1;
 }
@@ -116,7 +122,10 @@ void SetBrightness(int value) {
 		case  9: raw = 55; break;
 		case 10: raw = 25; break;
 	}
-	
+	if (this_ism22) {
+		//ism22 is inverted
+		raw = 255 - raw;
+	}
 	SetRawBrightness(raw);
 	SaveSettings();
 }

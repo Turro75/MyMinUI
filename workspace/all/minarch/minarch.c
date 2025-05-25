@@ -5600,7 +5600,8 @@ void getCPUusage(char * data) {
 
 static void chooseSyncRef(void) {
 #if defined(NO_VSYNC)
-	use_core_fps = 1;
+	use_core_fps = 0;
+	use_nofix = 1;
 #else
 	switch (sync_ref) {
 		case SYNC_SRC_AUTO:   use_core_fps = (core.get_region() == RETRO_REGION_PAL); use_nofix = 0; break;

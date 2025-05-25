@@ -12,7 +12,7 @@
 #include <msettings.h>
 
 #include "defines.h"
-#include "platform.h"
+//#include "platform.h"
 #include "api.h"
 #include "utils.h"
 #include "sunxi_display2.h"
@@ -144,14 +144,35 @@ void PLAT_pollInput(void) {
 					if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; pressed ? selectstartstatus[i]++ : selectstartstatus[i]--; } 
 				    if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; pressed ? selectstartstatus[i]++ : selectstartstatus[i]--;}
 					if (selectstartstatus[i] == 2) {
+						if (selectstartlaststatus[i] != selectstartstatus[i]) {
+							//LOG_info("SEL+START event detected, generating MENU event stause: %d\n", pressed);fflush(stdout);
 							btn = BTN_MENU;  id = BTN_ID_MENU; 
 							selectstartlaststatus[i]=1; 
 							pad.is_pressed		&= ~BTN_SELECT; // unset
 							pad.just_repeated	&= ~BTN_SELECT; // unset	
 							pad.is_pressed		&= ~BTN_START; // unset
-							pad.just_repeated	&= ~BTN_START; // unset						
-							}
-					if ((selectstartstatus[i] == 1) && (selectstartlaststatus[i] == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus[i]=0;}	
+							pad.just_repeated	&= ~BTN_START; // unset	
+							if (pressed){
+								PWR_Pressed = 1;
+								PWR_Tick = SDL_GetTicks();
+								PWR_Actions = 0;		
+								//LOG_info("BTN_MENU event detected, status: %d , start timer = %d , actions = %d\n", pressed, PWR_Tick, PWR_Actions);fflush(stdout);
+								//printf("pwr pressed\n");				
+							} 						
+						}
+					}
+					if ((selectstartstatus[i] == 1) && (selectstartlaststatus[i] == 1)) {
+						btn = BTN_MENU; 	
+						id = BTN_ID_MENU; 
+						selectstartlaststatus[i]=0;
+						if ( (PWR_Pressed) && (!PWR_Actions) && (SDL_GetTicks() - PWR_Tick > PWR_TIMEOUT)) {
+									//pwr button pressed for more than PWR_TIMEOUT ms (3s default)
+									btn = BTN_POWEROFF; 		id = BTN_ID_POWEROFF;
+									PWR_Pressed = 0;	
+				//					LOG_info("BTN_MENU release event detected, status: %d , elapsed timer = %d , actions = %d\n", pressed, SDL_GetTicks() - PWR_Tick, PWR_Actions);fflush(stdout);
+									//printf("pwr released and pwr button event generated\n");			
+								} 
+					}	
 					if (code==RAW_A)		{ btn = BTN_B; 			id = BTN_ID_B; }
 					if (code==RAW_B)		{ btn = BTN_A; 			id = BTN_ID_A; }
 				} 
@@ -212,7 +233,10 @@ void PLAT_pollInput(void) {
 					}
 				}
 			}
-			if ((btn!=BTN_NONE)&&(btn!=BTN_MENU)) PWR_Actions = 1;
+			if ((btn!=BTN_NONE)&&(btn!=BTN_MENU)) {
+				//LOG_info("Not BTN_MENU event detected at %d, btn = %d\n", SDL_GetTicks(),btn);fflush(stdout);
+				PWR_Actions = 1;
+			}
 			if (btn==BTN_NONE) continue;
 
 			if (!pressed) {
@@ -260,6 +284,7 @@ static struct VID_Context {
 	int width;  //current width 
 	int height; // current height
 	int pitch;  //sdl bpp
+	
 	int sharpness; //let's see if it works
 	int rotate;
 	int rotategame;
@@ -271,7 +296,8 @@ static struct VID_Context {
 } vid;
 
 void pan_display(int page){
-	vid.vinfo.yoffset = vid.vinfo.yres * page;
+	//vid.vinfo.yoffset = vid.vinfo.yres_virtual/2 * page;
+	vid.vinfo.yoffset = 0;
 	ioctl(vid.fdfb, FBIOPAN_DISPLAY, &vid.vinfo);
 }
 
@@ -370,22 +396,21 @@ int swap_buffers_init(void){
     config.channel = 0;
     config.layer_id = 0; // Layer 0
     config.enable = 1;
-
+	config.info.fb.align[0] = 4;//bytes
     config.info.mode = LAYER_MODE_BUFFER;
     config.info.zorder = 0; // In primo piano
     config.info.alpha_mode = 1;
     config.info.alpha_value = 0xff;
-	config.info.fb.format = DISP_FORMAT_ARGB_8888;
-    config.info.fb.size[0].width = GAME_WIDTH;
-    config.info.fb.size[0].height = GAME_HEIGHT;
-	config.info.fb.align[0] = 4;//bytes
-    config.info.fb.crop.x = 0;
-    config.info.fb.crop.y = 0;
-    config.info.fb.crop.width =  ((unsigned long long)GAME_WIDTH) << 32;
-    config.info.fb.crop.height = ((unsigned long long)GAME_HEIGHT) << 32;
+    config.info.fb.format = DISP_FORMAT_ARGB_8888;
 	config.info.fb.flags = DISP_BF_NORMAL;
 	config.info.fb.scan = DISP_SCAN_PROGRESSIVE;
-	config.info.id = 0;
+    config.info.fb.size[0].width = GAME_WIDTH;
+    config.info.fb.size[0].height = GAME_HEIGHT;
+    config.info.fb.crop.x = 0;
+    config.info.fb.crop.y = 0;
+    config.info.fb.crop.width = (unsigned long long)(GAME_WIDTH) << 32;
+    config.info.fb.crop.height = (unsigned long long)(GAME_HEIGHT) << 32;
+
     config.info.screen_win.x = 0;
     config.info.screen_win.y = 0;
     config.info.screen_win.width = GAME_WIDTH;
@@ -395,18 +420,18 @@ int swap_buffers_init(void){
 void swap_buffers(int page)
 {
 	unsigned long arg[3];
-    swap_buffers_init();
+ //   swap_buffers_init();
     config.info.fb.addr[0] = (uintptr_t)vid.fbmmap[page];
 
     arg[0] = 0;//screen 0
 	arg[1] = (unsigned long)&config;
 	arg[2] = 1; //one layer
 	int ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, (void*)arg);
-//	LOG_info("Swap_buffers retvalue = %d\n", ret);fflush(stdout);
+	//LOG_info("Swap_buffers retvalue = %d\n", ret);fflush(stdout);
 }
 
 int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max;
-//SDL_Surface * page[2];
+SDL_Surface * page[2];
 SDL_Surface* PLAT_initVideo(void) {
 
 	//looks for environment cpu frequencies
@@ -472,12 +497,11 @@ SDL_Surface* PLAT_initVideo(void) {
 	GAME_WIDTH = w;
 	GAME_HEIGHT = h;
 
-	LOG_info("DEVICE_WIDTH = %d, DEVICE_HEIGHT = %d, DEVICE_PITCH = %d, GAME_WIDTH = %d, GAME_HEIGHT = %d\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH, GAME_WIDTH, GAME_HEIGHT);fflush(stdout);
+	
 	vid.rotate = ism22 * (1 - getHDMIStatus());   //m21 always 0, m22 is 0 on HDMI and 1 on display
 	LOG_info("ism22 = %d, HDMI = %d, rotate = %d\n", ism22, getHDMIStatus(), vid.rotate);fflush(stdout);
-	
-	if (vid.rotate & ism22) {
-		//is the m22 so the screen is rotated if not HDMI
+	if (vid.rotate % 2 ==1) {
+		//is the internal m22 display so the screen is rotated 90 degrees
 		GAME_WIDTH = h;
 		GAME_HEIGHT = w;
 	}
@@ -488,17 +512,14 @@ SDL_Surface* PLAT_initVideo(void) {
 		LOG_info("Detected custom screen orientation: Rotation = %d\n", vid.rotate);fflush(stdout);
 	} else {
 		//if the file does not exist, we create it with the default value.
-		putInt(ROTATE_SYSTEM_PATH, vid.rotate);
+		//putInt(ROTATE_SYSTEM_PATH, vid.rotate); wrong for m22
 	}
 	vid.rotategame = (4-vid.rotate) & 3;
 
 	LOG_info("Use screen orientation: Rotation = %d, Game rotation = %d, ism22 = %d, HDMI = %d, rotate = %d\n", vid.rotate*90, vid.rotategame*90, ism22, getHDMIStatus(), vid.rotate);fflush(stdout);
 
-	vid.vinfo.xres=GAME_WIDTH;
-	vid.vinfo.yres=GAME_HEIGHT;
-	
-	vid.vinfo.xoffset=0;
-	vid.vinfo.yoffset=0;
+	LOG_info("DEVICE_WIDTH = %d, DEVICE_HEIGHT = %d, DEVICE_PITCH = %d, GAME_WIDTH = %d, GAME_HEIGHT = %d\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH, GAME_WIDTH, GAME_HEIGHT);fflush(stdout);
+
 	/////for m22
 	//HDMI ok
 	//DEVICE_WIDTH=854;
@@ -517,42 +538,41 @@ SDL_Surface* PLAT_initVideo(void) {
     //vid.vinfo.yres=854;
 	
 	
-	vid.vinfo.bits_per_pixel=32;
+	vid.vinfo.xres=GAME_WIDTH;
+	vid.vinfo.yres=GAME_HEIGHT;
+	vid.vinfo.xoffset=0;
+	vid.vinfo.yoffset=0;
 	vid.vinfo.xres_virtual=vid.vinfo.xres;
 	vid.vinfo.yres_virtual=vid.vinfo.yres*2;
+	vid.vinfo.bits_per_pixel=32;	
+	//at the beginning set the screen size to 640x480
     set_fbinfo();
 	get_fbinfo();
 
-	unsigned int arg[3];
-	arg[0] = 0;
-	arg[1] = 1;
-	int zero = 0;
-	
-#define DISP_VSYNC_EVENT_EN 0x0B
-	printf("ABILITAZIONE VSYNC RESULT = %d\n",ioctl(vid.fdfb, DISP_VSYNC_EVENT_EN, (void*)arg)); fflush (stdout);	
-
-//	system("cat /sys/class/disp/disp/attr/sys > /mnt/SDCARD/sys1.txt");
-
-	vid.page = 0;
-	pan_display(vid.page);
-	vid.renderingGame = 0;
-	vid.offset = vid.vinfo.yres * vid.finfo.line_length;
-	vid.screen_size = vid.offset;
-	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
+	vid.screengame =  SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
-	vid.screengame = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
 	LOG_info("vid.screen: %ix%i\n", vid.screen->w, vid.screen->h);fflush(stdout);
 	LOG_info("vid.screengame: %ix%i\n", vid.screengame->w, vid.screengame->h);fflush(stdout);
 	LOG_info("vid.screen2: %ix%i\n", vid.screen2->w, vid.screen2->h);fflush(stdout);
 
+//	vid.page = 0;
+//	pan_display(vid.page);
+//	swap_buffers_init();
+//	swap_buffers(vid.page);
+	vid.renderingGame = 0;
+
+	
+	vid.screen_size = vid.vinfo.yres_virtual * vid.finfo.line_length;
+	vid.offset = vid.screen_size/2;
+	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
 	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
-    vid.fbmmap[0] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+	vid.fbmmap[0] = mmap(NULL, vid.offset, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 	if (vid.fbmmap[0] == MAP_FAILED) {
 		LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
 		//return NULL;
 	}
-	vid.fbmmap[1] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+	vid.fbmmap[1] = mmap(NULL, vid.offset, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 	if (vid.fbmmap[1] == MAP_FAILED) {
 		LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
 		//return NULL;
@@ -560,16 +580,13 @@ SDL_Surface* PLAT_initVideo(void) {
 	LOG_info("Address vid.fbmmap[0]: %p\n", vid.fbmmap[0]);fflush(stdout);
 	LOG_info("Address vid.fbmmap[1]: %p\n", vid.fbmmap[1]);fflush(stdout);
 	swap_buffers_init();
+	vid.page = 0;
 	swap_buffers(vid.page);
 	vid.sharpness = SHARPNESS_SOFT;
-
-//test for doublebuffering effectiveness
-/*	
-	page[0] = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
-	page[1] = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
-	SDL_FillRect(page[0], &(SDL_Rect){0,0,GAME_WIDTH/2,GAME_HEIGHT}, 0xFFFFFFFF);
-	SDL_FillRect(page[1], &(SDL_Rect){GAME_WIDTH/2,0,GAME_WIDTH/2,GAME_HEIGHT}, 0x00FF00FF);
-*/
+//	page[0] = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
+//	page[1] = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
+//	SDL_FillRect(page[0], &(SDL_Rect){0, 0, GAME_WIDTH/2, GAME_HEIGHT}, 0xffff00ff); // TODO: revisit
+//	SDL_FillRect(page[1], &(SDL_Rect){GAME_WIDTH/2, 0, GAME_WIDTH/2, GAME_HEIGHT}, 0xff00ffff); // TODO: revisit
 
 	return vid.screen;
 }
@@ -596,8 +613,8 @@ void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
-	memset(vid.fbmmap[0], 0, vid.screen_size);
-	memset(vid.fbmmap[1], 0, vid.screen_size);
+	memset(vid.fbmmap[0], 0, vid.offset);
+	memset(vid.fbmmap[1], 0, vid.offset);
 }
 
 void PLAT_setVsync(int vsync) {
@@ -677,11 +694,12 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 //	uint32_t now = SDL_GetTicks();
 //	vid.page=0;
 	if (!vid.renderingGame) {
+		pan_display(vid.page);
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.screen->w;
 		vid.targetRect.h = vid.screen->h;
-		vid.page = 0;
+		//vid.page = 0;
 		if (vid.rotate == 0)
 		{
 			// 90 Rotation
@@ -702,22 +720,29 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			// 270 Rotation
 			FlipRotate270(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
 		}
-		swap_buffers(vid.page);
+		
+		
+		
 	} else {
 		//maybe one Day I'll find the time to investigate on why neon copy functions aren't working here
 		// No Rotation
 			FlipRotate000(vid.screengame, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
+	//		FlipRotate000(page[vid.page], vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
 //		if (vid.targetRect.w == vid.screen->w) {
-			//fullscreen
+//			//fullscreen
 //			pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap[vid.page], vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
 //		} else {
 //			//window
 //			convert_rgb565_to_argb8888_neon_rect(vid.screengame->pixels, vid.fbmmap[vid.page], vid.screengame->w, vid.screengame->w, vid.targetRect.x, vid.targetRect.y, vid.targetRect.w, vid.targetRect.h);
 //		}
 		vid.renderingGame = 0;
-		swap_buffers(vid.page);
-		vid.page ^= 1;
+		//swap_buffers(vid.page);
+		
 	}	
+
+	swap_buffers(vid.page);
+//	if (sync) pan_display(0);
+	vid.page ^= 1;
 	//LOG_info("Total Flip TOOK: %imsec, Draw TOOK: %imsec\n", SDL_GetTicks()-now, now2-now);fflush(stdout);
 }
 ///////////////////////////////
@@ -799,7 +824,7 @@ void rawBacklight(int value) {
 	unsigned int args[4] = {0};
 	args[1] = value;
 	int disp_fd=open("/dev/disp",O_RDWR);
-	if (value){
+	if (value>0){
 		ioctl(disp_fd, DISP_LCD_BACKLIGHT_ENABLE, args);
 	} else {
 		ioctl(disp_fd, DISP_LCD_BACKLIGHT_DISABLE, args);
@@ -813,8 +838,8 @@ void PLAT_enableBacklight(int enable) {
 		SetBrightness(GetBrightness());
         rawBacklight(1);		
     } else {
-		//rawBacklight(0);
-		SetRawBrightness(255);
+		rawBacklight(0);
+	//	SetRawBrightness(254);
     }	
 }
 

@@ -7,6 +7,27 @@
 
 #include "sdl.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+SDL_Surface* PLAT_initVideo(void);
+void PLAT_initInput(void);
+void PLAT_quitInput(void);
+void PLAT_pollInput(void);
+void PLAT_flip(SDL_Surface* screen, int sync);
+void PLAT_quitVideo(void);
+void PLAT_clearVideo(SDL_Surface* screen);
+void PLAT_clearAll(void);
+void PLAT_setVsync(int vsync);
+void PLAT_setCPUSpeed(int speed);
+int PLAT_getNumProcessors(void);
+uint32_t PLAT_screenMemSize(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #define PAD_poll PLAT_pollInput
 #define PAD_wake PLAT_shouldWake
 
@@ -61,6 +82,7 @@
 
 #define CODE_MENU		27
 #define CODE_POWER		CODE_NA
+#define CODE_POWEROFF	513
 
 #define CODE_PLUS		12
 #define CODE_MINUS		11
@@ -118,7 +140,7 @@
 #define _HDMI_PITCH (_HDMI_WIDTH * 2)
 
 #define MAX_WIDTH _HDMI_WIDTH
-#define MAX_HEIGHT _HDMI_HEIGHT
+#define MAX_HEIGHT _HDMI_WIDTH
 #define MAX_DEPTH 32 
 
 #define ARGB_MASK_8888	0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
@@ -129,6 +151,7 @@
 #define SDCARD_PATH "/mnt/SDCARD"
 #define MUTE_VOLUME_RAW 0
 #define HAS_NEON
+//#define NO_VSYNC
 
 ///////////////////////////////
 
