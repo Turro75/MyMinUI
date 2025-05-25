@@ -449,6 +449,11 @@ SDL_Surface* PLAT_initVideo(void) {
 	ism22 = 0;
 	if (exists(ISM22_PATH)) {
 		ism22 = 1;
+		//crrate the file menumissing.txt
+		int tmpfd = open(SYSTEM_PATH "/menumissing.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
+		if (tmpfd >= 0) {
+			close(tmpfd);
+		}
 	}
 
 	vid.fdfb = open("/dev/fb0", O_RDWR);
