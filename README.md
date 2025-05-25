@@ -31,7 +31,7 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 ## M21/M22:
 
-  - reintroduced full support for m21/m22, all common features are available
+  - reintroduced full support for m21/m22, all common features are available, the nextui audio fix is disabled as the missing vsync (see below) make it not effective.
 
   - since the m22 doesn't have the  menu button the menu is emulated by select+start
 
@@ -47,7 +47,7 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
   - the m22 has a rotated screen while the hdmi output don't, this is automatically handled even on native pico8.
 
-  
+
 
 
 # Release 22/05/2025 fix
