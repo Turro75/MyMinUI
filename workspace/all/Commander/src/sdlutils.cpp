@@ -231,9 +231,9 @@ void hastalavista(void)
     // Quit SDL
     TTF_Quit();
     IMG_Quit();
-    PLAT_quitVideo();
-    SDL_Quit();
-    PLAT_quitInput();
+  //  PWR_quit();
+	PAD_quit();
+	PLAT_quitVideo();
 }
 
 void pleaseWait(void)

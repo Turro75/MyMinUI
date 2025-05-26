@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 #if defined(USE_SDL2)
         init_flags |= SDL_INIT_GAMECONTROLLER;
 #endif
-        SDL_Init(init_flags);
+//        SDL_Init(init_flags);
     }
     if (IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF | IMG_INIT_WEBP) == 0) {
         std::cerr << "IMG_Init failed" << std::endl;
@@ -150,7 +150,6 @@ int main(int argc, char *argv[])
 
     //Quit
     SDL_utils::hastalavista();
-    PLAT_quitVideo();
 
     return 0;
 }

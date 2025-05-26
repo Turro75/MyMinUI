@@ -296,8 +296,8 @@ static struct VID_Context {
 } vid;
 
 void pan_display(int page){
-	//vid.vinfo.yoffset = vid.vinfo.yres_virtual/2 * page;
-	vid.vinfo.yoffset = 0;
+	vid.vinfo.yoffset = vid.vinfo.yres_virtual/2 * page;
+	//vid.vinfo.yoffset = 0;
 	ioctl(vid.fdfb, FBIOPAN_DISPLAY, &vid.vinfo);
 }
 
@@ -447,6 +447,11 @@ SDL_Surface* PLAT_initVideo(void) {
 	LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
 
 	ism22 = 0;
+
+	if (exists(SYSTEM_PATH "/menumissing.txt")) {
+		unlink(SYSTEM_PATH "/menumissing.txt");
+	}
+
 	if (exists(ISM22_PATH)) {
 		ism22 = 1;
 		//crrate the file menumissing.txt
@@ -487,6 +492,11 @@ SDL_Surface* PLAT_initVideo(void) {
 			sprintf(hdmimode, "%dx%dp%d", _HDMI_WIDTH, _HDMI_HEIGHT, _HDMI_HZ);
 			putFile(CUSTOM_HDMI_SETTINGS_PATH,hdmimode);
 			LOG_info("Writing default HDMI Mode %dx%dp%d\n", w, h, hz);fflush(stdout);
+		}
+		if (getenv("COMMANDER_SCREEN_FIX")!=NULL) {
+			w = 1280;
+			h = 720;
+			p = 1280 * 2;
 		}
 		system("sync");
 	} else {
@@ -699,7 +709,6 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 //	uint32_t now = SDL_GetTicks();
 //	vid.page=0;
 	if (!vid.renderingGame) {
-		pan_display(vid.page);
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.screen->w;
@@ -726,8 +735,6 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			FlipRotate270(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
 		}
 		
-		
-		
 	} else {
 		//maybe one Day I'll find the time to investigate on why neon copy functions aren't working here
 		// No Rotation
@@ -741,7 +748,8 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 //			convert_rgb565_to_argb8888_neon_rect(vid.screengame->pixels, vid.fbmmap[vid.page], vid.screengame->w, vid.screengame->w, vid.targetRect.x, vid.targetRect.y, vid.targetRect.w, vid.targetRect.h);
 //		}
 		vid.renderingGame = 0;
-		//swap_buffers(vid.page);
+//		swap_buffers(vid.page);
+//		vid.page ^= 1;
 		
 	}	
 
@@ -839,7 +847,7 @@ void rawBacklight(int value) {
 
 
 void PLAT_enableBacklight(int enable) {
-    if (enable){
+    if (enable>0){
 		SetBrightness(GetBrightness());
         rawBacklight(1);		
     } else {
@@ -853,7 +861,7 @@ void PLAT_powerOff(void) {
 	sleep(2);
 
 	SetRawVolume(MUTE_VOLUME_RAW);
-	PLAT_enableBacklight(0);
+	PLAT_enableBacklight(1);
 	SND_quit();
 	VIB_quit();
 	PWR_quit();
