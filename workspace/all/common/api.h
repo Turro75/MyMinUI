@@ -215,6 +215,9 @@ void pixman_composite_src_1555_0565_asm_neon(int width, int height,
 void pixman_composite_src_0565_0565_asm_neon(int width, int height,
 	uint16_t *dst, int dst_stride_pixels, const uint16_t *src, int src_stride_pixels);
 
+void convert_argb1555_to_rgb565_neon(int width, int height,
+    uint16_t *dst, int dst_stride_pixels, const uint16_t *src, int src_stride_pixels);
+
 //retroarch uses it in its sunxi implementation, quick way to convert and copy a buffer.
 void pixman_composite_src_0565_8888_asm_neon(int width,
 	int height,

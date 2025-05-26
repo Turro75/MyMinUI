@@ -2355,6 +2355,45 @@ void convert_rgb565_to_argb8888_neon_rect(
 }
 
 
+
+void convert_argb1555_to_rgb565_neon(
+    int width, int height,
+    uint16_t *dst, int dst_stride_pixels,
+    const uint16_t *src, int src_stride_pixels)
+{
+    for (int y = 0; y < height; ++y) {
+        const uint16_t *src_row = src + y * src_stride_pixels;
+        uint16_t *dst_row = dst + y * dst_stride_pixels;
+        int x = 0;
+        for (; x + 8 <= width; x += 8) {
+            uint16x8_t vsrc = vld1q_u16(src_row + x);
+
+            uint16x8_t r = vandq_u16(vshrq_n_u16(vsrc, 10), vdupq_n_u16(0x1F));
+            uint16x8_t g = vandq_u16(vshrq_n_u16(vsrc, 5), vdupq_n_u16(0x1F));
+            uint16x8_t b = vandq_u16(vsrc, vdupq_n_u16(0x1F));
+
+            // Estendi il verde da 5 a 6 bit
+            uint16x8_t g6 = vorrq_u16(vshlq_n_u16(g, 1), vshrq_n_u16(g, 4));
+
+            uint16x8_t rgb = vorrq_u16(
+                vorrq_u16(vshlq_n_u16(r, 11), vshlq_n_u16(g6, 5)),
+                b
+            );
+
+            vst1q_u16(dst_row + x, rgb);
+        }
+        // pixel rimanenti
+        for (; x < width; ++x) {
+            uint16_t px = src_row[x];
+            uint16_t r = (px >> 10) & 0x1F;
+            uint16_t g = (px >> 5) & 0x1F;
+            uint16_t b = px & 0x1F;
+            uint16_t g6 = (g << 1) | (g >> 4);
+            dst_row[x] = (r << 11) | (g6 << 5) | b;
+        }
+    }
+}
+
 int FlipRotate000(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
 	//this is actually a no rotation conversion.
 	
