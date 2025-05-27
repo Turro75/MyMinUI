@@ -20,7 +20,6 @@
 #define ISM22_PATH "/mnt/SDCARD/m21/thisism22"
 
 ///////////////////////////////
-void Main_Flip(void);
 
 #define RAW_UP		103 //SDL_SCANCODE_UP
 #define RAW_DOWN	108 //SDL_SCANCODE_DOWN
@@ -494,9 +493,9 @@ SDL_Surface* PLAT_initVideo(void) {
 			LOG_info("Writing default HDMI Mode %dx%dp%d\n", w, h, hz);fflush(stdout);
 		}
 		if (getenv("COMMANDER_SCREEN_FIX")!=NULL) {
-			w = 1280;
-			h = 720;
-			p = 1280 * 2;
+			w = 1024;
+			h = 576;
+			p = w * 2;
 		}
 		system("sync");
 	} else {
@@ -665,7 +664,11 @@ void PLAT_setEffect(int effect) {
 	next_effect = effect;
 }
 void PLAT_vsync(int remaining) {
-	if (remaining>0) usleep(remaining*1000);
+	if (remaining>0) {
+		usleep(remaining*1000);
+	} else {
+//		pan_display(0);
+	}
 }
 
 scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
