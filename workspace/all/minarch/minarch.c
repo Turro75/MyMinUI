@@ -72,7 +72,12 @@ char pwractionstr[256];
 
 int fancy_mode;
 
-
+enum {
+	SYNC_SRC_NOFIX,
+	SYNC_SRC_AUTO,
+	SYNC_SRC_SCREEN,
+	SYNC_SRC_CORE
+};
 
 
 // default frontend options
@@ -81,7 +86,7 @@ static int screen_scaling = SCALE_ASPECT;
 static int screen_effect = EFFECT_NONE;
 static int screen_sharpness = SHARPNESS_SOFT;
 static int prevent_tearing = 1; // lenient
-static int sync_ref = 1;
+static int sync_ref = SYNC_SRC_AUTO;
 static int show_debug = 0;
 static int max_ff_speed = 3; // 4x
 static int fast_forward = 0;
@@ -755,13 +760,6 @@ enum {
 	FE_OPT_DEBUG,
 	FE_OPT_MAXFF,
 	FE_OPT_COUNT,
-};
-
-enum {
-	SYNC_SRC_NOFIX,
-	SYNC_SRC_AUTO,
-	SYNC_SRC_SCREEN,
-	SYNC_SRC_CORE
 };
 
 enum {
@@ -3209,7 +3207,28 @@ void video_refresh_callback_resize(void) {
 
 
 static int use_core_fps = 1;
-static int use_nofix = 0;
+
+static void chooseSyncRef(void) {
+#if defined(NO_VSYNC)
+	use_core_fps = 0;
+	use_nofix = 1;
+#else
+	switch (sync_ref) {
+		case SYNC_SRC_AUTO:   use_core_fps = (core.get_region() == RETRO_REGION_PAL); use_nofix = 0; break;
+		case SYNC_SRC_SCREEN:   use_core_fps = 0; use_nofix = 0; break;
+		case SYNC_SRC_CORE:     use_core_fps = 1; use_nofix = 0; break;
+		case SYNC_SRC_NOFIX:    use_core_fps = 0; use_nofix = 1; break;
+	}
+#endif
+	LOG_info("%s: sync_ref is set to %s, game region is %s, use core fps = %s, use_nofix = %s\n",
+		  __FUNCTION__,
+		  sync_ref_labels[sync_ref],
+		  core.get_region() == RETRO_REGION_NTSC ? "NTSC" : "PAL",
+		  use_core_fps ? "yes" : "no",
+		  use_nofix ? "yes" : "no"
+		  );
+}
+
 static uint32_t last_flip_time = 0;
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
 //	uint32_t now = SDL_GetTicks();
@@ -3639,6 +3658,7 @@ void Core_load(void) {
 
 	LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);fflush(stdout);
 	Core_updateAVInfo();
+	chooseSyncRef();
 }
 void Core_reset(void) {
 	core.reset();
@@ -5598,30 +5618,6 @@ void getCPUusage(char * data) {
 	fclose(fp);
 }
 
-
-static void chooseSyncRef(void) {
-#if defined(NO_VSYNC)
-	use_core_fps = 0;
-	use_nofix = 1;
-#else
-	switch (sync_ref) {
-		case SYNC_SRC_AUTO:   use_core_fps = (core.get_region() == RETRO_REGION_PAL); use_nofix = 0; break;
-		case SYNC_SRC_SCREEN: use_core_fps = 0; use_nofix = 0; break;
-		case SYNC_SRC_CORE:   use_core_fps = 1; use_nofix = 0; break;
-		case SYNC_SRC_NOFIX:  use_core_fps = 0; use_nofix = 1; break;
-	}
-#endif
-	LOG_info("%s: sync_ref is set to %s, game region is %s, use core fps = %s, use_nofix = %s\n",
-		  __FUNCTION__,
-		  sync_ref_labels[sync_ref],
-		  core.get_region() == RETRO_REGION_NTSC ? "NTSC" : "PAL",
-		  use_core_fps ? "yes" : "no",
-		  use_nofix ? "yes" : "no"
-		  );
-
-}
-
-
 static void trackFPS(void) {
 	if (!show_debug) return;
 
@@ -5682,7 +5678,7 @@ static void* flipThread(void *arg) {
 		run = should_run_flip;
 		render_ = render;
 		pthread_mutex_unlock(&flip_mx);
-#ifdef M210
+#ifdef M21
 		if (run && render_) {
 			trackFPS();
 			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
@@ -5883,7 +5879,7 @@ int main(int argc , char* argv[]) {
 	LOG_info("MAIN THREAD MOVED TO CPU %i\n", currentmaincpu);
 	while (!quit) {
 		GFX_startFrame();
-		if (has_pending_opt_change) {
+		if (has_pending_opt_change == 1) {
 			has_pending_opt_change = 0;
 			if (Core_updateAVInfo()) {
 				LOG_info("AV info changed, reset sound system");
@@ -5905,7 +5901,7 @@ int main(int argc , char* argv[]) {
 			pthread_mutex_unlock(&core_mx);
 			pthread_mutex_lock(&flip_mx);
 			render = 1;
-#ifndef M210
+#ifndef M21
 			pthread_cond_signal(&flip_rq);
 #endif
 			pthread_mutex_unlock(&flip_mx);	

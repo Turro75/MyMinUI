@@ -167,6 +167,7 @@ int currentsampleratein = 0;
 int currentsamplerateout = 0;
 int should_rotate = 0;
 int currentcputemp = 0;
+int use_nofix = 0;
 
 SDL_Surface* GFX_init(int mode) {
 	gfx.screen = PLAT_initVideo();
@@ -1153,8 +1154,12 @@ static void SND_audioCallback(void *userdata, uint8_t *stream, int len) {
 		len -= 1;
 	}
 }
-static void SND_resizeBuffer(void) { // plat_sound_resize_buffer
 
+static void SND_resizeBuffer(void) { // plat_sound_resize_buffer
+	//if nofix snd.buffer_seconds must be 0
+	if (use_nofix == 1){
+		snd.frame_count = snd.buffer_seconds * snd.sample_rate_in / snd.frame_rate;
+	}
 	if (snd.frame_count == 0)
 		return;
 
@@ -1167,6 +1172,10 @@ static void SND_resizeBuffer(void) { // plat_sound_resize_buffer
 
 	snd.frame_in = 0;
 	snd.frame_out = 0;
+
+	if (use_nofix == 1) {
+		snd.frame_filled = snd.frame_count - 1;
+	}
 
 	SDL_UnlockAudio();
 }
