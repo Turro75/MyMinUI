@@ -46,7 +46,7 @@ void getFile(char* path, char* buffer, size_t buffer_size);
 void putInt(char* path, int value);
 int getInt(char* path);
 void bmp2png(char * filename);
-void getHdmiModeValues(char * hdmimode, int *w, int *h, int *hz);
+int getHdmiModeValues(char * hdmimode, int *w, int *h, int *hz);
 
 uint64_t getMicroseconds(void);
 

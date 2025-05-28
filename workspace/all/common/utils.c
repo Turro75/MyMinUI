@@ -432,8 +432,11 @@ uint64_t getMicroseconds(void) {
 }
 
 
-void getHdmiModeValues(char * hdmimode, int *w, int *h, int *hz){
+int getHdmiModeValues(char * hdmimode, int *w, int *h, int *hz){
 	// Inizializza i valori a 0
+	int localw = *w;
+	int localh = *h;
+	int localhz = *hz;
     *w = 0;
     *h = 0;
     *hz = 0;
@@ -455,5 +458,12 @@ void getHdmiModeValues(char * hdmimode, int *w, int *h, int *hz){
         // Estrai la frequenza (hz)
         char *hz_start = p_pos + 1;
         *hz = atoi(hz_start);
-    }
+		return 0;
+    } else {
+		// Se il formato non è corretto, ripristina i valori originali
+		*w = localw;
+		*h = localh;
+		*hz = localhz;
+		return -1;
+	}
 }

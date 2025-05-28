@@ -475,7 +475,7 @@ SDL_Surface* PLAT_initVideo(void) {
 
 	
 	//system("cat /sys/class/disp/disp/attr/sys > /mnt/SDCARD/sysA.txt");
-	int w,h,p,hz;
+	int w,h,p,hz = 0;
 	if (getHDMIStatus() || (ism22)) {
 		char hdmimode[64];
 		w = _HDMI_WIDTH;
@@ -483,9 +483,13 @@ SDL_Surface* PLAT_initVideo(void) {
 		p = _HDMI_PITCH;
 		if (exists(CUSTOM_HDMI_SETTINGS_PATH)){
 			getFile(CUSTOM_HDMI_SETTINGS_PATH,hdmimode,sizeof(hdmimode));
-			getHdmiModeValues(hdmimode, &w, &h, &hz);
-			p = w * 2;
-			LOG_info("HDMI Custom Mode detected %dx%dp%d\n", w, h, hz);fflush(stdout);
+			if (getHdmiModeValues(hdmimode, &w, &h, &hz) == -1) {
+				LOG_info("HDMI Custom Mode load failed\n");fflush(stdout);
+				unlink(CUSTOM_HDMI_SETTINGS_PATH);
+			} else {
+				p = w * 2;
+				LOG_info("HDMI Custom Mode detected %dx%dp%d\n", w, h, hz);fflush(stdout);
+			}
 		} else {
 			//the first run write the default values to the custom file.
 			sprintf(hdmimode, "%dx%dp%d", _HDMI_WIDTH, _HDMI_HEIGHT, _HDMI_HZ);

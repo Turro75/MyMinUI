@@ -288,7 +288,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	cpufreq_max = atoi(getenv("CPU_SPEED_MAX"));
 	LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
 
-	int w,p,h,hz;
+	int w,p,h,hz = 0;
 	if (GetHDMI()){
 		SetHDMI(1);
 		vid.fdfb = open("/dev/fb1", O_RDWR);
@@ -298,9 +298,13 @@ SDL_Surface* PLAT_initVideo(void) {
 		p = HDMI_PITCH_;
 		if (exists(CUSTOM_HDMI_SETTINGS_PATH)){
 			getFile(CUSTOM_HDMI_SETTINGS_PATH,hdmimode,sizeof(hdmimode));
-			getHdmiModeValues(hdmimode, &w, &h, &hz);
-			p = w * 2;
-			LOG_info("HDMI Custom Mode detected %dx%dp%d\n", w, h, hz);fflush(stdout);
+			if (getHdmiModeValues(hdmimode, &w, &h, &hz) == -1) {
+				LOG_info("HDMI Custom Mode load failed\n");fflush(stdout);
+				unlink(CUSTOM_HDMI_SETTINGS_PATH);
+			} else {
+				p = w * 2;
+				LOG_info("HDMI Custom Mode detected %dx%dp%d\n", w, h, hz);fflush(stdout);
+			}
 		} else {
 			//the first run write the default values to the custom file.
 			sprintf(hdmimode, "%dx%dp%d", HDMI_WIDTH_, HDMI_HEIGHT_, HDMI_HZ_);
