@@ -38,24 +38,43 @@ bump() {
 	bump
 	
 	tell RG35XX
-	show ./workspace/rg35xx/other/DinguxCommander
+#	show ./workspace/rg35xx/other/DinguxCommander
 	echo CORES
 	list ./workspace/rg35xx/cores/src
 	bump
 	
+	tell M21
+#	show ./workspace/rg35xx/other/DinguxCommander
+	echo CORES
+	list ./workspace/m21/cores/src
+	bump
+
 	tell MIYOOMINI
-	show ./workspace/miyoomini/other/DinguxCommander
+#	show ./workspace/miyoomini/other/DinguxCommander
 	show ./workspace/miyoomini/other/sdl
 	echo CORES
 	list ./workspace/miyoomini/cores/src
 	bump
 	
-	tell TRIMUISMART
-	show ./workspace/trimuismart/other/DinguxCommander
-	show ./workspace/trimuismart/other/unzip60
+	tell MY282
+	show ./workspace/my282/other/unzip60
 	echo CORES
-	list ./workspace/trimuismart/cores/src
+	list ./workspace/my282/cores/src
 	bump
+
+
+	tell R36S
+	show ./workspace/r36s/other/unzip60
+	echo CORES
+	list ./workspace/r36s/cores/src
+	bump
+
+#	tell TRIMUISMART
+#	show ./workspace/trimuismart/other/DinguxCommander
+#	show ./workspace/trimuismart/other/unzip60
+#	echo CORES
+#	list ./workspace/trimuismart/cores/src
+#	bump
 	
 	# tell TRIMUI
 	# show ./workspace/trimui/other/DinguxCommander
@@ -63,33 +82,33 @@ bump() {
 	# echo CORES
 	# list ./workspace/trimui/cores/src
 	# bump
-
-	tell RGB30
-	show ./workspace/rgb30/other/DinguxCommander
-	echo CORES
-	list ./workspace/rgb30/cores/src
-	bump
-
-	tell TG5040
-	show ./workspace/tg5040/other/unzip60
-	echo CORES
-	list ./workspace/tg5040/cores/src
-	bump
-
-	tell M17
-	echo CORES
-	list ./workspace/m17/cores/src
-	bump
-	
-	tell RG35XXPLUS
-	show ./workspace/tg5040/other/unzip60
-	echo CORES
-	list ./workspace/rg35xx/cores/src # just copied from normal rg35xx
-	bump
-	
-	tell GKDPIXEL
-	echo CORES
-	list ./workspace/gkdpixel/cores/src
-	bump
+#
+#	tell RGB30
+#	show ./workspace/rgb30/other/DinguxCommander
+#	echo CORES
+#	list ./workspace/rgb30/cores/src
+#	bump
+#
+#	tell TG5040
+#	show ./workspace/tg5040/other/unzip60
+#	echo CORES
+#	list ./workspace/tg5040/cores/src
+#	bump
+#
+#	tell M17
+#	echo CORES
+#	list ./workspace/m17/cores/src
+#	bump
+#	
+#	tell RG35XXPLUS
+#	show ./workspace/tg5040/other/unzip60
+#	echo CORES
+#	list ./workspace/rg35xx/cores/src # just copied from normal rg35xx
+#	bump
+#	
+#	tell GKDPIXEL
+#	echo CORES
+#	list ./workspace/gkdpixel/cores/src
+#	bump
 
 } | sed 's/\n/ /g'
