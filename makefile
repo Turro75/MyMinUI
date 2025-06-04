@@ -103,9 +103,9 @@ special:
 	# setup miyoomini/trimui family .tmp_update in BOOT
 	mv ./build/BOOT/common ./build/BOOT/.tmp_update
 	mv ./build/BOOT/miyoo ./build/BASE/
-	mv ./build/BOOT/trimui ./build/BASE/
+#	mv ./build/BOOT/trimui ./build/BASE/
 	cp -R ./build/BOOT/.tmp_update ./build/BASE/miyoo/app/
-	cp -R ./build/BOOT/.tmp_update ./build/BASE/trimui/app/
+#	cp -R ./build/BOOT/.tmp_update ./build/BASE/trimui/app/
 	cp -R ./build/BASE/miyoo ./build/BASE/miyoo354
 
 specialpackage: tidy
