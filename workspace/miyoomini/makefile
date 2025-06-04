@@ -20,21 +20,21 @@ all: readmes
 	cd lumon && make
 	cd show && make
 	cd overclock && make
+	cd $(REQUIRES_NDS) && make -f Makefile.mini cfg
+	cd $(REQUIRES_NDS) && make -f Makefile.mini all
+	cp -L ${PREFIX}/lib/libjson-c.so.2 $(REQUIRES_NDS)/drastic/lib/
 
-early: $(REQUIRES_SDL) $(REQUIRES_NDS)
-	cd other/sdl && ./make.sh
+early:  $(REQUIRES_NDS) #$(REQUIRES_SDL)
 	cd other/latency_reduction && make
-#	cd other/DinguxCommander && make -j
 
 clean:
 	cd blank && make clean
 	cd batmon && make clean
 	cd lumon && make clean
 	cd show && make clean
-	cd other/sdl && make distclean
 	cd other/latency_reduction && make clean
 	cd $(REQUIRES_NDS) && make -f Makefile.mini clean
-#	cd other/DinguxCommander && make clean
+
 
 ###########################################################
 
@@ -48,8 +48,5 @@ $(REQUIRES_NDS):
 	git clone https://github.com/steward-fu/nds.git $(REQUIRES_NDS)
 	cd $(REQUIRES_NDS) && git checkout 55d45ea
 	cd $(REQUIRES_NDS) && patch -p1 < ../nds_19.patch
-	cd $(REQUIRES_NDS) && make -f Makefile.mini cfg
-	cd $(REQUIRES_NDS) && make -f Makefile.mini
-	cp -L ${PREFIX}/lib/libjson-c.so.2 $(REQUIRES_NDS)/drastic/lib/
 
 include ../all/readmes/makefile

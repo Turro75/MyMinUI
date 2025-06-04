@@ -5,7 +5,7 @@ $(PLATFORM):
 	cp ./workspace/$@/batmon/batmon.elf ./build/SYSTEM/$@/bin/
 	cp ./workspace/$@/lumon/lumon.elf ./build/SYSTEM/$@/bin/
 	cp ./workspace/$@/show/show.elf ./build/SYSTEM/$@/bin
-	cp ./workspace/$@/other/sdl/build/.libs/libSDL-1.2.so.0.11.5 ./build/SYSTEM/$@/lib/libSDL-1.2.so.0
+#	cp ./workspace/$@/other/sdl/build/.libs/libSDL-1.2.so.0.11.5 ./build/SYSTEM/$@/lib/libSDL-1.2.so.0
 	cp ./workspace/$@/other/latency_reduction/as_preload.so ./build/SYSTEM/$@/lib/
 	cp ./workspace/$@/other/latency_reduction/audioserver.mod ./build/SYSTEM/$@/bin/
 	# installer

@@ -14,7 +14,8 @@ endif
 
 # commits after this one break save states (as of 20231025)
 #gpsp_HASH = 1d1c719
-# fbneo_HASH = db9f7e9
+fbneo_HASH = ffdacc6a
+puae_HASH = c68404c
 
 ###############################
 

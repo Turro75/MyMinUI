@@ -97,7 +97,6 @@ puae_REPO = https://github.com/libretro/libretro-uae
 #puae_REPO = https://github.com/KMFDManic/libretro-uae
 puae_BR = 2.6.1
 puae_CORE = puae2021_libretro.so
-puae_HASH = c68404c
 
 neocd_REPO = https://github.com/libretro/neocd_libretro
 neocd_CORE = neocd_libretro.so
