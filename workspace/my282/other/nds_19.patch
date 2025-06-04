@@ -1,0 +1,30 @@
+diff --git a/Makefile.mk b/Makefile.mk
+index 53681cd..20f8a67 100644
+--- a/Makefile.mk
++++ b/Makefile.mk
+@@ -1,5 +1,5 @@
+ ifeq ($(NDS_GCC),1)
+-export CROSS=arm-linux-gnueabihf-
++export CROSS=$(CROSS_COMPILE)
+ export PATH=/opt/mini/bin:$(shell echo $$PATH)
+ endif
+ 
+@@ -8,7 +8,7 @@ export AR=${CROSS}ar
+ export AS=${CROSS}as
+ export LD=${CROSS}ld
+ export CXX=${CROSS}g++
+-export HOST=arm-linux
++export HOST=arm-buildroot-linux-gnueabihf
+ 
+ SDL2_CFG += --enable-video
+ SDL2_CFG += --disable-video-x11
+@@ -34,6 +34,9 @@ ifeq ($(NDS_ALSA),1)
+ endif
+ 
+ 	make -C sdl2 -j4
++	patchelf --replace-needed ${PREFIX}/lib/libEGL.so libEGL.so sdl2/build/.libs/libSDL2-2.0.so.0
++	patchelf --replace-needed ${PREFIX}/lib/libGLESv2.so libGLESv2.so sdl2/build/.libs/libSDL2-2.0.so.0
++	patchelf --print-needed sdl2/build/.libs/libSDL2-2.0.so.0
+ 	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/lib/
+ 
+ ifeq ($(NDS_RUNNER),1)
