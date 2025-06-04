@@ -1,7 +1,7 @@
 #! /bin/sh
 
 
-TOOLCHAIN_TAR="my282_toolchain.tar.gz"
+TOOLCHAIN_TAR="my282_toolchain_glibc.tar.gz"
 
 #TOOLCHAIN_URL="https://github.com/steward-fu/website/releases/download/miyoo-a30/a30_toolchain-v1.0.tar.gz"
 TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/miyoo_a30_toolchain/my282_toolchain.tar.gz"
