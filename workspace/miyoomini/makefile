@@ -12,6 +12,7 @@ endif
 
 REQUIRES_SDL=other/sdl
 REQUIRES_COMMANDER=other/DinguxCommander
+REQUIRES_NDS=other/nds
 
 all: readmes
 	cd blank && make
@@ -20,7 +21,7 @@ all: readmes
 	cd show && make
 	cd overclock && make
 
-early: $(REQUIRES_SDL) 
+early: $(REQUIRES_SDL) $(REQUIRES_NDS)
 	cd other/sdl && ./make.sh
 	cd other/latency_reduction && make
 #	cd other/DinguxCommander && make -j
@@ -32,6 +33,7 @@ clean:
 	cd show && make clean
 	cd other/sdl && make distclean
 	cd other/latency_reduction && make clean
+	cd $(REQUIRES_NDS) && make -f Makefile.mini clean
 #	cd other/DinguxCommander && make clean
 
 ###########################################################
@@ -40,5 +42,14 @@ $(REQUIRES_SDL):
 	git clone --depth 1 --branch miniui-miyoomini https://github.com/shauninman/SDL-1.2.git $(REQUIRES_SDL)
 $(REQUIRES_COMMANDER):
 	git clone --depth 1 --branch miniui-miyoomini https://github.com/shauninman/DinguxCommander.git $(REQUIRES_COMMANDER)
+
+$(REQUIRES_NDS):
+	rmdir -r $(REQUIRES_NDS) | true
+	git clone https://github.com/steward-fu/nds.git $(REQUIRES_NDS)
+	cd $(REQUIRES_NDS) && git checkout 55d45ea
+	cd $(REQUIRES_NDS) && patch -p1 < ../nds_19.patch
+	cd $(REQUIRES_NDS) && make -f Makefile.mini cfg
+	cd $(REQUIRES_NDS) && make -f Makefile.mini
+	cp -L ${PREFIX}/lib/libjson-c.so.2 $(REQUIRES_NDS)/drastic/lib/
 
 include ../all/readmes/makefile

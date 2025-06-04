@@ -1,0 +1,40 @@
+diff --git a/Makefile.mk b/Makefile.mk
+index 53681cd..accc154 100644
+--- a/Makefile.mk
++++ b/Makefile.mk
+@@ -1,5 +1,5 @@
+ ifeq ($(NDS_GCC),1)
+-export CROSS=arm-linux-gnueabihf-
++export CROSS=$(CROSS_COMPILE)
+ export PATH=/opt/mini/bin:$(shell echo $$PATH)
+ endif
+ 
+@@ -8,7 +8,7 @@ export AR=${CROSS}ar
+ export AS=${CROSS}as
+ export LD=${CROSS}ld
+ export CXX=${CROSS}g++
+-export HOST=arm-linux
++export HOST=arm-buildroot-linux-gnueabihf
+ 
+ SDL2_CFG += --enable-video
+ SDL2_CFG += --disable-video-x11
+@@ -34,6 +34,7 @@ ifeq ($(NDS_ALSA),1)
+ endif
+ 
+ 	make -C sdl2 -j4
++	patchelf --print-needed sdl2/build/.libs/libSDL2-2.0.so.0
+ 	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/lib/
+ 
+ ifeq ($(NDS_RUNNER),1)
+diff --git a/sdl2/configure.ac b/sdl2/configure.ac
+index 3caab02..b754938 100644
+--- a/sdl2/configure.ac
++++ b/sdl2/configure.ac
+@@ -2439,6 +2439,7 @@ CheckNDSVideo()
+         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_sys"
+         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lshmvar"
+         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_common"
++        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../assets/mini/lib"
+     fi
+ 
+     if test x$MOD = xa30; then
