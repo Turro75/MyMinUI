@@ -7,7 +7,7 @@ fi
 
 FILEPATH="$(readlink -f "$0")"
 NEWPATH="$(dirname "${FILEPATH}")"
-
+OLDPATH2=/root/buildroot/output/build
 cd "${NEWPATH}"
 LOCFILE="sdk-location"
 if [ ! -r "${LOCFILE}" ]; then
@@ -39,6 +39,7 @@ grep -lr "${OLDPATH}" . | while read -r FILE ; do
     if file -b --mime-type "${FILE}" | grep -q '^text/' && [ "${FILE}" != "${LOCFILE}" ]
     then
         sed -i "s|${OLDPATH}|${NEWPATH}|g" "${FILE}"
+	sed -i "s|${OLDPATH2}/.*/lib.*\.la||g" "${FILE}"
     fi
 done
 

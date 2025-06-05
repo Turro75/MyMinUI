@@ -4,7 +4,7 @@
 #include <functional>
 #include <string>
 #include <vector>
-
+#include <cstdint>
 
 #include "sdl.h"
 

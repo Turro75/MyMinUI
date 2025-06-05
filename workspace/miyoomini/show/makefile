@@ -6,7 +6,7 @@ TARGET = show
 PRODUCT= $(TARGET).elf
 
 CC = $(CROSS_COMPILE)gcc
-CFLAGS   = -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve 
+CFLAGS   = -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7-a
 LDFLAGS	 = -lSDL -lSDL_image
 
 all:

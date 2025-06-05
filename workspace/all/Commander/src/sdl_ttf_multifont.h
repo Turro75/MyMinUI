@@ -9,6 +9,7 @@
 #include <limits>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 /* Rendering with font fallback for SDL_ttf. */
 

@@ -2,6 +2,7 @@
 #define TEXT_EDIT_H_
 
 #include <string>
+#include <cstdint>
 
 #include <SDL.h>
 

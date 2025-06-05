@@ -2,6 +2,7 @@
 #define TEXT_VIEWER_H_
 
 #include <string>
+#include <cstdint>
 
 #include "sdl_ptrs.h"
 #include "sdl_ttf_multifont.h"
