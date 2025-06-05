@@ -77,9 +77,8 @@ if [ "$CUST_CPUCLOCK" == "1" ]; then
     overclock.elf $CPU_SPEED_PERF
 fi
 
-
 curvol=$(get_curvol)
-#killall -9 keymon.elf
+
 if $IS_PLUS; then
     killall -9 audioserver
 else
@@ -88,12 +87,10 @@ fi
 sleep 0.2
 set_snd_level "${curvol}" &
 
-LD_TRACE_LOADED_OBJECTS=1 ./drastic	&> $LOGS_PATH/NDS_ldd.txt
-
-./drastic "$1"	&> $LOGS_PATH/NDS.txt
+if [ -f /mnt/SDCARD/Bios/NDS/drastic ]; then
+    /mnt/SDCARD/Bios/NDS/drastic "$1" > ${LOGS_PATH}/NDS.txt 2>&1
+fi
 sync
-
-
 
 if [  -d "/customer/app/skin_large" ]; then
     USE_752x560_RES=0

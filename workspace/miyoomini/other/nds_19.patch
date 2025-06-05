@@ -1,5 +1,5 @@
 diff --git a/Makefile.mk b/Makefile.mk
-index 53681cd..accc154 100644
+index 53681cd..155b328 100644
 --- a/Makefile.mk
 +++ b/Makefile.mk
 @@ -1,5 +1,5 @@
@@ -18,23 +18,58 @@ index 53681cd..accc154 100644
  
  SDL2_CFG += --enable-video
  SDL2_CFG += --disable-video-x11
-@@ -34,6 +34,7 @@ ifeq ($(NDS_ALSA),1)
+@@ -33,8 +33,28 @@ ifeq ($(NDS_ALSA),1)
+ 	cp alsa/libasound.so.2 drastic/lib/
  endif
  
- 	make -C sdl2 -j4
+-	make -C sdl2 -j4
++	make -C sdl2 -j4 V=1
++	patchelf --replace-needed libEGL.so.1 libEGL.so sdl2/build/.libs/libSDL2-2.0.so.0
++	patchelf --replace-needed libGLESv2.so.2 libGLESv2.so sdl2/build/.libs/libSDL2-2.0.so.0
 +	patchelf --print-needed sdl2/build/.libs/libSDL2-2.0.so.0
  	cp sdl2/build/.libs/libSDL2-2.0.so.0 drastic/lib/
++	rm -rf drastic/drastic
++	rm -rf drastic/drastic64
++	rm -rf drastic/cpuclock
++	rm -rf drastic/launch.sh
++ifeq ($(MOD),mini)
++	rm -rf drastic/lib/libEGL.so
++	rm -rf drastic/lib/libGLESv2.so
++	rm -rf drastic/lib/libGLESv1_CM.so
++	rm -rf drastic/lib/libdbus-1.so.3
++	rm -rf drastic/lib/libbz2.so.1.0
++	rm -rf drastic/lib/libjson-c.so.5
++	rm -rf drastic/lib/libpng16.so.16
++	rm -rf drastic/lib/libz2.so.1.0
++	rm -rf drastic/lib/libz.so.1
++	rm -rf drastic/lib/libSDL2_image-2.0.so.0
++	rm -rf drastic/lib/libSDL2_ttf-2.0.so.0
++endif
  
  ifeq ($(NDS_RUNNER),1)
+ 	make -C runner MOD=$(MOD)
 diff --git a/sdl2/configure.ac b/sdl2/configure.ac
-index 3caab02..b754938 100644
+index 3caab02..18df317 100644
 --- a/sdl2/configure.ac
 +++ b/sdl2/configure.ac
 @@ -2439,6 +2439,7 @@ CheckNDSVideo()
          EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_sys"
          EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lshmvar"
          EXTRA_LDFLAGS="$EXTRA_LDFLAGS -lmi_common"
-+        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L../assets/mini/lib"
++        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -s -L../assets/mini/lib"
      fi
  
      if test x$MOD = xa30; then
+diff --git a/sdl2/src/video/nds/nds_video.c b/sdl2/src/video/nds/nds_video.c
+index 00b6334..7ffbaba 100644
+--- a/sdl2/src/video/nds/nds_video.c
++++ b/sdl2/src/video/nds/nds_video.c
+@@ -17,7 +17,7 @@
+ #include <sys/mman.h>
+ #include <sys/types.h>
+ #include <sys/ioctl.h>
+-#include <json-c/json.h>
++//#include <json-c/json.h>
+ 
+ #if defined(GKD2) || defined(BRICK)
+ #include <sys/socket.h>
