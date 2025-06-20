@@ -1243,7 +1243,7 @@ static void Config_readOptionsString(char* cfg) {
 		Config_syncFrontend(option->key, option->value);
 	}
 	
-	if (has_custom_controllers && Config_getValue(cfg,"minarch_gamepad_type",value,NULL)) {
+	if ((has_custom_controllers == 1) && Config_getValue(cfg,"minarch_gamepad_type",value,NULL)) {
 		gamepad_type = strtol(value, NULL, 0);
 		int device = strtol(gamepad_values[gamepad_type], NULL, 0);
 		core.set_controller_port_device(0, device);
@@ -1400,7 +1400,7 @@ static void Config_write(int override) {
 		fprintf(file, "%s = %s\n", option->key, option->values[option->value]);
 	}
 
-	if (has_custom_controllers) fprintf(file, "%s = %i\n", "minarch_gamepad_type", gamepad_type);
+	if (has_custom_controllers == 1) fprintf(file, "%s = %i\n", "minarch_gamepad_type", gamepad_type);
 
 	fprintf(file,"%s = %s\n", "MapABXYtoRightStick", config.controller_map_abxy_to_rstick ? "On" : "Off");
 	fprintf(file,"%s = %s\n", "MapLeftSticktoDPad", config.controller_map_lstick_to_dpad ? "On" : "Off");
@@ -1444,8 +1444,8 @@ static void Config_restore(void) {
 	}
 	config.core.changed = 1; // let the core know
 
-	if (has_custom_controllers) {
-		gamepad_type = 0;
+	if (has_custom_controllers == 1) {
+		gamepad_type = 1;
 		core.set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
 	}
 
@@ -3963,6 +3963,7 @@ enum {
 	MENU_INPUT, // eg. renders like but MENU_VAR but handles input differently
 };
 typedef struct MenuList {
+	int totalnum;
 	int type;
 	int max_width; // cached on first draw
 	char* desc;
@@ -4175,7 +4176,7 @@ static int OptionControls_optionChanged(MenuList* list, int i) {
 	MenuItem* item = &list->items[i];
 	if (item->values!=gamepad_labels) return MENU_CALLBACK_NOP;
 
-	if (has_custom_controllers) {
+	if (has_custom_controllers == 1) {
 		gamepad_type = item->value;
 		int device = strtol(gamepad_values[item->value], NULL, 0);
 		core.set_controller_port_device(0, device);
@@ -4203,6 +4204,7 @@ static int OptionControls_mapABXYChanged(MenuList* list, int i) {
 
 
 static MenuList OptionControls_menu = {
+	.totalnum = 0,
 	.type = MENU_INPUT,
 	.desc = "Press A to set and X to clear."
 		"\nSupports single button and MENU+button." // TODO: not supported on nano because POWER doubles as MENU
@@ -4218,7 +4220,8 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 	if (OptionControls_menu.items==NULL) {
 	//	LOG_info("OptionControls_openMenu Create\n");
 		// TODO: where do I free this?
-		OptionControls_menu.items = calloc(RETRO_BUTTON_COUNT+2+has_custom_controllers, sizeof(MenuItem));
+		OptionControls_menu.totalnum = RETRO_BUTTON_COUNT+2+has_custom_controllers;
+		OptionControls_menu.items = calloc(OptionControls_menu.totalnum, sizeof(MenuItem));
 		int k = 0;
 		
 		MenuItem* item2 = &OptionControls_menu.items[k++];
@@ -4257,6 +4260,11 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 			item->values = button_labels;
 			LOG_info("\t%s (%i:%i)\n", button->name, button->local, button->retro);
 		}
+		if (k != OptionControls_menu.totalnum) {
+	//		LOG_error("OptionControls_openMenu: itemnum mismatch! %i != %i\n", k, OptionControls_menu.totalnum);
+			OptionControls_menu.totalnum = k;
+		}
+	//	LOG_info("OptionControls_openMenu %i items, expected = %i\n", k, OptionControls_menu.totalnum);fflush(stdout);
 	}
 	else {
 		// update values
@@ -4271,7 +4279,7 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 		pad.map_leftstick_to_dpad = config.controller_map_lstick_to_dpad;
 		
 
-		if (has_custom_controllers) {
+		if (has_custom_controllers == 1) {
 			MenuItem* item = &OptionControls_menu.items[k++];
 			item->value = gamepad_type;
 		}
@@ -4449,8 +4457,15 @@ static int Menu_options(MenuList* list) {
 	int max_visible_options = (screen->h - ((SCALE1(PADDING + PILL_SIZE) * 2) + SCALE1(BUTTON_SIZE))) / SCALE1(BUTTON_SIZE); // 7 for 480, 10 for 720
 
 
-	int count;
-	for (count=0; items[count].name; count++);
+	int count = 0;
+	if (list->totalnum > 0) {
+		count = list->totalnum;
+	} else {
+	// count items
+		count = 0;
+		while (items[count].name) count++;
+	}
+	LOG_info("Detected COUNT Items = %d\n", count);fflush(stdout);
 	int selected = 0;
 	int start = 0;
 	int end = MIN(count,max_visible_options);
