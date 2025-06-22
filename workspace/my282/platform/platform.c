@@ -675,8 +675,12 @@ void PLAT_setCPUSpeed(int speed) {
 
 #define RUMBLE_PATH "/sys/devices/virtual/timed_output/vibrator/enable"
 
-void PLAT_setRumble(int strength) {
-	putInt(RUMBLE_PATH, strength?1000:0);
+void PLAT_setRumble(int effect, int strength) {
+	int val = ((80 - (1-effect)*45 ) * strength)>>16;
+	//LOG_info("Rumble effect: %i, strength: %i, val: %i\n", effect, strength, val);fflush(stdout);
+	if ((val > 10)|| (val == 0)) {
+		putInt(RUMBLE_PATH, val);
+	}
 }
 
 int PLAT_pickSampleRate(int requested, int max) {

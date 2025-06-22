@@ -402,7 +402,8 @@ static void Game_close(void) {
 	if (game.data) free(game.data);
 	if (game.tmp_path[0]) remove(game.tmp_path);
 	game.is_open = 0;
-	VIB_setStrength(0); // just in case
+	VIB_setStrength(0,0,0); // just in case
+	VIB_setStrength(0,1,0); // just in case
 }
 
 static struct retro_disk_control_callback disk_control;
@@ -1964,7 +1965,9 @@ static void Input_init(const struct retro_input_descriptor *vars) {
 
 static bool set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength) {
 	// TODO: handle other args? not sure I can
-	VIB_setStrength(strength);
+//	LOG_info("set_rumble_state: port %u, effect %u, strength %u\n", port, effect, strength);
+//	if (effect > 0)
+	VIB_setStrength(port,effect,strength);
 	return 1;
 }
 
@@ -5161,7 +5164,8 @@ static void Menu_loop(void) {
 	GFX_setEffect(EFFECT_NONE);
 	
 	int rumble_strength = VIB_getStrength();
-	VIB_setStrength(0);
+	VIB_setStrength(0,0,0);
+	VIB_setStrength(0,1,0);
 	
 	PWR_enableAutosleep();
 	PAD_reset();
@@ -5551,7 +5555,7 @@ static void Menu_loop(void) {
 		
 
 		setOverclock(overclock); // restore overclock value
-		if (rumble_strength) VIB_setStrength(rumble_strength);
+		if (rumble_strength) VIB_setStrength(0,0,rumble_strength);
 		
 		GFX_setVsync(prevent_tearing);
 		if (!HAS_POWER_BUTTON) PWR_disableSleep();

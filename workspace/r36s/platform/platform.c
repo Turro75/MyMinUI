@@ -60,6 +60,83 @@ struct input_event {
 };
 #define EV_KEY			0x01
 #define EV_ABS			0x03
+#define EV_FF			0x15
+
+struct ff_replay {
+	__u16 length;
+	__u16 delay;
+};
+
+struct ff_rumble_effect {
+	__u16 strong_magnitude;
+	__u16 weak_magnitude;
+};
+
+struct ff_envelope {
+	__u16 attack_length;
+	__u16 attack_level;
+	__u16 fade_length;
+	__u16 fade_level;
+};
+
+struct ff_constant_effect {
+	__s16 level;
+	struct ff_envelope envelope;
+};
+
+struct ff_periodic_effect {
+	__u16 waveform;
+	__u16 period;
+	__s16 magnitude;
+	__s16 offset;
+	__u16 phase;
+
+	struct ff_envelope envelope;
+
+	__u32 custom_len;
+	__s16 *custom_data;
+};
+struct ff_trigger {
+	__u16 button;
+	__u16 interval;
+};
+
+struct ff_ramp_effect {
+	__s16 start_level;
+	__s16 end_level;
+	struct ff_envelope envelope;
+};
+
+struct ff_condition_effect {
+	__u16 right_saturation;
+	__u16 left_saturation;
+
+	__s16 right_coeff;
+	__s16 left_coeff;
+
+	__u16 deadband;
+	__s16 center;
+};
+
+struct ff_effect {
+	__u16 type;
+	__s16 id;
+	__u16 direction;
+	struct ff_trigger trigger;
+	struct ff_replay replay;
+
+	union {
+		struct ff_constant_effect constant;
+		struct ff_ramp_effect ramp;
+		struct ff_periodic_effect periodic;
+		struct ff_condition_effect condition[2]; /* One for each axis */
+		struct ff_rumble_effect rumble;
+	} u;
+};
+
+#define FF_RUMBLE	0x50
+#define EVIOCGBIT(ev,len)	_IOC(_IOC_READ, 'E', 0x20 + (ev), len)	/* get event bits */
+#define EVIOCSFF	_IOC(_IOC_WRITE, 'E', 0x80, sizeof(struct ff_effect))	/* send a force effect to a force feedback device */
 
 #define NOMENU_PATH SYSTEM_PATH "/menumissing.txt"
 int menumissing = 0;
@@ -84,8 +161,40 @@ long map(int x, int in_min, int in_max, int out_min, int out_max) {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-void PLAT_initInput(void) {
+#define FF_MAX		0x7f
+#define FF_CNT		(FF_MAX+1)
 
+int testBit(int bit, const uint8_t arr[]) {
+    return arr[bit / 8] & (1 << (bit % 8));
+}
+int rumblefd = -1;
+int check_rumble(void){
+	char eventrumble[30];
+	int eventid = 0;
+	for (eventid = 0; eventid<6;eventid++){
+		sprintf(eventrumble, "/dev/input/event%d", eventid);
+		if (exists(eventrumble)) {
+			LOG_info("Checking %s for rumble support\n", eventrumble);fflush(stdout);
+			int fd = open(eventrumble, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+			if (fd >= 0) {
+				uint8_t mFfBitmask[FF_CNT / 8];
+				if (ioctl(fd, EVIOCGBIT(EV_FF,  sizeof(mFfBitmask)),  mFfBitmask) >= 0) {
+				//	if (features > 0) {
+					int x = testBit(FF_RUMBLE, mFfBitmask);
+						if (x>0) {
+							LOG_info("Rumble checked supported on %s\n", eventrumble);fflush(stdout);
+							rumblefd = open(eventrumble, O_RDWR | O_NONBLOCK | O_CLOEXEC);
+						}
+				}
+				close(fd);
+			}
+		}
+	}
+}
+
+
+void PLAT_initInput(void) {
+	check_rumble();
 	if (exists(NOMENU_PATH)) {
 		menumissing = 1;
 	}
@@ -151,6 +260,7 @@ void PLAT_quitInput(void) {
 	for (int i=0; i<INPUT_COUNT; i++) {
 		close(inputs[i]);
 	}
+	close(rumblefd);
 }
 
 void PLAT_pollInput(void) {
@@ -875,8 +985,47 @@ void PLAT_setCPUSpeed(int speed) {
 	}
 }
 
-void PLAT_setRumble(int strength) {
+
+enum retro_rumble_effect
+{
+   RETRO_RUMBLE_STRONG = 0,
+   RETRO_RUMBLE_WEAK = 1,
+   RETRO_RUMBLE_DUMMY = 10
+};
+
+static int rumblenum[2] = {-1,-1};
+void PLAT_setRumble(int effect, int strength) {
 	// buh
+	/* Create new or update old playing state. */
+    struct ff_effect e      = {0};
+	struct input_event play;
+    e.type   = FF_RUMBLE;
+    e.id     = rumblenum[effect];
+    e.replay.delay = 0;
+	e.replay.length = 0xc000; // 1 second    e.u.rumble.strong_magnitude = strength;
+	if (effect == RETRO_RUMBLE_STRONG) {
+		e.u.rumble.strong_magnitude = strength;
+	} else {
+		e.u.rumble.weak_magnitude = strength;
+	}
+
+//	LOG_info("Setting rumble %d effect %d with strength %d\n", rumblenum[effect], effect, strength);fflush(stdout);
+    //rumblenum++;
+	if (ioctl(rumblefd, EVIOCSFF, &e) < 0)
+	{
+	//	LOG_info("Failed to set rumble effect num %d\n", rumblenum);
+		return;
+	} else {
+		memset(&play,0,sizeof(play));
+		play.type = EV_FF;
+		play.code = e.id;
+		rumblenum[effect] = e.id;
+		play.value = 1;	
+		if (write(rumblefd, (const void*) &play, sizeof(play)) < sizeof(play)) {
+	//		LOG_info("Unable to Play rumble effect");fflush(stdout);
+			;
+		}
+	}
 }
 
 int PLAT_pickSampleRate(int requested, int max) {

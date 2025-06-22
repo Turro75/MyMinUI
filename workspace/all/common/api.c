@@ -1885,42 +1885,56 @@ int PAD_tappedMenu(uint32_t now) {
 static struct VIB_Context {
 	int initialized;
 	pthread_t pt;
-	int queued_strength;
+	int queued_strength[2];
 	int strength;
+	int effect;
 } vib = {0};
 static void* VIB_thread(void *arg) {
 #define DEFER_FRAMES 3
 	static int defer = 0;
 	while(1) {
 		SDL_Delay(17);
-		if (vib.queued_strength!=vib.strength) {
-			if (defer<DEFER_FRAMES && vib.queued_strength==0) { // minimize vacillation between 0 and some number (which this motor doesn't like)
+		if (vib.queued_strength[0]!=vib.strength) {
+			if (defer<DEFER_FRAMES && vib.queued_strength[0]==0) { // minimize vacillation between 0 and some number (which this motor doesn't like)
 				defer += 1;
 				continue;
 			}
-			vib.strength = vib.queued_strength;
+			vib.strength = vib.queued_strength[0];
 			defer = 0;
 
-			PLAT_setRumble(vib.strength);
+			PLAT_setRumble(vib.effect,vib.strength);
+			continue;
+		}
+		if (vib.queued_strength[1]!=vib.strength) {
+			if (defer<DEFER_FRAMES && vib.queued_strength[1]==0) { // minimize vacillation between 0 and some number (which this motor doesn't like)
+				defer += 1;
+				continue;
+			}
+			vib.strength = vib.queued_strength[1];
+			defer = 0;
+
+			PLAT_setRumble(vib.effect,vib.strength);
 		}
 	}
 	return 0;
 }
 void VIB_init(void) {
-	vib.queued_strength = vib.strength = 0;
+	vib.queued_strength[0] = vib.queued_strength[0] = vib.strength = 0;
 	pthread_create(&vib.pt, NULL, &VIB_thread, NULL);
 	vib.initialized = 1;
 }
 void VIB_quit(void) {
 	if (!vib.initialized) return;
 	
-	VIB_setStrength(0);
+	VIB_setStrength(0,0,0);
+	VIB_setStrength(0,1,0);
 	pthread_cancel(vib.pt);
 	pthread_join(vib.pt, NULL);
 }
-void VIB_setStrength(int strength) {
-	if (vib.queued_strength==strength) return;
-	vib.queued_strength = strength;
+void VIB_setStrength(int port, int effect, int strength) {
+	if (vib.queued_strength[effect]==strength) return;
+	vib.queued_strength[effect] = strength;
+	vib.effect = effect;
 }
 int VIB_getStrength(void) {
 	return vib.strength;

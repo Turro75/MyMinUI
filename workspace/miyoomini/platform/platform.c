@@ -25,8 +25,8 @@
 ///////////////////////////////
 // based on eggs GFXSample_rev15
 
-#include <mi_sys.h>
-#include <mi_gfx.h>
+//#include <mi_sys.h>
+//#include <mi_gfx.h>
 
 int is_plus = 0;
 int is_miniv4 = 0;
@@ -655,8 +655,8 @@ void PLAT_setCPUSpeed(int speed) {
 	}
 }
 
-void PLAT_setRumble(int strength) {
-    static char lastvalue = 0;
+void rumble_start(int strength){
+	static char lastvalue = 0;
     const char str_export[2] = "48";
     const char str_direction[3] = "out";
     char value[1];
@@ -672,6 +672,17 @@ void PLAT_setRumble(int strength) {
        if (fd > 0) { write(fd, value, 1); close(fd); }
        lastvalue = value[0];
     }
+}
+
+uint32_t rumble_stop(uint32_t interval, void *param) {
+	rumble_start(0);
+	return 0; // return 0 to stop the timer
+}
+
+void PLAT_setRumble(int effect, int strength) {
+	rumble_start(strength);
+	if (strength > 0)
+		SDL_AddTimer(((70-(1-effect)*60) * strength)>>16, rumble_stop, NULL);
 }
 
 int PLAT_pickSampleRate(int requested, int max) {

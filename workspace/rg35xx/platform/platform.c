@@ -608,14 +608,14 @@ void PLAT_setCPUSpeed(int speed) {
 	}
 }
 
-void PLAT_setRumble(int strength) {
-	int val = MAX(0, MIN((100 * strength)>>16, 100));
-	// LOG_info("strength: %8i (%3i/100)\n", strength, val);
-	int fd = open("/sys/class/power_supply/battery/moto", O_WRONLY);
-	if (fd>0) {
-		dprintf(fd, "%d", val);
-		close(fd);
-	}
+void PLAT_setRumble(int effect, int strength) {	
+		int val = ((70-(1-effect)*60) * strength)>>16;
+		//LOG_info("Rumble effect: %i, strength: %i, val: %i\n", effect, strength, val);fflush(stdout);
+		int fd = open("/sys/class/power_supply/battery/moto", O_WRONLY);
+		if (fd>0) {
+			dprintf(fd, "%d", val);
+			close(fd);
+		}
 }
 
 int PLAT_pickSampleRate(int requested, int max) {

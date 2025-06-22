@@ -353,8 +353,8 @@ int PAD_tappedMenu(uint32_t now); // special case, returns 1 on release of BTN_M
 
 void VIB_init(void);
 void VIB_quit(void);
-void VIB_setStrength(int strength);
- int VIB_getStrength(void);
+void VIB_setStrength(int port, int effect, int strength);
+int VIB_getStrength(void);
 	
 ///////////////////////////////
 
@@ -435,7 +435,7 @@ void PLAT_enableBacklight(int enable);
 void PLAT_powerOff(void);
 	
 void PLAT_setCPUSpeed(int speed); // enum
-void PLAT_setRumble(int strength);
+void PLAT_setRumble(int effect, int strength);
 int PLAT_pickSampleRate(int requested, int max);
 
 char* PLAT_getModel(void);
