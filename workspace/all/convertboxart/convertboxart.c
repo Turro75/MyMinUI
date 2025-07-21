@@ -98,6 +98,7 @@ int main(int argc, char* argv[]) {
     GFX_blitMessage(font.large, "Press A to Exit", screen, &(SDL_Rect){0,200,screen->w,screen->h-200});
 
     GFX_flip(screen);
+    PAD_init();
     // Wait for user's input
     while (!quit) {
         PAD_poll();
@@ -109,10 +110,10 @@ int main(int argc, char* argv[]) {
     }
 
     PWR_setCPUSpeed(CPU_SPEED_MENU);
-    QuitSettings();
+    QuitSettings();    
     PWR_quit();
     GFX_quit();
-
+    PAD_quit();
     return EXIT_SUCCESS;
 }
 
