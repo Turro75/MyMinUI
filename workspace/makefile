@@ -21,8 +21,8 @@ all:
 		cd ./$(PLATFORM)/keymon && make
 		cd ./$(PLATFORM)/cores && make
 		cd ./$(PLATFORM) && make
-		cd ./all/minui/ && make
 		cd ./all/minarch/ && make
+		cd ./all/minui/ && make
 		cd ./all/clock/ && make
 		cd ./all/minput/ && make
 		cd ./all/clear_recent/ && make

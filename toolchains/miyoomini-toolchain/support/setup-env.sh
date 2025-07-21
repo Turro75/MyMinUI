@@ -1,3 +1,4 @@
+ln -s /bin/sed /usr/bin/sed
 export UNION_PLATFORM=miyoomini
 export PATH="/opt/${UNION_PLATFORM}-toolchain/bin:${PATH}:/opt/${UNION_PLATFORM}-toolchain/arm-buildroot-linux-gnueabihf/sysroot/usr/bin"
 export CROSS_COMPILE=/opt/${UNION_PLATFORM}-toolchain/bin/arm-buildroot-linux-gnueabihf-
