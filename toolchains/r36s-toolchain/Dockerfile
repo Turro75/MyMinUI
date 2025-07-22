@@ -4,6 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Rome
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+RUN sed -i 's/deb.debian/archive.debian/' /etc/apt/sources.list
 RUN apt-get -y update && apt-get -y install \
 	bc \
     build-essential \
