@@ -909,7 +909,8 @@ Available frequency
 	
 }
 
-void PLAT_setRumble(int strength) {
+void PLAT_setRumble(int effect, int strength)
+{
 	// buh
 }
 
