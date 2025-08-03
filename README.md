@@ -14,6 +14,32 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+# Release 03/08/2025
+
+## All:
+
+  - Audio Fix, ensure the proper audio sync algo is loaded at game launch.
+
+  - fix convertboxart tool unable to exit
+
+  - update dockerfiles for correct toolchains creation (deb.debian repository moved to archive.debian)
+
+
+## Miyoomini, A30:
+
+  -  include Steward Fu NDS support, it brings several improvements compared to the pak released which was the version 1.8. To get it working You need to manually add the drastic binary (You can get it from steward fu 1.8 release file) to the Bios/NDS folder.
+
+  - add/refine rumble support
+
+  - Unfortunately the lack of spare time avoided me to bring NDS to the other platforms, it is one of the targets for a future release.
+
+
+## r36s, rg35xx: 
+  - add/refine rumble support
+
+
+
+
 # Release 25/05/2025
 
 ## All:
