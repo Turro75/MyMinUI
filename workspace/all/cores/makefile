@@ -16,6 +16,7 @@ endif
 #gpsp_HASH = 1d1c719
 fbneo_HASH = ffdacc6a
 puae_HASH = c68404c
+pokemini_HASH = 78656d46
 
 ###############################
 
