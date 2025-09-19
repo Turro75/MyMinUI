@@ -1,0 +1,42 @@
+diff --git a/Makefile b/Makefile
+index e400288..4c02536 100644
+--- a/Makefile
++++ b/Makefile
+@@ -165,6 +165,37 @@ else ifeq ($(platform), classic_armv8_a35)
+ 	LDFLAGS += -marm -mcpu=cortex-a35 -mfpu=neon-fp-armv8 -mfloat-abi=hard -Ofast -flto -fuse-linker-plugin
+ #######################################
+ 
++# miyoomini 
++else ifeq ($(platform), miyoomini)
++	TARGET := $(TARGET_NAME)_libretro.so
++	CC = $(CROSS_COMPILE)gcc
++   CXX = $(CROSS_COMPILE)g++
++   AR = $(CROSS_COMPILE)ar
++	fpic := -fPIC
++	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
++	FLAGS += -DARM -Ofast \
++	-flto=4 -fwhole-program -fuse-linker-plugin \
++	-fdata-sections -ffunction-sections -Wl,--gc-sections \
++	-fno-stack-protector -fno-ident -fomit-frame-pointer \
++	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
++	-fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
++	-fmerge-all-constants -fno-math-errno \
++	$(MYARCH)
++	HAVE_NEON = 1
++	ARCH = arm
++  LDFLAGS += -marm -mtune=cortex-a7 -mfpu=neon-vfpv4
++	ifeq ($(shell echo `$(CC) -dumpversion` "< 4.9" | bc -l), 1)
++	  CFLAGS += -march=armv7-a
++	else
++	  CFLAGS += -march=armv7ve
++	  # If gcc is 5.0 or later
++	  ifeq ($(shell echo `$(CC) -dumpversion` ">= 5" | bc -l), 1)
++	    LDFLAGS += -static-libgcc -static-libstdc++
++	  endif
++	endif
++######################################
++
++
+ # OS X
+ else ifeq ($(platform), osx)
+    TARGET := $(TARGET_NAME)_libretro.dylib

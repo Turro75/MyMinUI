@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo prboom mame2003-plus neocd
-CORES += a5200 a7800 a2600 dosbox tyrquake wonderswan puae #mesen # bmp2png 
+CORES += a5200 a7800 a2600 dosbox tyrquake wonderswan puae beetle_ngp #mesen # bmp2png 
 
 
 ###############################
@@ -12,6 +12,9 @@ CORES += a5200 a7800 a2600 dosbox tyrquake wonderswan puae #mesen # bmp2png
 # *_FLAGS=
 # *_MAKEFILE=
 # *_BUILD_PATH=
+
+beetle_ngp_REPO = https://github.com/libretro/beetle-ngp-libretro.git
+beetle_ngp_CORE = mednafen_ngp_libretro.so
 
 mesen_REPO = https://github.com/libretro/Mesen.git
 mesen_CORE = mesen_libretro.so

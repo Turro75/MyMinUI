@@ -1,6 +1,6 @@
 #!/bin/sh
 
-EMU_EXE=race
+EMU_EXE=mednafen_ngp
 
 RUN=minarch
 RUN2=minarch
