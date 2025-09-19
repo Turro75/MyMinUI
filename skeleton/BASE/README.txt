@@ -45,6 +45,28 @@ in the release file (i.e. MyMinUI-YYYYMMDDb-0-m21.zip) there is a folder called 
 Move (or copy) the file m21/emulationstation and m21/tomato to the root of the FAT32 partition created above.
 Copy also the whole release zip file (leave it zipped) in the FAT32 partition created above.
 
+
+The sdcard file structure is now:
+
+./tomato
+
+./emulationstation
+
+./MyMinUI-YYYYMMDDb-0-m21.zip
+
+./m21:
+binmusl			installing.png		thisism22		updating.png
+emulationstation	libmusl			tomato
+
+./m21/binmusl:
+amixer		fuse2fs		show.elf	unzip
+
+./m21/libmusl:
+libasound.so.2		libfuse.so.2		libSDL-1.2.so.0		libz.so.1
+libblkid.so.1		libpng16.so.16		libSDL2_image-2.0.so.0
+libcom_err.so.2		libSDL_image-1.2.so.0	libSDL2_ttf-2.0.so.0
+libext2fs.so.2		libSDL_ttf-2.0.so.0	libSDL2-2.0.so.0
+
 Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
 Once installation process is completed switch off the PWR switch to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
