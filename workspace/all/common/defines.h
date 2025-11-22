@@ -31,6 +31,7 @@
 #define HIDE_BOXART_IFSTATE_PATH SHARED_USERDATA_PATH "/hide-boxart-ifstate"
 #define AUTO_RESUME_PATH SHARED_USERDATA_PATH "/.minui/auto_resume.txt"
 #define AUTO_RESUME_SLOT 0
+#define GAME_SWITCHER_PERSIST_PATH SHARED_USERDATA_PATH "/.minui/game_switcher.txt"
 #define TOOLBOXART_CFGFILE SDCARD_PATH "/Tools/" THISPLATFORM "/Convert BoxArt.pak/toolboxart.cfg"
 #define GAMEBOXART_CFGFILE SDCARD_PATH "/Tools/" THISPLATFORM "/Convert BoxArt.pak/gameboxart.cfg"
 #define AUTO_RESUME_MODIFIER_PATH SHARED_USERDATA_PATH "/.minui/auto_resume_modifier.txt"
