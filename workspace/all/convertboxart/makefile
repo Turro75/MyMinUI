@@ -21,7 +21,7 @@ SDL?=SDL
 
 TARGET = convertboxart
 INCDIR = -I. -I../common/ -I../../$(PLATFORM)/platform/ $(MY_INCDIR)
-SOURCE =   $(TARGET).c ../common/utils.c ../common/api.c ../common/scaler.c ../common/$(SDL)_Rotozoom.c ../../$(PLATFORM)/platform/platform.c
+SOURCE =   $(TARGET).c ../common/utils.c ../common/api.c ../common/scaler.c ../common/$(SDL)_rotozoom.c ../../$(PLATFORM)/platform/platform.c
 SOURCE += ../common/pixman-arm-neon-asm.S
 INCDIR += -I../minarch/libretro-common/include/ 
 
