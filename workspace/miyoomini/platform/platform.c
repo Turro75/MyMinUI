@@ -440,14 +440,12 @@ void PLAT_pan(void) {
 	
 }
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
-
+	vid.page ^= 1;
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.screen->w;
 		vid.targetRect.h = vid.screen->h;
-		vid.page = 0;
-
 		if (vid.rotate == 0) 
 		{
 			// No Rotation
@@ -468,17 +466,15 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			// 270 Rotation
 			FlipRotate270(vid.screen, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
 		}
-		pan_display(vid.page); //to avoid flickering/tearing in menu.
+		//to avoid flickering/tearing in menu.
 	} else {
 		//the image must be rotated by 180° 
 		pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset*sync, vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
 		//FlipRotate000(vid.screengame, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
-		vid.renderingGame = 0;	
-		if (sync) {
-			pan_display(vid.page);
-			vid.page ^= 1;
-		}
-	}	
+		
+	}
+	vid.renderingGame = 0;	
+	pan_display(vid.page); 	
 }
 
 // TODO:

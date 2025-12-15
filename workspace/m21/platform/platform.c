@@ -715,6 +715,7 @@ void PLAT_pan(void) {
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
 //	vid.page=0;
+	vid.page ^= 1;
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
@@ -754,15 +755,14 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 //			//window
 //			convert_rgb565_to_argb8888_neon_rect(vid.screengame->pixels, vid.fbmmap[vid.page], vid.screengame->w, vid.screengame->w, vid.targetRect.x, vid.targetRect.y, vid.targetRect.w, vid.targetRect.h);
 //		}
-		vid.renderingGame = 0;
+		
 //		swap_buffers(vid.page);
 //		vid.page ^= 1;
 		
 	}	
-
+	vid.renderingGame = 0;
 	swap_buffers(vid.page);
 //	if (sync) pan_display(0);
-	vid.page ^= 1;
 	//LOG_info("Total Flip TOOK: %imsec, Draw TOOK: %imsec\n", SDL_GetTicks()-now, now2-now);fflush(stdout);
 }
 ///////////////////////////////

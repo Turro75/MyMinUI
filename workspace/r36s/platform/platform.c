@@ -590,6 +590,18 @@ SDL_Surface* PLAT_initVideo(void) {
 				h = 720;
 				p = 1440;
 			}
+			if ((conn->modes[c].vdisplay == 768) && (conn->modes[c].hdisplay == 1024) && (conn->modes[c].vrefresh == 61)) {
+				LOG_info("This is an r40xx pro max (4:3 4\"screen)\n");fflush(stdout);
+				DEVICE_WIDTH=1024;
+				DEVICE_HEIGHT=768;
+				DEVICE_PITCH=2048;
+				GAME_WIDTH=1024;
+				GAME_HEIGHT=768;
+				w = 1024;
+				h = 768;
+				p = 2048;
+				hz = 61;
+			}
 			LOG_info("Found ConnectorID %i : mode %ux%u@%dHz\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
 			if (conn->modes[c].vdisplay == h && conn->modes[c].hdisplay == w && conn->modes[c].vrefresh == hz) {
 				LOG_info("Selected ConnectorID %i : mode %ux%u@%dHz found\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
@@ -777,7 +789,7 @@ static void modeset_page_flip_event(int fd, unsigned int frame,
 }
 
 #define DRM_MODE_PAGE_FLIP_ASYNC 0x02
-void pan_display(int page) {
+void pan_display(int page, int sync) {
 	drmEventContext ev;
 	//struct timeval now,now2,now3;
 	
@@ -790,25 +802,29 @@ void pan_display(int page) {
 	//if no vsync FLAG =  DRM_MODE_PAGE_FLIP_ASYNC
 	// if vsync FLAG =  DRM_MODE_PAGE_FLIP_EVENT 
 	int flag = DRM_MODE_PAGE_FLIP_EVENT;
-	int ret = drmModePageFlip(vid.fdfb	, vid.crtc[vid.page], vid.fb[vid.page], flag, NULL);
+	if (!sync){
+		flag = DRM_MODE_PAGE_FLIP_ASYNC;
+		flipflag=0;
+	}
+	int ret = drmModePageFlip(vid.fdfb	, vid.crtc[page], vid.fb[page], flag, NULL);
 	while(flipflag){
 		drmHandleEvent(vid.fdfb, &ev);
 	}
 }
 void PLAT_pan(void) {
-//	pan_display(vid.page);
+//	pan_display(vid.page,1);
 //	vid.page = 1 - vid.page;
 }
 
 
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
+	vid.page ^= 1;
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.screen->w;
 		vid.targetRect.h = vid.screen->h;
-		vid.page = 0;
 		if (vid.rotate == 0)
 		{
 			// 90 Rotation
@@ -829,7 +845,6 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			// 270 Rotation
 			FlipRotate270(vid.screen, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
 		}
-		pan_display(vid.page); //to avoid flickerint/tearing in the menu
 	} else {
 		// No Rotation
 //		FlipRotate000(vid.screengame, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
@@ -840,28 +855,9 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			//window
 			convert_rgb565_to_argb8888_neon_rect(vid.screengame->pixels, vid.fbmmap[vid.page], vid.screengame->w, vid.screengame->w, vid.targetRect.x, vid.targetRect.y, vid.targetRect.w, vid.targetRect.h);
 		}
-		
-		vid.renderingGame = 0;
-		drmEventContext ev;
-		//struct timeval now,now2,now3;
-
-		/* init variables */
-		memset(&ev, 0, sizeof(ev));
-		ev.version = DRM_EVENT_CONTEXT_VERSION;
-		ev.page_flip_handler = modeset_page_flip_event;
-		int flag = DRM_MODE_PAGE_FLIP_ASYNC;
-		flipflag=sync;	
-		if (sync){
-			//if no vsync FLAG =  DRM_MODE_PAGE_FLIP_ASYNC
-			// if vsync FLAG =  DRM_MODE_PAGE_FLIP_EVENT 
-			flag = DRM_MODE_PAGE_FLIP_EVENT;
-		}
-		int ret = drmModePageFlip(vid.fdfb	, vid.crtc[vid.page], vid.fb[vid.page], flag, NULL);
-		while(flipflag){
-			drmHandleEvent(vid.fdfb, &ev);
-		}
-		//	LOG_info("Total Flip TOOK: %imsec, Draw TOOK: %imsec\n", SDL_GetTicks()-now, now2-now);
 	}
+	vid.renderingGame = 0;	
+	pan_display(vid.page,sync);
 }
 
 
@@ -1033,7 +1029,7 @@ int PLAT_pickSampleRate(int requested, int max) {
 }
 
 char* PLAT_getModel(void) {
-	return "R36S/353 ArkOS";
+	return "R36S/RG353 ArkOS";
 }
 
 int PLAT_isOnline(void) {

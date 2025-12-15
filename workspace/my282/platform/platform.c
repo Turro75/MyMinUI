@@ -414,30 +414,63 @@ SDL_Surface* PLAT_initVideo(void) {
 	LOG_info("vid.screengame: %ix%i\n", vid.screengame->w, vid.screengame->h);fflush(stdout);
 	LOG_info("vid.screen2: %ix%i\n", vid.screen2->w, vid.screen2->h);fflush(stdout);
 
+/*
+	int error_code;
+	for (int i = 0; i < 11; i++) {
+		int cnow = SDL_GetTicks();
+		usleep(7000);
+		pan_display(0);
+		printf("FBIOPAN_DISPLAY took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
+	}
+	
+	for (int i = 0; i < 11; i++) {
+		int cnow = SDL_GetTicks();
+		usleep(7000);
+		set_fbinfo();
+		printf("FBIOPUT_VSCREENINFO took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
+	}
+
+	for (int i = 0; i < 11; i++) {
+		int cnow = SDL_GetTicks();
+		usleep(7000);
+		int _;
+		error_code = ioctl(vid.fdfb, FBIOBLANK, &_); 
+		printf("FBIOBLANK took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
+	}
+	
+	for (int i = 0; i < 11; i++) {
+		int cnow = SDL_GetTicks();
+		usleep(7000);
+		int _;
+		error_code = ioctl(vid.fdfb, FBIO_WAITFORVSYNC, &_); 
+		printf("FBIO_WAITFORVSYNC took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
+	}
+
+*/
 	vid.page = 0;
 	pan_display(vid.page);
-	swap_buffers_init();
-	swap_buffers(vid.page);
+//	swap_buffers_init();
+//	swap_buffers(vid.page);
 	vid.renderingGame = 0;
 
 	vid.offset = vid.vinfo.yres * vid.finfo.line_length;
 	vid.screen_size = vid.offset;
 	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
    //create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
-   vid.fbmmap[0] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+   vid.fbmmap[0] = mmap(NULL, vid.screen_size*2, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
    if (vid.fbmmap[0] == MAP_FAILED) {
 	   LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
 	   //return NULL;
    }
-   vid.fbmmap[1] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
-   if (vid.fbmmap[1] == MAP_FAILED) {
-	   LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
-	   //return NULL;
-   }
+//   vid.fbmmap[1] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+//   if (vid.fbmmap[1] == MAP_FAILED) {
+//	   LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
+//	   //return NULL;
+//   }
    LOG_info("Address vid.fbmmap[0]: %p\n", vid.fbmmap[0]);fflush(stdout);
-   LOG_info("Address vid.fbmmap[1]: %p\n", vid.fbmmap[1]);fflush(stdout);
-   swap_buffers_init();
-   swap_buffers(vid.page);
+//   LOG_info("Address vid.fbmmap[1]: %p\n", vid.fbmmap[1]);fflush(stdout);
+ //  swap_buffers_init();
+ //  swap_buffers(vid.page);
 	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
 }
@@ -447,7 +480,7 @@ void PLAT_quitVideo(void) {
 	SDL_FreeSurface(vid.screen2);
 	SDL_FreeSurface(vid.screengame);
 	munmap(vid.fbmmap[0], 0);
-	munmap(vid.fbmmap[1], 0);
+//	munmap(vid.fbmmap[1], 0);
 	close(vid.dispfd);	
     close(vid.fdfb);
 }
@@ -462,8 +495,8 @@ void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
-	memset(vid.fbmmap[0], 0, vid.screen_size);
-	memset(vid.fbmmap[1], 0, vid.screen_size);
+	memset(vid.fbmmap[0], 0, vid.screen_size*2);
+//	memset(vid.fbmmap[1], 0, vid.screen_size);
 }
 
 void PLAT_setVsync(int vsync) {
@@ -502,7 +535,7 @@ void PLAT_vsync(int remaining) {
 	if (remaining>0) {
 		usleep(remaining*1000);
 	} else {
-		pan_display(0);
+		pan_display(vid.page);
 	}
 }
 
@@ -538,44 +571,43 @@ void PLAT_pan(void) {
 }
 
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
+	vid.page ^= 1;
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.screen->w;
 		vid.targetRect.h = vid.screen->h;
-		vid.page = 0;	
+		//vid.page = 0;	
 		if (vid.rotate == 0) 
 		{
 			// No Rotation
-			FlipRotate000(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
+			FlipRotate000(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 		}
 		if (vid.rotate == 1)
 		{
 			// 90 Rotation
-			FlipRotate090(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
+			FlipRotate090(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 		}
 		if (vid.rotate == 2)
 		{
 			// 180 Rotation
-			FlipRotate180(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
+			FlipRotate180(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 		}
 		if (vid.rotate == 3)
 		{
 			// 270 Rotation
-			FlipRotate270(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
+			FlipRotate270(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 		}
-		pan_display(0); //to avoid tearing/flickering in the menu
-		swap_buffers(vid.page);		
+		 //to avoid tearing/flickering in the menu
+		
+	//	swap_buffers(vid.page);		
 	} else {
-		pixman_composite_src_0565_8888_asm_neon(vid.screengame->w,vid.screengame->h, vid.fbmmap[vid.page], vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
+		pixman_composite_src_0565_8888_asm_neon(vid.screengame->w,vid.screengame->h, vid.fbmmap[0]+vid.offset*vid.page, vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
 		//FlipRotate000(vid.screengame, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
-		vid.renderingGame = 0;
-		if (sync) {
-			pan_display(0);
-		}
-		swap_buffers(vid.page);
-		vid.page ^= 1;	
+		
 	}
+	vid.renderingGame = 0;		
+	pan_display(vid.page);
 }
 
 

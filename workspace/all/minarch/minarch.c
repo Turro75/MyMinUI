@@ -59,6 +59,7 @@ static int waitforthread = 0;
 static int loadgamesuccess = 0;
 static int can_dupe = false;
 uint32_t *mutedaudiodata;
+uint64_t starttimervalue;
 
 static pthread_t		core_pt, flip_pt;
 static pthread_mutex_t	core_mx, flip_mx;
@@ -1703,6 +1704,8 @@ int waiting_for_thread_stop = 0;
 
 static void wait_For_Thread(void) {
 	//at first stop running core.run
+	uint64_t invalue = getMicroseconds();
+	LOG_info("wait_For_Thread IN @ %lluusec: render = %i - rendering = %i\n",invalue-starttimervalue, render,rendering);fflush(stdout);
 	waiting_for_thread_stop = 1;
 //	LOG_info("wait_For_Thread IN0: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	pthread_mutex_lock(&core_mx);
@@ -1710,7 +1713,7 @@ static void wait_For_Thread(void) {
 	pthread_mutex_unlock(&core_mx);
 	//wait 50msecs to be sure the core has stopped 
 //	LOG_info("wait_For_Thread IN1: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
-	usleep(25000);
+//	usleep(25000);
 //	LOG_info("wait_For_Thread IN2: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	//rendering = 1;
 	//signal the core thread to unlock the main thread and render the last frame
@@ -1719,9 +1722,9 @@ static void wait_For_Thread(void) {
 	pthread_mutex_unlock(&core_mx);
 //	LOG_info("wait_For_Thread IN3: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	//wait 25msecs to be sure the flip thread has renderer the last frame
-	usleep(25000);
+//	usleep(25000);
 //	LOG_info("wait_For_Thread IN4: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
-	int rendering2 = 1000;
+	int rendering2 = 500;
 	//check if render and renderer are both 0, wait at least 1000msecs the go forward
 	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
 		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);fflush(stdout);
@@ -1729,9 +1732,11 @@ static void wait_For_Thread(void) {
 		rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
 	}
 //	LOG_info("wait_For_Thread IN5: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
-	rendering = 0;
-	render = 0;
+//	rendering = 0;
+//	render = 0;
 	waiting_for_thread_stop = 0;
+	LOG_info("wait_For_Thread OUT took %lluusec: render = %i - rendering = %i\n",getMicroseconds()-invalue, render,rendering);
+	fflush(stdout);
 }
 
 
@@ -1833,10 +1838,6 @@ static void input_poll_callback(void) {
 	if (!ignore_menu && PAD_justReleased(BTN_MENU)) {
 		show_menu = 1;
 		//firstmenu = 1;
-
-		if (thread_video) {	
-			wait_For_Thread();
-		}
 	}
 	
 	// TODO: figure out how to ignore button when MENU+button is handled first
@@ -3336,7 +3337,7 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 	int callback_time = SDL_GetTicks();
 //	storage_audio_timing[_x][2] = callback_time;
 	//LOG_info("video_refresh_callback IN elapsed %lums width:%i height:%i pitch:%i ABS:%i\n", callback_time-last_callback_time ,width,height,pitch, callback_time);fflush(stdout);
-	if (!data || show_menu) {
+	if (!data) {
 		//LOG_info("Empty Frame\n");fflush(stdout);
 		return; //frameskip activated?
 	}
@@ -5121,28 +5122,11 @@ static int getAlias(char* path, char* alias) {
 static void Menu_loop(void) {
 
 	LOG_info("Entering Menu render= %i - rendering= %i\n",render,rendering);fflush(stdout);
-	//wait_For_Thread();
-/*	int rendering2 = 1500;
-	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
-		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);fflush(stdout);
-		usleep(1000);
-		rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
-	}
-	rendering = 0;
-	render = 0;*/
-	if (firstmenu) PLAT_clearAll();
+	if (thread_video==1) {	
+			wait_For_Thread();
+		}
+	if (firstmenu) PLAT_clearAll(); //useless?
 	firstmenu = 0;
-	//SDL_FillRect(screengame, NULL, 0xFFFF0000);
-//	menu.bitmap = SDL_CreateRGBSurfaceFrom(screengame->pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, DEVICE_PITCH, RGBA_MASK_565);
-//	LOG_info("Create tmpbitmap\n");fflush(stdout);
-	//check if the bitmap must be rotated:
-//	int gamerot, screenrot;
-	//gamerot = PLAT_getScreenRotation(1);
-	//screenrot = PLAT_getScreenRotation(0);
-	//if (gamerot!=screenrot) {
-		//menu.bitmap must be rotated
-	//}
-	//menu.bitmap = rotateSurface90Degrees(screengame, 3);
 	menu.bitmap = rotozoomSurface(screengame, (4-PLAT_getScreenRotation(1))*90.0, 1.0, 1);
 	SDL_Surface* backing = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH,DEVICE_HEIGHT,FIXED_DEPTH,RGBA_MASK_565); 
 	SDL_BlitSurface(menu.bitmap, NULL, backing, NULL);
@@ -5563,6 +5547,8 @@ static void Menu_loop(void) {
 
 		if (thread_video) {
 			LOG_info("Exiting menu, returning to video_thread\n");fflush(stdout);
+			render = 0;
+			rendering = 0;
 			pthread_mutex_lock(&core_mx);
 			should_run_core = 1;
 			pthread_mutex_unlock(&core_mx);		
@@ -5747,6 +5733,7 @@ static void resetFPSCounter() {
 
 
 int main(int argc , char* argv[]) {
+	starttimervalue = getMicroseconds();
 	LOG_info("MinArch Date:%s Commit:%s\n", BUILD_DATE, BUILD_HASH);
 	cpu_set_t maint;
 	IS_MINARCH=1;

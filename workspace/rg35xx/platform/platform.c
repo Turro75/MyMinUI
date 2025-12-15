@@ -471,13 +471,13 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	}
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
-
+	vid.page ^= 1;
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.screen->w;
 		vid.targetRect.h = vid.screen->h;
-		vid.page = 0;
+		//vid.page = 0;
 		if (vid.rotate == 0)
 		{
 			// 90 Rotation
@@ -515,7 +515,6 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			PLAT_vsync(0);
 		}
 		pan_display(vid.page);
-		vid.page ^= 1;
 	}	
 //	LOG_info("FLIP_VIDEO took %imsec\n", SDL_GetTicks()-now);fflush(stdout);
 }
