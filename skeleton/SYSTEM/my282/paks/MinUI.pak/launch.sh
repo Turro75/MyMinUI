@@ -4,6 +4,7 @@ export PLATFORM="my282"
 export SDCARD_PATH="/mnt/SDCARD"
 export BIOS_PATH="$SDCARD_PATH/Bios"
 export SAVES_PATH="$SDCARD_PATH/Saves"
+export CHEATS_PATH="$SDCARD_PATH/Cheats"
 export SYSTEM_PATH="$SDCARD_PATH/.system/$PLATFORM"
 export CORES_PATH="$SYSTEM_PATH/cores"
 export USERDATA_PATH="$SDCARD_PATH/.userdata/$PLATFORM"
@@ -47,6 +48,7 @@ keymon.elf & #> $LOGS_PATH/keymon.txt 2>&1 &
 #######################################
 
 mkdir -p "$LOGS_PATH"
+mkdir -p "$CHEATS_PATH"
 mkdir -p "$SHARED_USERDATA_PATH/.minui"
 AUTO_PATH="$USERDATA_PATH/auto.sh"
 if [ -f "$AUTO_PATH" ]; then

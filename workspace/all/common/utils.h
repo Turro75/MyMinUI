@@ -50,4 +50,9 @@ int getHdmiModeValues(char * hdmimode, int *w, int *h, int *hz);
 
 uint64_t getMicroseconds(void);
 
+//add cheat support
+void truncateString(char *string, size_t max_len);
+void wrapString(char *string, size_t max_len, size_t max_lines);
+//end of add cheat support
+
 #endif
