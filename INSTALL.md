@@ -130,6 +130,8 @@ While in EmulationStation go to options->Tools then run the tool EnableMyMinUI.s
 at reboot the installation process will start showing the screen "installing MyMinUI..."
 Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
+The r36s platform supports: Anbernic rg353p(s), v(s) and m while arc is not tested, GameConsole r36s, r36sPlus (4" 1:1) and r40xx pro max (4" 4:3).
+
 
 # Share sdcard across other devices:
 
