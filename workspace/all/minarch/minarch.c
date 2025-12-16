@@ -635,7 +635,7 @@ finish:
 #define CHEAT_MAX_LIST_LENGTH (CHEAT_MAX_PATHS * MAX_PATH)
 static void Cheat_getPaths(char paths[CHEAT_MAX_PATHS][MAX_PATH], int* count) {
 	// Generate possible paths, ordered by most likely to be used (pre v6.2.3 style first)
-	sprintf(paths[(*count)++], "%s/%s.cht", core.cheats_dir, game.name); // /mnt/SDCARD/Cheats/GB/Super Example World.<ext>.cht
+	sprintf(paths[(*count)++], "%s/%s.cht", core.cheats_dir, game.fullname); // /mnt/SDCARD/Cheats/GB/Super Example World (USA).cht
 
 	// Respect map.txt: use alias if available
 	// eg. 1941.zip	-> 1941: Counter Attack
