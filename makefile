@@ -81,6 +81,7 @@ setup:
 	cp -R ./skeleton/SYSTEM/$(PLATFORM) ./build/SYSTEM/$(PLATFORM)
 	cp -R ./skeleton/EXTRAS/Bios ./build/EXTRAS/Bios
 	cp -R ./skeleton/EXTRAS/Roms ./build/EXTRAS/Roms
+	cp -R ./skeleton/EXTRAS/Cheats ./build/EXTRAS/Cheats
 #	cp -R ./skeleton/EXTRAS/Saves ./build/EXTRAS/Saves
 	cp -R ./skeleton/EXTRAS/Emus/$(PLATFORM) ./build/EXTRAS/Emus/$(PLATFORM)
 	cp -R ./skeleton/EXTRAS/Tools/$(PLATFORM) ./build/EXTRAS/Tools/$(PLATFORM)
@@ -143,7 +144,7 @@ specialpackage: tidy
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
 	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
-	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 trimui rg35xxplus r36s m21 gkdpixel em_ui.sh MinUI.zip README.txt
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Cheats Saves Tools miyoo miyoo354 trimui rg35xxplus r36s m21 gkdpixel em_ui.sh MinUI.zip README.txt
 	
 	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt
@@ -191,7 +192,7 @@ package: tidy
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
 	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
-	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 m21 r36s rg35xx MinUI.zip README.txt
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Cheats Tools miyoo miyoo354 m21 r36s rg35xx MinUI.zip README.txt
 	
 	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt
