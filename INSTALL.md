@@ -96,7 +96,11 @@ The TF1 sdcard is used to boot MinUI while the second is used to store minui, al
 
 # R36S Single SDCard method:
 
-MyMinUI is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
+The r36s platform supports: Anbernic rg353p(s), v(s) and m while arc is not tested, GameConsole r36s, r36sPlus (4" 1:1) and r40xx pro max (4" 4:3).
+
+MyMinUI for r36s is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
+MyMinUI for rg353x is built over the latest official ArkOS image for available here at the end of the page: 
+https://github.com/christianhaitian/arkos/wiki
 
 At first You must install ArkOS, follow installation instructions provided by ArkOS support page. If You have a wifi dongle configure now the network to get is working even in MyMinUI.
 
@@ -111,9 +115,15 @@ at reboot the installation process will start showing the screen "installing MyM
 Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
 
+
+
 # R36S Two SDCard method:
 
-MyMinUI is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
+The r36s platform supports: Anbernic rg353p(s), v(s) and m while arc is not tested, GameConsole r36s, r36sPlus (4" 1:1) and r40xx pro max (4" 4:3).
+
+MyMinUI for r36s is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
+MyMinUI for rg353x is built over the latest official ArkOS image available at the end of the page: 
+https://github.com/christianhaitian/arkos/wiki
 
 On the FIRST sdcard You must install ArkOS, follow installation instructions provided by ArkOS support page. If You have a wifi dongle configure now the network to get is working even in MyMinUI.
 

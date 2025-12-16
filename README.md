@@ -14,6 +14,32 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+# Release 16/12/2025
+
+### All: 
+
+- added cheats support, thanks to [hong19860320](https://github.com/hong19860320) who made a PR to MinUI (rejected by MinUI dev) that allowed me to add cheats support with a minimal effort. 
+- move from race to beetle_ngp as core for neo geo pocket and neo geo pocket color, this breaks compatibility of the existing saved states.
+- thanks to [charveey](https://github.com/Turro75/MyMinUI/commits?author=charveey) for this fix https://github.com/Turro75/MyMinUI/commit/95927d84811e9a42f6760f82fffe11d89376b25d that prevented building of the convertboxart tool.
+
+### R36s:
+
+- added support for the GameConsole R40XX Pro Max  (4" 4:3 display)
+- solved the massive screen tearing by adding a true screen flip.
+- fixed a bug in minarch that prevented the menu drawing while entering the menu on prboom
+
+### Miyoo A30:
+
+- reverted back to the framebuffer screen flip based on virtual y res instead of layer approach fixing the massive screen tearing of the recent releases.
+
+
+### RG35XX, M21, MiyooMini:
+
+- modified the render process to have the same flow for all platforms.
+
+
+
+
 # Release 03/08/2025
 
 ## All:
