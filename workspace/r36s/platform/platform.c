@@ -748,9 +748,12 @@ void PLAT_setEffect(int effect) {
 	next_effect = effect;
 }
 void PLAT_vsync(int remaining) {
-//	if (remaining>0) usleep(remaining*1000);
-	int res = 0;
-	ioctl(vid.fdfb, FBIOBLANK, &res);
+	if (remaining>0) {
+		usleep(remaining*1000);
+	} else {
+		int res = 0;
+		ioctl(vid.fdfb, FBIOBLANK, &res);
+	}
 }
 
 scaler_t PLAT_getScaler(GFX_Renderer* renderer) {

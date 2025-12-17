@@ -671,7 +671,7 @@ void PLAT_vsync(int remaining) {
 	if (remaining>0) {
 		usleep(remaining*1000);
 	} else {
-//		pan_display(0);
+		pan_display(0);
 	}
 }
 
