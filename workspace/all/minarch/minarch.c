@@ -1074,6 +1074,7 @@ enum {
 	SHORTCUT_CYCLE_EFFECT,
 	SHORTCUT_TOGGLE_FF,
 	SHORTCUT_HOLD_FF,
+	SHORTCUT_GAMESWITCHER,
 	SHORTCUT_COUNT,
 };
 
@@ -1349,6 +1350,7 @@ static struct Config {
 		[SHORTCUT_CYCLE_EFFECT]			= {"Cycle Effect",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_TOGGLE_FF]			= {"Toggle FF",			-1, BTN_ID_NONE, 0},
 		[SHORTCUT_HOLD_FF]				= {"Hold FF",			-1, BTN_ID_NONE, 0},
+		[SHORTCUT_GAMESWITCHER] 		= {"Game Switcher", 	-1, BTN_ID_NONE, 0},
 		{NULL}
 	},
 	.controller_map_abxy_to_rstick = 0,
@@ -2063,6 +2065,14 @@ static void input_poll_callback(void) {
 		ignore_menu = 1;
 	}
 	
+	if (PAD_isPressed(BTN_MENU) && PAD_isPressed(BTN_SELECT)) {
+		ignore_menu = 1;
+		Menu_saveState();
+		putFile(GAME_SWITCHER_PERSIST_PATH, game.path + strlen(SDCARD_PATH));
+		GFX_clear(screen);
+		quit = 1;
+	}
+
 	if (PAD_justPressed(BTN_POWER)) {
 		if (thread_video) {
 
@@ -2118,7 +2128,12 @@ static void input_poll_callback(void) {
 						Menu_saveState();
 						quit = 1;
 						break;
-					case SHORTCUT_CYCLE_SCALE:
+					case SHORTCUT_GAMESWITCHER:
+						Menu_saveState();
+						putFile(GAME_SWITCHER_PERSIST_PATH, game.path + strlen(SDCARD_PATH));
+						quit = 1;
+						break;
+						case SHORTCUT_CYCLE_SCALE:
 						screen_scaling += 1;
 						if (screen_scaling>=SCALE_COUNT) screen_scaling -= SCALE_COUNT;
 						Config_syncFrontend(config.frontend.options[FE_OPT_SCALING].key, screen_scaling);
