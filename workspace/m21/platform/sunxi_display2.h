@@ -426,6 +426,14 @@ typedef enum
     DISP_TV_SVIDEO  = 4,
 }disp_tv_output;
 
+
+#define DISP_LAYER_WORK_MODE_NORMAL 0
+#define DISP_LAYER_WORK_MODE_SCALER 4
+#define DISP_CMD_VERSION 0x00
+#define DISP_CMD_LAYER_REQUEST  0x40
+#define DISP_CMD_LAYER_RELEASE  0x41
+
+
 typedef enum tag_DISP_CMD
 {
 	//----disp global----

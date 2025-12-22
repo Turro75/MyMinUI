@@ -389,11 +389,28 @@ int getHDMIStatus(void) {
 }
 
 disp_layer_config config;
+static int platform_layer_id = -1;
 int swap_buffers_init(void){
 	memset(&config, 0, sizeof(config));
+	/* try to request a free layer from disp driver */
+	if (vid.dispfd >= 0) {
+		uint32_t req[2];
+		req[0] = 0; /* fb_id 0 */
+		req[1] = DISP_LAYER_WORK_MODE_NORMAL;
+		int lid = ioctl(vid.dispfd, DISP_CMD_LAYER_REQUEST, &req);
+		if (lid >= 0) {
+			platform_layer_id = lid;
+			config.layer_id = lid;
+			LOG_info("Requested display layer %d\n", lid);
+		} else {
+			LOG_info("Layer request failed (%d), falling back to layer 0\n", lid);
+			config.layer_id = 0;
+		}
+	} else {
+		config.layer_id = 0;
+	}
 
-    config.channel = 0;
-    config.layer_id = 0; // Layer 0
+	config.channel = 0;
     config.enable = 1;
 	config.info.fb.align[0] = 4;//bytes
     config.info.mode = LAYER_MODE_BUFFER;
@@ -416,16 +433,34 @@ int swap_buffers_init(void){
     config.info.screen_win.height = GAME_HEIGHT;
 }
 // Funzione per swappare i buffer
+int firstswap = 1;
 void swap_buffers(int page)
 {
 	unsigned long arg[3];
  //   swap_buffers_init();
-    config.info.fb.addr[0] = (uintptr_t)vid.fbmmap[page];
+	// The Sunxi driver expects physical framebuffer addresses (smem_start),
+	// not virtual mmap pointers. Use fb fixed info smem_start + page offset.
+//	if (vid.fdfb >= 0) {
+//		config.info.fb.addr[0] = (uintptr_t)vid.finfo.smem_start + ((uintptr_t)page * (uintptr_t)vid.offset);
+//	} else {
+		config.info.fb.addr[0] = (uintptr_t)vid.fbmmap[page];
+//	}
 
-    arg[0] = 0;//screen 0
+	arg[0] = 0; // screen 0 (fb id)
 	arg[1] = (unsigned long)&config;
-	arg[2] = 1; //one layer
-	int ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, (void*)arg);
+	arg[2] = 1; // one layer
+	int ret = -1;
+	if (vid.dispfd >= 0) {
+		ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, (void*)arg);
+		if (firstswap == 1) {
+			firstswap = 0;
+			LOG_info("First swap_buffers completed\n");
+			LOG_info("swap_buffers: page=%d layer=%d platform_layer_id=%d ioctl_ret=%d\n", page, config.layer_id, platform_layer_id, ret);
+			LOG_info("swap_buffers: fb_paddr=0x%08lx fb_mmap=%p finfo.smem_start=0x%08lx offset=%u\n", (unsigned long)config.info.fb.addr[0], vid.fbmmap[page], (unsigned long)vid.finfo.smem_start, (unsigned)vid.offset);
+			fflush(stdout);
+		}
+	}
+		
 	//LOG_info("Swap_buffers retvalue = %d\n", ret);fflush(stdout);
 }
 
@@ -590,6 +625,8 @@ SDL_Surface* PLAT_initVideo(void) {
 		LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
 		//return NULL;
 	}
+	/* Map the second page at an offset equal to one page size so the two
+	   mappings refer to distinct framebuffer pages. */
 	vid.fbmmap[1] = mmap(NULL, vid.offset, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 	if (vid.fbmmap[1] == MAP_FAILED) {
 		LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
@@ -616,9 +653,19 @@ void PLAT_quitVideo(void) {
 
 //	SDL_FreeSurface(page[0]);
 //	SDL_FreeSurface(page[1]);
-	munmap(vid.fbmmap[0], 0);
-	munmap(vid.fbmmap[1], 0);	
-    close(vid.fdfb);
+	if (vid.fbmmap[0] && vid.fbmmap[0] != MAP_FAILED) munmap(vid.fbmmap[0], vid.offset);
+	if (vid.fbmmap[1] && vid.fbmmap[1] != MAP_FAILED) munmap(vid.fbmmap[1], vid.offset);
+	if (platform_layer_id >= 0 && vid.dispfd >= 0) {
+		uint32_t rel[2];
+		rel[0] = 0; /* fb id */
+		rel[1] = platform_layer_id;
+		ioctl(vid.dispfd, DISP_CMD_LAYER_RELEASE, &rel);
+		LOG_info("Released display layer %d\n", platform_layer_id);
+		platform_layer_id = -1;
+	}
+
+	if (vid.fdfb >= 0) close(vid.fdfb);
+	if (vid.dispfd >= 0) close(vid.dispfd);
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {
@@ -721,7 +768,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.screen->w;
 		vid.targetRect.h = vid.screen->h;
-		//vid.page = 0;
+//		vid.page = 0;
 		if (vid.rotate == 0)
 		{
 			// 90 Rotation

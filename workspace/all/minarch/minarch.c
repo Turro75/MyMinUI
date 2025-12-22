@@ -60,7 +60,6 @@ static int waitforthread = 0;
 static int loadgamesuccess = 0;
 static int can_dupe = false;
 uint32_t *mutedaudiodata;
-uint64_t starttimervalue;
 
 static pthread_t		core_pt, flip_pt;
 static pthread_mutex_t	core_mx, flip_mx;
@@ -2005,8 +2004,6 @@ int waiting_for_thread_stop = 0;
 
 static void wait_For_Thread(void) {
 	//at first stop running core.run
-	uint64_t invalue = getMicroseconds();
-	LOG_info("wait_For_Thread IN @ %lluusec: render = %i - rendering = %i\n",invalue-starttimervalue, render,rendering);fflush(stdout);
 	waiting_for_thread_stop = 1;
 //	LOG_info("wait_For_Thread IN0: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	pthread_mutex_lock(&core_mx);
@@ -2025,7 +2022,7 @@ static void wait_For_Thread(void) {
 	//wait 25msecs to be sure the flip thread has renderer the last frame
 //	usleep(25000);
 //	LOG_info("wait_For_Thread IN4: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
-	int rendering2 = 500;
+	int rendering2 = 100;
 	//check if render and renderer are both 0, wait at least 1000msecs the go forward
 	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
 		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);fflush(stdout);
@@ -2033,11 +2030,9 @@ static void wait_For_Thread(void) {
 		rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
 	}
 //	LOG_info("wait_For_Thread IN5: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
-//	rendering = 0;
-//	render = 0;
+	rendering = 0;
+	render = 0;
 	waiting_for_thread_stop = 0;
-	LOG_info("wait_For_Thread OUT took %lluusec: render = %i - rendering = %i\n",getMicroseconds()-invalue, render,rendering);
-	fflush(stdout);
 }
 
 
@@ -3334,11 +3329,41 @@ static char cpuload[128];
 		
 static uint32_t sec_start = 0;
 
-#ifdef USES_SWSCALER
-	static int fit = 1;
-#else
-	static int fit = 0;
-#endif	
+
+
+static long a[9];
+static long up[5], up1[5], idle[5], idle1[5];
+void getCPUusage(char * data) {
+	int counter;
+  	int i;
+  	float load;
+  	FILE* fp;
+  	char *scrap;
+	data[0] = '\0';
+	scrap=(char *)malloc(15);
+    fp = fopen ("/proc/stat", "r");
+	for (counter = 0; counter <= processors; counter++)
+    {
+       up1[counter]=0;
+       fscanf (fp, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld",scrap,&a[0],&a[1],&a[2],&a[3],&a[4],&a[5],&a[6],&a[7],&a[8],&a[9]);
+       if (strncmp(scrap,"cpu",3) != 0) break;
+	   if (counter < 1) continue;
+       for (i =0; i < 8; i++) up1[counter]+= a[i];
+       idle1[counter] = a[3]+a[4];
+       up[counter]=up1[counter]-up[counter];
+       idle[counter]=idle1[counter]-idle[counter];
+       load=((float)(up[counter]-idle[counter])/(float)up[counter])*100.0;
+// now you have the load..
+        sprintf(data,"%s%03.0f%%", data, load);
+        //if (counter == processors) printf("\n");
+// update staic variables for next loop
+       up[counter]=up1[counter];
+       idle[counter]=idle1[counter];
+     }
+	fclose(fp);
+	
+}
+
 
 void video_refresh_callback_rotate(int rotation, void *data, unsigned width, unsigned height, size_t pitch) {
 	//int x, y, thispitch;
@@ -3534,6 +3559,8 @@ static void chooseSyncRef(void) {
 		  );
 }
 
+static uint32_t _now = 0;
+static uint32_t sec_start2 = 0;
 static uint32_t last_flip_time = 0;
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
 //	uint32_t now = SDL_GetTicks();
@@ -3587,15 +3614,16 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		blitBitmapText(debug_text,-2,renderer.dst_y+2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 
 		sprintf(debug_text, "%.0f/%.0f", fps_double,fps2_double);
-//#ifdef M21
-#if 1
-		blitBitmapText(debug_text,renderer.dst_x+2,-2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
-#else
-		blitBitmapText(debug_text,2,-21,screen->pixels,screen->pitch/2, screen->w,screen->h);
+		blitBitmapText(debug_text,renderer.dst_x+2,-22,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 
-		sprintf(debug_text, "%s", cpuload);
-		blitBitmapText(debug_text,2,-2,screen->pixels,screen->pitch/2, screen->w,screen->h);
-#endif
+		_now = SDL_GetTicks();
+
+		if ((_now - sec_start2 ) >=1000) {
+			sec_start2 = _now;
+			getCPUusage(cpuload);
+		}	
+		blitBitmapText(cpuload,renderer.dst_x+2,-2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+
 		sprintf(debug_text, "%s %i", effect_str,renderer.rotategame*90);
 		blitBitmapText(debug_text,-2,-2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
 	}
@@ -4782,6 +4810,7 @@ static int OptionQuicksave_onConfirm(MenuList* list, int i) {
 
 static int OptionCheats_optionChanged(MenuList* list, int i) {
 	MenuItem* item = &list->items[i];
+	if (i < 0 || (size_t)i >= cheatcodes.count) return MENU_CALLBACK_NOP;
 	struct Cheat *cheat = &cheatcodes.cheats[i];
 	cheat->enabled = item->value;
 	Core_applyCheats(&cheatcodes);
@@ -4790,10 +4819,11 @@ static int OptionCheats_optionChanged(MenuList* list, int i) {
 
 static int OptionCheats_optionDetail(MenuList* list, int i) {
 	MenuItem* item = &list->items[i];
+	if (i < 0 || (size_t)i >= cheatcodes.count) return MENU_CALLBACK_NOP;
 	struct Cheat *cheat = &cheatcodes.cheats[i];
 	if (cheat->info)
 		return Menu_message((char*)cheat->info, (char*[]){ "B","BACK", NULL });
-	else return MENU_CALLBACK_NOP;
+	return MENU_CALLBACK_NOP;
 }
 
 static MenuList OptionCheats_menu = {
@@ -4825,14 +4855,12 @@ static int OptionCheats_openMenu(MenuList* list, int i) {
 			item->value = cheat->enabled;
 			item->values = onoff_labels;
 		}
-	} else {
+	}
+	else {
 		// update
-		for (int j = 0; j < cheatcodes.count; j++) {
-			struct Cheat *cheat = &cheatcodes.cheats[i];
-			MenuItem *item = &OptionCheats_menu.items[i];
-			// I guess that makes sense, nobody is changing these but us - what about state restore?
-			if(!cheat->enabled)
-				continue;
+		for (int j = 0; j < (int)cheatcodes.count; j++) {
+			struct Cheat *cheat = &cheatcodes.cheats[j];
+			MenuItem *item = &OptionCheats_menu.items[j];
 			item->value = cheat->enabled;
 		}
 	}
@@ -5562,10 +5590,29 @@ static void Menu_loop(void) {
 
 	LOG_info("Entering Menu render= %i - rendering= %i\n",render,rendering);fflush(stdout);
 	if (thread_video==1) {	
-			wait_For_Thread();
-		}
-	if (firstmenu) PLAT_clearAll(); //useless?
+		wait_For_Thread();
+	}
+	/*	int rendering2 = 1500;
+	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
+		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);fflush(stdout);
+		usleep(1000);
+		rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
+	}
+	rendering = 0;
+	render = 0;*/
+	if (firstmenu) PLAT_clearAll();
 	firstmenu = 0;
+	//SDL_FillRect(screengame, NULL, 0xFFFF0000);
+//	menu.bitmap = SDL_CreateRGBSurfaceFrom(screengame->pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, DEVICE_PITCH, RGBA_MASK_565);
+//	LOG_info("Create tmpbitmap\n");fflush(stdout);
+	//check if the bitmap must be rotated:
+//	int gamerot, screenrot;
+	//gamerot = PLAT_getScreenRotation(1);
+	//screenrot = PLAT_getScreenRotation(0);
+	//if (gamerot!=screenrot) {
+		//menu.bitmap must be rotated
+	//}
+	//menu.bitmap = rotateSurface90Degrees(screengame, 3);
 	menu.bitmap = rotozoomSurface(screengame, (4-PLAT_getScreenRotation(1))*90.0, 1.0, 1);
 	SDL_Surface* backing = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH,DEVICE_HEIGHT,FIXED_DEPTH,RGBA_MASK_565); 
 	SDL_BlitSurface(menu.bitmap, NULL, backing, NULL);
@@ -6029,38 +6076,6 @@ finish:
 }
 
 
-static long a[9];
-static long up[5], up1[5], idle[5], idle1[5];
-void getCPUusage(char * data) {
-	int counter;
-  	int i;
-  	float load;
-  	FILE* fp;
-  	char *scrap;
-	data[0] = '\0';
-	scrap=(char *)malloc(15);
-    fp = fopen ("/proc/stat", "r");
-	for (counter = 0; counter <= processors; counter++)
-    {
-       up1[counter]=0;
-       fscanf (fp, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld",scrap,&a[0],&a[1],&a[2],&a[3],&a[4],&a[5],&a[6],&a[7],&a[8],&a[9]);
-       if (strncmp(scrap,"cpu",3) != 0) break;
-	   if (counter < 1) continue;
-       for (i =0; i < 8; i++) up1[counter]+= a[i];
-       idle1[counter] = a[3]+a[4];
-       up[counter]=up1[counter]-up[counter];
-       idle[counter]=idle1[counter]-idle[counter];
-       load=((float)(up[counter]-idle[counter])/(float)up[counter])*100.0;
-// now you have the load..
-        sprintf(data,"%s%03.0f%%", data, load);
-        //if (counter == processors) printf("\n");
-// update staic variables for next loop
-       up[counter]=up1[counter];
-       idle[counter]=idle1[counter];
-     }
-	sprintf(data,"%s%s", data, (thread_video == 1) ? "T": " ");
-	fclose(fp);
-}
 
 static void trackFPS(void) {
 	if (!show_debug) return;
@@ -6070,9 +6085,7 @@ static void trackFPS(void) {
 		double last_time = (double)(now - sec_start) / 1000;
 		fps_double = fps_ticks / last_time;
 		fps2_double = fps2_ticks / last_time;
-#ifndef M21
-//		getCPUusage(cpuload);
-#endif
+
 		sec_start = now;
 		fps_ticks = 0;
 		fps2_ticks = 0;		
@@ -6122,7 +6135,7 @@ static void* flipThread(void *arg) {
 		run = should_run_flip;
 		render_ = render;
 		pthread_mutex_unlock(&flip_mx);
-#ifdef M21
+#ifdef M210
 		if (run && render_) {
 			trackFPS();
 			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
@@ -6172,7 +6185,6 @@ static void resetFPSCounter() {
 
 
 int main(int argc , char* argv[]) {
-	starttimervalue = getMicroseconds();
 	LOG_info("MinArch Date:%s Commit:%s\n", BUILD_DATE, BUILD_HASH);
 	cpu_set_t maint;
 	IS_MINARCH=1;
@@ -6239,7 +6251,7 @@ int main(int argc , char* argv[]) {
 	} else {
 		sprintf(pwractionstr,"OFF");
 	}
-
+	sprintf(cpuload,"0");
 	screen = GFX_init(MODE_MENU);
 	screengame = PLAT_getScreenGame();
 	renderer.rotate = (renderer.rotate + PLAT_getScreenRotation(1)) & 3;
@@ -6346,16 +6358,16 @@ int main(int argc , char* argv[]) {
 			pthread_mutex_unlock(&core_mx);
 			pthread_mutex_lock(&flip_mx);
 			render = 1;
-#ifndef M21
+#ifndef M210
 			pthread_cond_signal(&flip_rq);
 #endif
 			pthread_mutex_unlock(&flip_mx);	
-#ifndef MIYOOMINI	//don't know why this makes Miyoomini cry :-)				
-			while (waiting_for_thread_stop) {
-				asm("nop");
-			//		usleep(0);
-			}
-#endif
+//#ifndef MIYOOMINI	//don't know why this makes Miyoomini cry :-)				
+//			while (waiting_for_thread_stop) {
+//				asm("nop");
+//			//		usleep(0);
+//			}
+//#endif
 		}
 		
 		if (show_menu) { 
