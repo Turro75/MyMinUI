@@ -413,44 +413,76 @@ Some emulators require or perform much better with official bios. MyMinUI is str
 
 Bios file names are case-sensitive:
 
-  FC:  disksys.rom
-  GB:  gb_bios.bin
-  GBA: gba_bios.bin
-  GBC: gbc_bios.bin
-  MD:  bios_CD_E.bin
-       bios_CD_J.bin
-	     bios_CD_U.bin
-       bios_MD.bin
-  GG:  bios.gg
-  PS:  psxonpsp660.bin
-  DOOM: prboom.wad (included in the release)
-  MGBA: gba_bios.bin
-  PCE: syscard3.pce
-  PKM: bios.min
-  SGB: sgb.bios
-  P8N: pico8.dat  (only for native Pico8)
-       pico8_dyn
-       pico8_64
-	A5200: 5200.rom
-         ATARIBAS.ROM
-  A7800: 7800 BIOS (U).rom
-  NG: neogeo.zip
-  NGCD: files below placed in a folder named neocd within the bios folder
-        000-lo.lo or ng-lo.rom
-        neocd_f.rom or neocd.bin or uni-bioscd.rom 
-
-
+├── A2600
+├── A5200
+│   ├── 5200.rom
+│   └── ATARIBAS.ROM
+├── A7800
+│   └── 7800 BIOS (U).rom
+├── DC
+├── DOOM
+│   └── prboom.wad
+├── DOS
+├── FBN
+│   └── fbneo
+│       └── hiscore.dat
+├── FC
+│   └── disksys.rom
+├── GB
+│   └── gb_bios.bin
+├── GBA
+│   └── gba_bios.bin
+├── GBC
+│   └── gbc_bios.bin
+├── GG
+│   └── bios.gg
+├── MAME
+│   └── mame2003-plus
+│       └── hiscore.dat
+├── MD
+│   └── bios_MD.bin
+├── MGBA
+│   └── gba_bios.bin
+├── N64
+├── NG
+│   └── neogeo.zip
+├── NGCD
+│   └── neocd
+│       └── neocd.zip
+├── NGPC
+├── P8
+│   └── put-pico8.dat-pico8_dyn-pico8_64-here
+├── PCE
+│   └── syscard3.pce
+├── PKM
+│   └── bios.min
+├── PS
+│   └── PSXONPSP660.BIN
+├── PSP
+├── PUAE
+│   ├── kick34005.A500
+│   ├── kick40063.A600
+│   └── kick40068.A1200
+├── QUAKE
+├── SFC
+├── SGB
+│   └── sgb_bios.bin
+├── SMS
+│   ├── bios_E.sms
+│   ├── bios_J.sms
+│   └── bios_U.sms
+└── VB
 
 ----------------------------------------
 Disc-based games
 
-To streamline launching multi-file disc-based games with MinUI place your bin/cue (and/or iso/wav files) in a folder with the same name as the cue file. MinUI will automatically launch the cue file instead of navigating into the folder when selected, eg. 
+To streamline launching multi-file disc-based games with MyMinUI place your bin/cue (and/or iso/wav files) in a folder with the same name as the cue file. MyMinUI will automatically launch the cue file instead of navigating into the folder when selected, eg. 
 
   Harmful Park (English v1.0)/
     Harmful Park (English v1.0).bin
     Harmful Park (English v1.0).cue
 
-For multi-disc games, put all the files for all the discs in a single folder. Then create an m3u file in that folder (just a text file containing the relative path to each disc's cue file on a separate line) with the same name as the folder. Instead of showing the entire messy contents of the folder, MinUI will launch the appropriate cue file, eg. For a "Policenauts" folder structured like this:
+For multi-disc games, put all the files for all the discs in a single folder. Then create an m3u file in that folder (just a text file containing the relative path to each disc's cue file on a separate line) with the same name as the folder. Instead of showing the entire messy contents of the folder, MyMinUI will launch the appropriate cue file, eg. For a "Policenauts" folder structured like this:
 
   Policenauts (English v1.0)/
     Policenauts (English v1.0).m3u
@@ -464,7 +496,7 @@ The m3u file would contain just:
   Policenauts (Japan) (Disc 1).cue
   Policenauts (Japan) (Disc 2).cue
 
-MyMinUI also supports chd files and official pbp files (recommended). Regardless of the multi-disc file format used, every disc of the same game share the same memory card and save state slots.
+MyMinUI also supports chd files and pbp files (recommended). Regardless of the multi-disc file format used, every disc of the same game share the same memory card and save state slots.
 
 ----------------------------------------
 Collections
