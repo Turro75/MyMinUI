@@ -151,6 +151,7 @@ static uint32_t PWR_Tick = 0;
 static int is353v = 0;
 static int is353p = 0;
 static int isg350 = 0;
+static int isrgb30 = 0;
 
 static int _R1_RAW, _R2_RAW, _L3_RAW, _R3_RAW, _START_RAW, _SELECT_RAW, _MENU_RAW;
 
@@ -168,81 +169,75 @@ int testBit(int bit, const uint8_t arr[]) {
     return arr[bit / 8] & (1 << (bit % 8));
 }
 int rumblefd = -1;
-int check_rumble(void){
+int check_rumble(char *rumbledevice){
 	char eventrumble[30];
-	int eventid = 0;
-	for (eventid = 0; eventid<6;eventid++){
-		sprintf(eventrumble, "/dev/input/event%d", eventid);
-		if (exists(eventrumble)) {
-			LOG_info("Checking %s for rumble support\n", eventrumble);fflush(stdout);
-			int fd = open(eventrumble, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-			if (fd >= 0) {
-				uint8_t mFfBitmask[FF_CNT / 8];
-				if (ioctl(fd, EVIOCGBIT(EV_FF,  sizeof(mFfBitmask)),  mFfBitmask) >= 0) {
-				//	if (features > 0) {
-					int x = testBit(FF_RUMBLE, mFfBitmask);
-						if (x>0) {
-							LOG_info("Rumble checked supported on %s\n", eventrumble);fflush(stdout);
-							rumblefd = open(eventrumble, O_RDWR | O_NONBLOCK | O_CLOEXEC);
-						}
-				}
-				close(fd);
+	if (exists(rumbledevice)) {
+		LOG_info("Checking %s for rumble support\n", rumbledevice);fflush(stdout);
+		int fd = open(rumbledevice, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+		if (fd >= 0) {
+			uint8_t mFfBitmask[FF_CNT / 8];
+			if (ioctl(fd, EVIOCGBIT(EV_FF,  sizeof(mFfBitmask)),  mFfBitmask) >= 0) {
+			//	if (features > 0) {
+				int x = testBit(FF_RUMBLE, mFfBitmask);
+					if (x>0) {
+						LOG_info("Rumble checked supported on %s\n", rumbledevice);fflush(stdout);
+						rumblefd = open(rumbledevice, O_RDWR | O_NONBLOCK | O_CLOEXEC);
+					}
 			}
+			close(fd);
 		}
 	}
 }
 
 
 void PLAT_initInput(void) {
-	check_rumble();
 	if (exists(NOMENU_PATH)) {
 		menumissing = 1;
 	}
 
-	inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
-	if (inputs[0]<0) {
-		LOG_info("/dev/input/event0 open failed"); // volume +/-
-	}
-	_R1_RAW = RAW_R1;
-	_R2_RAW = RAW_R2;
 	if (is353v) {
+		check_rumble("/dev/input/event4");
+		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event4", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+		_R1_RAW = RAW_R1;
+	    _R2_RAW = RAW_R2;
 		_L3_RAW = RAW_L3_353;
 		_R3_RAW = RAW_R3_353;
-
+		_START_RAW = RAW_START_353;
+		_SELECT_RAW = RAW_SELECT_353;
+		_MENU_RAW = RAW_MENU_353;
 		// check if is set as rg353p then swap R1/R2 to meet rg353p
 		if (is353p){
 			_R1_RAW = RAW_R2;
 	    	_R2_RAW = RAW_R1;
 		}
-
+	} else if (isrgb30==1) {
+		//check_rumble("/dev/input/event3"); no rumble support?
+		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
+		inputs[1] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		inputs[2] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+		_R1_RAW = RAW_R1;
+	    _R2_RAW = RAW_R2;
 		_START_RAW = RAW_START_353;
 		_SELECT_RAW = RAW_SELECT_353;
-		_MENU_RAW = RAW_MENU_353;
-	} else if (isg350) {
-		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		_L3_RAW = RAW_L3_353;
 		_R3_RAW = RAW_R3_353;
-		_START_RAW = RAW_START_353;
-		_SELECT_RAW = RAW_SELECT_353;
-		_MENU_RAW = RAW_MENU_353;
+		menumissing = 1; //no menu button on rgb30
 	} else {
 		//r36s
+		check_rumble("/dev/input/event2");
+		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+		_R1_RAW = RAW_R1;
+	    _R2_RAW = RAW_R2;
 		_L3_RAW = RAW_L3;
 		_R3_RAW = RAW_R3;
 		_START_RAW = RAW_START;
 		_SELECT_RAW = RAW_SELECT;
 		_MENU_RAW = RAW_MENU;
 	}
-	if (inputs[1]<0) {
-		LOG_info("/dev/input/event2-4 open failed: is353v=%d - isg350=%d - r36s = %d", is353v, isg350, !is353v && !isg350); // volume +/-
-	}
-	inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
-	if (inputs[2]<0) {
-		LOG_info("/dev/input/event3 open failed"); // volume +/-
-	}
-	//Stick_init(); // analog
 
 	// test to simulate a volume down pressure to let rg353v working...
 	struct input_event event;
@@ -507,14 +502,28 @@ SDL_Surface* PLAT_initVideo(void) {
 	p = FIXED_PITCH;
 	hz = FIXED_HZ;	
 //	vid.numpages = 1;
-	if (exists("/dev/input/by-path/platform-fe5b0000.i2c-event")) {
-		//is the rg353v
-		is353v = 1;
-		isg350 = 0;
-		// check here if the file exists to meet rg353p
-		if (exists(IS_RG353P)){
+	is353v = 0;
+	is353p = 0;
+	isrgb30 = 0;
+
+	if (access("/dev/input/by-path/platform-fdd40000.i2c-platform-rk805-pwrkey-event",F_OK)==0) {
+		//is the rk3566 based rg353v/353p/rgb30		
+		if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
+			//is the rg353v/p
+			is353v = 1;
+			if (exists(IS_RG353P)){
 			is353p = 1;
 		}
+		} else {
+			//is the rgb30
+			isrgb30 = 1;
+		}
+	} else {
+		//is the r36s
+		
+	}
+
+	if (is353v || isrgb30) {
 		if (GetHDMI()) {
 			char hdmimode[64];
 			w = _HDMI_WIDTH;
@@ -851,7 +860,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 	} else {
 		// No Rotation
 //		FlipRotate000(vid.screengame, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
-		if (vid.targetRect.w == vid.screen->w) {
+		if ((vid.targetRect.w == vid.screen->w) && (vid.targetRect.h == vid.screen->h)) {
 			//fullscreen
 			pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap[vid.page], vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
 		} else {

@@ -12,44 +12,51 @@ export SDL_NOMOUSE=1
 echo 0 | sudo  tee /sys/class/graphics/fbcon/cursor_blink
 sudo systemctl stop oga_events
 
+if [ -e ${SDCARD_PATH}/bootfailed.txt ]; then
+	sudo rm -rf ${SDCARD_PATH}/bootfailed.txt
+fi
 if [ -e $SDCARD_PATH ]; then
 	sudo rm -rf $SDCARD_PATH
 fi
 
-#check if a second SDCARD is inserted
-if [ -e "/dev/input/by-path/platform-fe5b0000.i2c-event" ]; then
-    echo "This is a 353v" >> $LOGFILE
-    if [ -e /dev/mmcblk2p1 ]; then
-	echo "Found /dev/mmcblk2p1" >> $LOGFILE
-	 sudo mkdir -p $SDCARD_PATH
-         sudo chmod 777 $SDCARD_PATH
-         sudo chown  ark:ark $SDCARD_PATH 
-         sudo mount /dev/mmcblk2p1 $SDCARD_PATH -o rw,defaults,noatime,uid=1002,gid=1002,fmask=0000,dmask=0000,errors=remount-ro
-    else
-	 ln -s /roms/MyMinUI $SDCARD_PATH
-    fi
+echo "Listing /dev/input/by-path/* devices:" >> $LOGFILE
+ls -l /dev/input/by-path/* >> $LOGFILE
+
+
+echo "Checking TF2 slot presence" >> $LOGFILE
+TF1DISKNUM=$(mount | grep "/ type ext4" | cut -d'p' -f1 | cut -d'k' -f2)
+TF2DISKNUM=$((${TF1DISKNUM}+1))
+echo "TF1 disk num is $TF1DISKNUM" >> $LOGFILE
+echo "TF2 disk num is $TF2DISKNUM" >> $LOGFILE
+TF2PATH="/dev/mmcblk${TF2DISKNUM}p1"
+if [ -e $TF2PATH ]; then
+	echo "TF2 detected at $TF2PATH" >> $LOGFILE
+	sudo mkdir -p $SDCARD_PATH
+	sudo chmod 777 $SDCARD_PATH
+	sudo chown  ark:ark $SDCARD_PATH 
+	sudo mount $TF2PATH $SDCARD_PATH -o rw,defaults,noatime,uid=1002,gid=1002,fmask=0000,dmask=0000,errors=remount-ro
+	mv $LOGFILE $SDCARD_PATH/log.txt
+	LOGFILE="$SDCARD_PATH/log.txt"
 else
-    echo "This is an r36s" >> $LOGFILE
-    if [ -e /dev/mmcblk1p1 ]; then
-	echo "Found /dev/mmcblk1p1" >> $LOGFILE
-	 sudo mkdir -p $SDCARD_PATH
-	 sudo chmod 777 $SDCARD_PATH
-	 sudo chown  ark:ark $SDCARD_PATH 
-	 sudo mount /dev/mmcblk1p1 $SDCARD_PATH -o rw,defaults,noatime,uid=1002,gid=1002,fmask=0000,dmask=0000,errors=remount-ro
-    else
-	 ln -s /roms/MyMinUI $SDCARD_PATH
-    fi
+	echo "TF2 not detected, using TF1 slot" >> $LOGFILE
+	echo "generating symlink from /roms/MyMinUI -> $SDCARD_PATH" >> $LOGFILE
+	ln -s /roms/MyMinUI $SDCARD_PATH
 fi
+
+#echo "Listing content of $SDCARD_PATH" >> $LOGFILE
+#ls -al $SDCARD_PATH/* >> $LOGFILE
+#ls $SDCARD_PATH/.system/r36s/* >> $LOGFILE
+echo "listing mounts:" >> $LOGFILE
 sudo mount >> $LOGFILE
+echo "Listing /dev/mmcblk* devices:" >> $LOGFILE
+ls -l /dev/mmcblk* >> $LOGFILE
 
 dd if=/dev/zero of=/dev/fb0 bs=1228800 count=1
-#ps ax >> $LOGFILE
-#ls $SDCARD_PATH/ >> $LOGFILE
-# chmod 777 $SDCARD_PATH
+
 # install/update
 # is there an update available?
 if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
-        NEWFILE=$(ls ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip)
+    NEWFILE=$(ls ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip)
 	#echo "Trovato release file" >> $LOGFILE
 	#echo "Sono nella directory " $(pwd) >> $LOGFILE
 
@@ -60,7 +67,7 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	fi
 	sudo  ${SDCARD_PATH}/${PLATFORM}/show.elf ${SDCARD_PATH}/${PLATFORM}/$ACTION.png >> $LOGFILE
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
-        sudo ${SDCARD_PATH}/${PLATFORM}/unzip -o $NEWFILE -d $SDCARD_PATH -x "r36s/*" >> $LOGFILE
+    sudo ${SDCARD_PATH}/${PLATFORM}/unzip -o $NEWFILE -d $SDCARD_PATH -x "r36s/*" >> $LOGFILE
 	sync
 
 	#remove useless dirs
@@ -72,12 +79,14 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 
 	echo "End phase 1" >> $LOGFILE
 	
+else
+	echo "No release file found on ${SDCARD_PATH}/My${FWNAME}" >> $LOGFILE
 fi
 
-
+echo "Checking for $UPDATE_PATH update file" >> $LOGFILE
 #same as original MinUI install/update process
 if [ -f "$UPDATE_PATH" ]; then
-
+	echo "Found update file $UPDATE_PATH" >> $LOGFILE
 	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
 	    ACTION="updating"
 	else
@@ -85,73 +94,39 @@ if [ -f "$UPDATE_PATH" ]; then
 	fi
 	sudo ${SDCARD_PATH}/${PLATFORM}/show.elf ${SDCARD_PATH}/${PLATFORM}/$ACTION.png
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
-        sudo ${SDCARD_PATH}/${PLATFORM}/unzip -o $UPDATE_PATH -d $SDCARD_PATH #&>> $LOGFILE
+    sudo ${SDCARD_PATH}/${PLATFORM}/unzip -o $UPDATE_PATH -d $SDCARD_PATH #&>> $LOGFILE
 	sync
 	# the updated system finishes the install/update
 	sudo rm -rf ${UPDATE_PATH}
 	sudo $SYSTEM_PATH/$PLATFORM/bin/install.sh
-
+else
+	echo "No update file found on $UPDATE_PATH" >> $LOGFILE
 fi
 
-#ROOTFS_MOUNTPOINT=/overlay
-#ROOTFS_IMG=${SYSTEM_PATH}/${PLATFORM}/rootfs.ext2
-#${SDCARD_PATH}/${PLATFORM}/binmusl/fuse2fs ${ROOTFS_IMG} ${ROOTFS_MOUNTPOINT} 2&> /dev/null
-
-#sync
-#ls -l ${ROOTFS_MOUNTPOINT}/* >> /mnt/SDCARD/ls.txt && sync
-
-#if [ -f ${ROOTFS_MOUNTPOINT}/bin/busybox ]; then
-#    rm -rf ${ROOTFS_MOUNTPOINT}/tmp/*
-#    mkdir -p ${ROOTFS_MOUNTPOINT}/mnt/SDCARD
-#    if [ ! -f ${ROOTFS_MOUNTPOINT}/etc/asound.conf ]; then
-#	cp /etc/asound.conf ${ROOTFS_MOUNTPOINT}/etc/asound.conf
-#	chmod 666 ${ROOTFS_MOUNTPOINT}/etc/asound.conf
-#	sync
- #   fi
-
-#    if [ ! -f ${ROOTFS_MOUNTPOINT}/etc/fb.modes ]; then
-#	cp $SDCARD_PATH/fb.modes ${ROOTFS_MOUNTPOINT}/etc/fb.modes
-#	chmod 666 ${ROOTFS_MOUNTPOINT}/etc/fb.modes
-#	sync
-#    fi
-
-
-
-#mount all other fs as minui on rg35xx og
-#    for f in dev dev/pts proc sys mnt/SDCARD tmp
-#    do
-#	mount -o bind /${f} ${ROOTFS_MOUNTPOINT}/${f}
-#    done
-    export PATH=/bin:/sbin:/usr/bin:/usr/sbin
-    export LD_LIBRARY_PATH=/usr/lib/:/lib/
-    export HOME=$SDCARD_PATH
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export LD_LIBRARY_PATH=/usr/lib/:/lib/
+export HOME=$SDCARD_PATH
 
 # add custom extra folders for advanced systems not present in standard MyMinUI
-#	if [ ! -d "${SDCARD_PATH}/Roms/PSP (PSP)" ]; then 
-		sudo mkdir -p "${SDCARD_PATH}/Roms/PSP (PSP)"; 
-		sudo mkdir -p "${SDCARD_PATH}/Bios/PSP";
-#		fi
-#	if [ ! -d "${SDCARD_PATH}/Roms/Nintendo 64 (N64)" ]; then 
-		sudo mkdir -p "${SDCARD_PATH}/Roms/Nintendo 64 (N64)"; 
-		sudo mkdir -p "${SDCARD_PATH}/Bios/N64";
-#	fi
-#	if [ ! -d "${SDCARD_PATH}/Roms/Dreamcast (DC)" ]; then 
-		sudo mkdir -p "${SDCARD_PATH}/Roms/Dreamcast (DC)"; 
-		sudo mkdir -p "${SDCARD_PATH}/Bios/DC";
-#	fi
+sudo mkdir -p "${SDCARD_PATH}/Roms/PSP (PSP)"; 
+sudo mkdir -p "${SDCARD_PATH}/Bios/PSP";
+sudo mkdir -p "${SDCARD_PATH}/Roms/Nintendo 64 (N64)"; 
+sudo mkdir -p "${SDCARD_PATH}/Bios/N64";
+sudo mkdir -p "${SDCARD_PATH}/Roms/Dreamcast (DC)"; 
+sudo mkdir -p "${SDCARD_PATH}/Bios/DC";
 
-	dd if=/dev/zero of=/dev/fb0 bs=1228800 count=1
-#evaluate if adding swap file or not
-#    ls -l ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/* >> $LOGFILE
+dd if=/dev/zero of=/dev/fb0 bs=1228800 count=1
+
+ls -l ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/* >> $LOGFILE
+
+if [ -f ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/launch.sh ] ; then
+    echo "Launching MyMinUI" >> $LOGFILE
     sudo ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/launch.sh
-    sync
+else
+    echo "Error: launch.sh not found!" >> $LOGFILE
+    echo "Exiting" > ${SDCARD_PATH}/bootfailed.txt
 fi
-
-
+    
 #umount ${ROOTFS_MOUNTPOINT}
-sync
-
-echo "Exiting" > ${SDCARD_PATH}/bootfailed.txt
-
 sync
 shutdown now # under no circumstances should stock be allowed to touch this card

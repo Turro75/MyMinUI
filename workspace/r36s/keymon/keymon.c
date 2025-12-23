@@ -36,36 +36,44 @@ FILE *file_log;
 int main (int argc, char *argv[]) {
 	InitSettings();
 	int is353v = 0;
-	int isg350 = 0;
+	int isrgb30 = 0;
 	int _MENU_RAW = CODE_MENU;
 	int _START_RAW = RAW_START;
 	int _SELECT_RAW = RAW_SELECT;
-	// TODO: will require two inputs
-	// input_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-	if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
-		//is the rg353v
-		is353v = 1;
-		isg350 = 0;
-	}
-	inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
-	if (is353v) {
+
+	if (access("/dev/input/by-path/platform-fdd40000.i2c-platform-rk805-pwrkey-event",F_OK)==0) {
+			//is the rk3566 based rg353v/353p/rgb30
+			_START_RAW = RAW_START_353;
+			_SELECT_RAW = RAW_SELECT_353;			
+			if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
+				//is the rg353v
+				_MENU_RAW = CODE_MENU_353;
+				is353v = 1;
+			} else {
+				//is the rgb30
+				isrgb30 = 1;
+				//NO MENU BUTTON...
+			}
+		} else {
+			//is the r36s
+			
+		}
+
+	if (is353v==1) {
+		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event4", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
-		_MENU_RAW = CODE_MENU_353;
-		_START_RAW = RAW_START_353;
-		_SELECT_RAW = RAW_SELECT_353;
-	} else if (isg350) {
-		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+	} else if (isrgb30==1) {
+		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
+		inputs[1] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		inputs[2] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
 	} else {
 		//r36s
+		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
 	}
-	
-	inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
-	//Stick_init(); // analog
-
-	//inputs[0] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-	
-	//printf("opened /dev/input/event1\n");system("sync");
+		
 
 	uint32_t input;
 	uint32_t val;
@@ -119,24 +127,6 @@ int main (int argc, char *argv[]) {
 					down_pressed = down_just_pressed = val;
 					if (val) down_repeat_at = now + 300;
 				}
-				/* switch (ev.code) {
-					case _MENU_RAW:
-						menu_pressed = val;
-					break;
-					case CODE_PLUS:
-						up_pressed = up_just_pressed = val;
-						if (val) up_repeat_at = now + 300;
-					break;
-					case CODE_MINUS:
-						down_pressed = down_just_pressed = val;
-						if (val) down_repeat_at = now + 300;
-					break;
-					default:
-						//file_log = fopen("/mnt/SDCARD/.userdata/m21/logs/keymon.log", "a+"); 
-						//fprintf(file_log, "Event BTN Code = %d\n",ev.code);
-						//fclose(file_log); system("sync");
-					break;
-				} */
 			}
 		}
 		

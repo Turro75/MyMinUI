@@ -168,19 +168,18 @@ long map(int x, int in_min, int in_max, int out_min, int out_max) {
 void SetRawVolume(int val) { // 0 - 20
 	char cmd[256];	
 	int rawval = map(val, 0, 20, 0, 237);
-	//if (rawval == 0) {
-		//sprintf(cmd, "amixer sset 'Headphone' mute && amixer sset 'Headphone volume' %d", 2);
-	//	sprintf(cmd, "amixer sset 'Headphone volume' %d", 2);
-	//} else	{
-		//sprintf(cmd, "amixer sset 'Headphone' unmute && amixer sset 'Headphone volume' %d", rawval-1);
-		//r36s
-		if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
+	if (access("/dev/input/by-path/platform-fdd40000.i2c-platform-rk805-pwrkey-event",F_OK)==0) {
+		//is the rk3566 based rg353v/353p/rgb30
+		//if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
 			//is the rg353v
-			sprintf(cmd, "amixer sset 'Master' %d", rawval);
-		} else {
-			//is the r36s
-			sprintf(cmd, "amixer sset 'Playback' %d", rawval);
-		}
+		//	sprintf(cmd, "amixer sset 'Master' %d", rawval);
+		//} else {
+			//is the rgb30
+		sprintf(cmd, "amixer sset 'Master' %d", rawval);
+	} else {
+		//is the r36s
+		sprintf(cmd, "amixer sset 'Playback' %d", rawval);
+	}
 	system(cmd);
 	printf("SetRawVolume(%i->%i) \"%s\"\n", val,rawval,cmd); fflush(stdout);
 }
@@ -208,15 +207,20 @@ int getInt(char* path) {
 int GetHDMI(void) {
 	int retvalue = 0;
 	char cmd[256];
-	if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) { 
+	if (access("/dev/input/by-path/platform-fdd40000.i2c-platform-rk805-pwrkey-event",F_OK)==0) { 
 		retvalue = getInt("/sys/class/extcon/hdmi/cable.0/state");
-	} 
-	if (retvalue == 0) {		
-		sprintf(cmd, "amixer set \"Playback Path\" SPK");
-	} else {
-		sprintf(cmd, "amixer set \"Playback Path\" HP");		
+		int _retvalue = retvalue;
+		if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)!=0) {
+			//is not the rg353v
+			_retvalue ^= 1; //invert for some reason, as it seems reversed on rgb30
+		}
+		if (_retvalue == 0) {		
+			sprintf(cmd, "amixer set \"Playback Path\" SPK"); //no HDMI connected
+		} else {
+			sprintf(cmd, "amixer set \"Playback Path\" HP"); //HDMI connected	
+		}
+		system(cmd);
 	}
-	system(cmd);
 	return retvalue;
 }
 void SetHDMI(int value) {
