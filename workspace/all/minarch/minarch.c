@@ -5454,7 +5454,8 @@ static void Menu_loop(void) {
 
 	menu.bitmap = rotozoomSurface(screengame, (4-PLAT_getScreenRotation(1))*90.0, 1.0, 1);
 	SDL_Surface* backing = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH,DEVICE_HEIGHT,FIXED_DEPTH,RGBA_MASK_565); 
-	SDL_BlitSurface(menu.bitmap, NULL, backing, NULL);
+//	SDL_BlitSurface(menu.bitmap, NULL, backing, NULL);
+	SDL_BlitScaled(menu.bitmap, NULL, backing, NULL);
 	int restore_w = screen->w;
 	int restore_h = screen->h;
 	int restore_p = screen->pitch;
