@@ -25,12 +25,6 @@ libretro-common
 workspace/hash.txt
 workspace/readmes
 
-FAKESD
-skeleton/BASE/Bios/GBA/gba_bios.bin
-skeleton/BASE/Roms/Game Boy Advance (GBA)/castlevania_aria_of_sorrow_eur.gba
-skeleton/BASE/Roms/Game Boy Advance (GBA)/Wario Ware Inc.gba
-skeleton/EXTRAS/Roms/Game Boy Advance (MGBA)/Wario Ware Inc.gba
-skeleton/EXTRAS/Roms/Pico-8 (P8)/194-8.p8.png
 
 
 workspace/rg35xx/boot/output
@@ -46,3 +40,12 @@ toolchains/m21-toolchain/.build
 .vscode/settings.json
 toolchains/m21-toolchain/support/m21_toolchain_glibc.tar.gz
 toolchains/m21-toolchain/support/m21_toolchain_musl.tar.gz
+toolchains/rg35xx-toolchain/support/rg35xx-toolchain.tar.gz
+toolchains/rg35xx-toolchain/support/rg35xx-buildroot-2017.11.config.ok
+toolchains/miyoomini-toolchain/support/miyoomini_toolchain_glibc.tar.gz
+toolchains/m21-toolchain/workspace/m21_toolchain_glibc.tar.gz
+toolchains/r36s-toolchain/.build
+workspace/my282/other/libsamplerate/libsamplerate.so.0
+workspace/r36s/log_r36.txt
+workspace/r36s/log_rg353v.txt
+workspace/r36s/log_rgb30.txt
