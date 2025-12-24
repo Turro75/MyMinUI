@@ -14,6 +14,29 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+# Release 23/12/2025
+
+This release fixes issues introduced with the previous 20251216 release.
+
+What's new:
+
+### r36s:
+
+- Added support for Powkiddy RGB30 (hdmi output not tested)
+  since the menu button is missing is emulated by select+start, no need to add the file menumissing.txt as the device is autodetected.
+- Added script DetectDevicespecs.sh to be copied under Arkos tools to make easier a port of a new arkos device to MyMinUI
+
+### M21:
+
+- reviewed rendering process to avoid flickering at game start
+
+### All:
+
+- Reviewed minarch to improve the render process.
+- Cleared up the Bios folder structure
+
+I noticed that Miyoomini+ has up to a couple of seconds delay on some cores when entering the in game menu, it won't freeze anymore.
+
 # Release 16/12/2025
 
 ### All: 
