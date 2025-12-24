@@ -595,9 +595,9 @@ SDL_Surface* PLAT_initVideo(void) {
 			}
 			if ((conn->modes[c].vdisplay == 768) && (conn->modes[c].hdisplay == 1024) && (conn->modes[c].vrefresh == 61)) {
 				LOG_info("This is an r40xx pro max (4:3 4\"screen)\n");fflush(stdout);
-				DEVICE_WIDTH=640;
-				DEVICE_HEIGHT=480;
-				DEVICE_PITCH=1280;
+				DEVICE_WIDTH=720; //better menu scaling on large 4:3 screen
+				DEVICE_HEIGHT=540; //better menu scaling on large 4:3 screen
+				DEVICE_PITCH=1440;
 				GAME_WIDTH=1024;
 				GAME_HEIGHT=768;
 				vid.width = 1024;
