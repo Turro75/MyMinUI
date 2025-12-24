@@ -414,6 +414,7 @@ static struct VID_Context {
 	struct _drmModeModeInfo mode[2];
 	SDL_Surface* screen;  //swsurface to let sdl thinking it's the screen
 	SDL_Surface* screen2; //stretched SDL2 surface
+	SDL_Surface* screen3; //temporary surface with the correct width/height before flipping
 	SDL_Surface *screengame; //stretched SDL2 surface
 	int linewidth[2];
 	int screen_size[2];
@@ -427,16 +428,6 @@ static struct VID_Context {
 	SDL_Rect targetRect;
 	int renderingGame;
 } vid;
-
-static int device_width;
-static int device_height;
-static int device_pitch;
-
-static int lastw=0;
-static int lasth=0;
-static int lastp=0;
-
-static int finalrotate=0;
 
 
 void IOCTLttyON(void){
@@ -563,7 +554,8 @@ SDL_Surface* PLAT_initVideo(void) {
 		DEVICE_WIDTH = h;
 		DEVICE_HEIGHT = w;
 	}
-	
+	vid.width = DEVICE_WIDTH;
+	vid.height = DEVICE_HEIGHT;
 
 	/* retrieve resources */
 	res = drmModeGetResources(vid.fdfb);
@@ -595,17 +587,21 @@ SDL_Surface* PLAT_initVideo(void) {
 				DEVICE_PITCH=1440;
 				GAME_WIDTH=720;
 				GAME_HEIGHT=720;
+				vid.width = 720;
+				vid.height = 720;
 				w = 720;
 				h = 720;
 				p = 1440;
 			}
 			if ((conn->modes[c].vdisplay == 768) && (conn->modes[c].hdisplay == 1024) && (conn->modes[c].vrefresh == 61)) {
 				LOG_info("This is an r40xx pro max (4:3 4\"screen)\n");fflush(stdout);
-				DEVICE_WIDTH=1024;
-				DEVICE_HEIGHT=768;
-				DEVICE_PITCH=2048;
+				DEVICE_WIDTH=640;
+				DEVICE_HEIGHT=480;
+				DEVICE_PITCH=1280;
 				GAME_WIDTH=1024;
 				GAME_HEIGHT=768;
+				vid.width = 1024;
+				vid.height = 768;
 				w = 1024;
 				h = 768;
 				p = 2048;
@@ -682,6 +678,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	vid.renderingGame = 0;
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);	
+	vid.screen3 = SDL_CreateRGBSurface(0, vid.width, vid.height, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screengame =  SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
@@ -691,6 +688,7 @@ void PLAT_quitVideo(void) {
 	close(vid.fdfb);
 	SDL_FreeSurface(vid.screen);
 	SDL_FreeSurface(vid.screen2);
+	SDL_FreeSurface(vid.screen3);
 	SDL_FreeSurface(vid.screengame);
 	munmap(vid.fbmmap[0],vid.screen_size[0]);
 	munmap(vid.fbmmap[1],vid.screen_size[1]);
@@ -709,12 +707,14 @@ void PLAT_quitVideo(void) {
 void PLAT_clearVideo(SDL_Surface* screen) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
+	SDL_FillRect(vid.screen3, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
 }
 
 void  PLAT_clearAll (void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
+	SDL_FillRect(vid.screen3, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
 	memset(vid.fbmmap[0], 0, vid.screen_size[0]);
 	memset(vid.fbmmap[1], 0, vid.screen_size[1]);
@@ -835,27 +835,28 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
-		vid.targetRect.w = vid.screen->w;
-		vid.targetRect.h = vid.screen->h;
+		vid.targetRect.w = vid.width;
+		vid.targetRect.h = vid.height;
+		scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(vid.screen->pixels, vid.screen->w, vid.screen->h, vid.screen->pitch, vid.screen3->pixels, vid.screen3->w, vid.screen3->h, vid.screen3->pitch, 0,0, vid.width, vid.height);
 		if (vid.rotate == 0)
 		{
 			// 90 Rotation
-			FlipRotate000(vid.screen, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
+			FlipRotate000(vid.screen3, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
 		}
 		if (vid.rotate == 1)
 		{
 			// 90 Rotation
-			FlipRotate090(vid.screen, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
+			FlipRotate090(vid.screen3, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
 		}
 		if (vid.rotate == 2)
 		{
 			// 180 Rotation
-			FlipRotate180(vid.screen, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
+			FlipRotate180(vid.screen3, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
 		}
 		if (vid.rotate == 3)
 		{
 			// 270 Rotation
-			FlipRotate270(vid.screen, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
+			FlipRotate270(vid.screen3, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
 		}
 	} else {
 		// No Rotation
