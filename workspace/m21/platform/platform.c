@@ -952,6 +952,7 @@ Available frequency
 		putFile(GOVERNOR_PATH, "userspace");
 		putInt(GOVERNOR_CPUSPEED_PATH, freq);
 		LOG_info("Set CPU speed to %i\n", freq);
+		cur_cpu_freq = freq/1000;
 	}
 	
 }

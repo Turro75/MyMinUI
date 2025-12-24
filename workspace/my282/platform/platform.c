@@ -702,6 +702,7 @@ void PLAT_setCPUSpeed(int speed) {
 	if (freq) {
 		system(cmd);
 		LOG_info("Set CPU speed to %i\n", freq);
+		cur_cpu_freq = freq;		
 	}
 }
 

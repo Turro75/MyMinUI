@@ -3276,7 +3276,58 @@ static const char* bitmap_font[] = {
 		"11      11"
 		"11      11"
 		"11      11"
-		"11      11",		
+		"11      11",	
+	['M'] = 
+		"11      11"
+		"111    111"
+		"1111  1111"
+		"11 1111 11"
+		"11  11  11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11",	
+	['H'] = 
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"1111111111"
+		"1111111111"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11",
+	['z'] = 
+		"          "
+		"          "
+		"          "
+		"          "
+		"1111111111"
+		"1111111111"
+		"        11"
+		"       11 "
+		"      11  "
+		"     11   "
+		"    11    "
+		"  11      "
+		" 11       "
+		"11        "
+		"1111111111"
+		"1111111111",			
 };
 
 static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
@@ -3354,8 +3405,8 @@ void getCPUusage(char * data) {
        up[counter]=up1[counter];
        idle[counter]=idle1[counter];
      }
+	sprintf(data,"%s/%dMHz", data, cur_cpu_freq);
 	fclose(fp);
-	
 }
 
 
@@ -4221,51 +4272,6 @@ void Menu_init(void) {
 	//	}
 		menu.disc = disk_control_ext.get_image_index();  //get the current disc index
 	}
-
-/*	if (game.m3u_path[0]) {  //in case of m3u file the core doesn't detects it so coreDiscManaged is not set
-		char* tmp;
-		strcpy(menu.base_path, game.m3u_path);
-		tmp = strrchr(menu.base_path, '/') + 1;
-		tmp[0] = '\0';
-		
-		//read m3u file
-		FILE* file = fopen(game.m3u_path, "r");
-		if (file) {
-			char line[256];
-			while (fgets(line,256,file)!=NULL) {
-				normalizeNewline(line);
-				trimTrailingNewlines(line);
-				if (strlen(line)==0) continue; // skip empty lines
-		
-				char disc_path[256];
-				strcpy(disc_path, menu.base_path);
-				tmp = disc_path + strlen(disc_path);
-				strcpy(tmp, line);
-				
-				// for every valid line in the m3u fill the disc_paths array
-				// found a valid disc path
-				if (exists(disc_path)) {
-					menu.disc_paths[menu.total_discs] = strdup(disc_path);
-					// matched our current disc					
-					if (exactMatch(disc_path, game.path)) {
-						menu.disc = menu.total_discs;
-					}
-					menu.total_discs += 1;
-				}
-			}
-			fclose(file);
-			if (menu.total_discs > 1) {
-				struct retro_game_info game_info = {};
-				coreDiscManaged = 1;
-				NumDiscsDetected = menu.total_discs;
-				for (int i = 0; i < menu.total_discs; i++) {
-					LOG_info("Disc %d: %s\n", i+1, menu.disc_paths[i]);
-					game_info.path = menu.disc_paths[i];
-					if (i>0) disk_control_ext.replace_image_index(i, &game_info);
-				}
-			}
-		}
-	}*/
 }
 
 void Menu_quit(void) {
@@ -5346,16 +5352,6 @@ static void Menu_saveState(void) {
 
 	Menu_updateState();
 	
-//	if (menu.total_discs) {
-//		char* disc_path = menu.disc_paths[menu.disc];
-//		if (game.m3u_path[0]) {
-//			putFile(menu.txt_path, game.m3u_path);
-//		} else {
-//			putFile(menu.txt_path, disc_path + strlen(menu.base_path));
-//		}
-//		putInt(menu.txt_path_slot, menu.disc);
-//	}
-	
 	//SDL_Surface* bitmap = SDL_CreateRGBSurfaceFrom(renderer.src_surface->pixels, renderer.src_surface->w, renderer.src_surface->h, FIXED_DEPTH, renderer.src_surface->pitch, RGBA_MASK_565);
 	SDL_Surface *tmpbitmap = SDL_CreateRGBSurfaceFrom(renderer.src_surface->pixels, renderer.src_surface->w, renderer.src_surface->h, FIXED_DEPTH, renderer.src_surface->pitch, RGBA_MASK_565);
 	SDL_Surface *bitmap = rotozoomSurface(tmpbitmap, (4-PLAT_getScreenRotation(1))*90.0, 1.0, 1);
@@ -5382,26 +5378,6 @@ static void Menu_loadState(void) {
 	
 	//now useless as state loads right disk on its own?
 
-/*	if (menu.save_exists && menu.total_discs) {  
-		char slot_disc_name[256];
-		getFile(menu.txt_path, slot_disc_name, 256);
-		
-		char slot_disc_path[256];
-		if (slot_disc_name[0]=='/') strcpy(slot_disc_path, slot_disc_name);
-		else sprintf(slot_disc_path, "%s%s", menu.base_path, slot_disc_name);
-		int next_index=0;
-		char* disc_path = menu.disc_paths[menu.disc];
-		for (int i=0; i<menu.total_discs; i++) {
-			if (exactMatch(slot_disc_path, menu.disc_paths[i])) {
-				next_index = i;
-				break;
-			}
-		}
-		if (!exactMatch(slot_disc_path, disc_path)) {
-			Game_changeDisc(next_index,slot_disc_path);
-		}
-	}
-*/	
 	state_slot = menu.slot;
 	//putInt(menu.slot_path, menu.slot);
 	State_read();
@@ -5472,27 +5448,10 @@ static void Menu_loop(void) {
 	if (thread_video==1) {	
 		wait_For_Thread();
 	}
-	/*	int rendering2 = 1500;
-	while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
-		//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);fflush(stdout);
-		usleep(1000);
-		rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
-	}
-	rendering = 0;
-	render = 0;*/
+
 	if (firstmenu) PLAT_clearAll();
 	firstmenu = 0;
-	//SDL_FillRect(screengame, NULL, 0xFFFF0000);
-//	menu.bitmap = SDL_CreateRGBSurfaceFrom(screengame->pixels, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, DEVICE_PITCH, RGBA_MASK_565);
-//	LOG_info("Create tmpbitmap\n");fflush(stdout);
-	//check if the bitmap must be rotated:
-//	int gamerot, screenrot;
-	//gamerot = PLAT_getScreenRotation(1);
-	//screenrot = PLAT_getScreenRotation(0);
-	//if (gamerot!=screenrot) {
-		//menu.bitmap must be rotated
-	//}
-	//menu.bitmap = rotateSurface90Degrees(screengame, 3);
+
 	menu.bitmap = rotozoomSurface(screengame, (4-PLAT_getScreenRotation(1))*90.0, 1.0, 1);
 	SDL_Surface* backing = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH,DEVICE_HEIGHT,FIXED_DEPTH,RGBA_MASK_565); 
 	SDL_BlitSurface(menu.bitmap, NULL, backing, NULL);
@@ -5519,13 +5478,6 @@ static void Menu_loop(void) {
 	
 	PWR_enableAutosleep();
 	PAD_reset();
-	
-	// if (!HAS_POWER_BUTTON && !HAS_POWEROFF_BUTTON) {
-	// 	MenuItem* item = &options_menu.items[5];
-	// 	item->name = "Quicksave";
-	// 	item->desc = "Automatically resume current state next power on.";
-	// 	item->on_confirm = OptionQuicksave_onConfirm;
-	// }
 	
 	// path and string things
 	char* tmp;
@@ -5783,52 +5735,6 @@ static void Menu_loop(void) {
 				});
 				SDL_FreeSurface(text);
 			}
-			/*
-			// slot preview
-			if (selected==ITEM_SAVE || selected==ITEM_LOAD) {
-				#define WINDOW_RADIUS 4 // TODO: this logic belongs in blitRect?
-				#define PAGINATION_HEIGHT 6
-				// unscaled
-				int hw = DEVICE_WIDTH / 2;
-				int hh = DEVICE_HEIGHT / 2;
-				int pw = hw + SCALE1(WINDOW_RADIUS*2);
-				int ph = hh + SCALE1(WINDOW_RADIUS*2 + PAGINATION_HEIGHT + WINDOW_RADIUS);
-				ox = DEVICE_WIDTH - pw - SCALE1(PADDING);
-				oy = (DEVICE_HEIGHT - ph) / 2;
-				
-				// window
-				GFX_blitRect(ASSET_STATE_BG, screen, &(SDL_Rect){ox,oy,pw,ph});
-				ox += SCALE1(WINDOW_RADIUS);
-				oy += SCALE1(WINDOW_RADIUS);
-				
-				if (menu.preview_exists) { // has save, has preview
-					// lotta memory churn here
-					SDL_Surface* bmp = IMG_Load(menu.bmp_path);
-					SDL_Surface* raw_preview = SDL_ConvertSurface(bmp, screen->format, SDL_SWSURFACE);
-					
-					// LOG_info("raw_preview %ix%i\n", raw_preview->w,raw_preview->h);
-					
-					SDL_FillRect(preview, NULL, 0);
-					Menu_scale(raw_preview, preview);
-					SDL_BlitSurface(preview, NULL, screen, &(SDL_Rect){ox,oy});
-					SDL_FreeSurface(raw_preview);
-					SDL_FreeSurface(bmp);
-				}
-				else {
-					SDL_Rect preview_rect = {ox,oy,hw,hh};
-					SDL_FillRect(screen, &preview_rect, 0);
-					if (menu.save_exists) GFX_blitMessage(font.large, "No Preview", screen, &preview_rect);
-					else GFX_blitMessage(font.large, "Empty Slot", screen, &preview_rect);
-				}
-				
-				// pagination
-				ox += (pw-SCALE1(15*MENU_SLOT_COUNT))/2;
-				oy += hh+SCALE1(WINDOW_RADIUS);
-				for (int i=0; i<MENU_SLOT_COUNT; i++) {
-					if (i==menu.slot)GFX_blitAsset(ASSET_PAGE, NULL, screen, &(SDL_Rect){ox+SCALE1(i*15),oy});
-					else GFX_blitAsset(ASSET_DOT, NULL, screen, &(SDL_Rect){ox+SCALE1(i*15)+4,oy+SCALE1(2)});
-				}
-			} */
 
 			// my slot preview enlarged to 384x288 for better see 
 			if (selected==ITEM_SAVE || selected==ITEM_LOAD) {
@@ -6111,10 +6017,7 @@ int main(int argc , char* argv[]) {
 	renderer.rotate = (renderer.rotate + PLAT_getScreenRotation(1)) & 3;
 	setOverclock(overclock); // default to normal
 	PAD_init();
-	//DEVICE_WIDTH = screen->w; // yea or nay?
-	//DEVICE_HEIGHT = screen->h; // yea or nay?
-	//DEVICE_PITCH = screen->pitch; // yea or nay?
-	// LOG_info("DEVICE_SIZE: %ix%i (%i)\n", DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
+
 	
 	VIB_init();
 	PWR_init();
