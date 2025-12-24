@@ -28,14 +28,14 @@ export LD_LIBRARY_PATH=$SYSTEM_PATH/lib:$LD_LIBRARY_PATH
 export SDL_NOMOUSE=1
 
 #######################################
-if [ -e "/dev/input/by-path/platform-fe5b0000.i2c-event" ]; then
-	#rg353
+if [ -e "/dev/input/by-path/platform-fdd40000.i2c-platform-rk805-pwrkey-event" ]; then
+	#rk3566
 	export CPU_SPEED_MENU=1104000
 	export CPU_SPEED_POWERSAVE=1104000
 	export CPU_SPEED_GAME=1416000
 	export CPU_SPEED_PERF=1608000
 else
-	#r36s
+	#rk3326
 	export CPU_SPEED_MENU=1008000
 	export CPU_SPEED_POWERSAVE=1008000
 	export CPU_SPEED_GAME=1200000
