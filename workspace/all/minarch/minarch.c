@@ -148,6 +148,7 @@ static struct Core {
 
 
 static int getAlias(char* path, char* alias);
+void Core_reset(void);
 ///////////////////////////////////////
 // based on picoarch/unzip.c
 
@@ -451,13 +452,6 @@ static void Game_changeDisc(int index) {
 			//LOG_info("3ChangeDisc: disk_control_ext.set_eject_state(false) SUCCESS!!!!\n");
 			}
 	}	
-	//putFile(CHANGE_DISC_PATH, path); // MinUI still needs to know this to update recents.txt
-	//putInt(CHANGE_DISC_INDEX_PATH, _index);
-	//Game_close();
-	//core.reset();
-	//status = STATUS_RESET;
-	//show_menu = 0;
-	//Game_open(path);
 	
 }
 
@@ -2108,7 +2102,7 @@ static void input_poll_callback(void) {
 				switch (i) {
 					case SHORTCUT_SAVE_STATE: Menu_saveState(); break;
 					case SHORTCUT_LOAD_STATE: Menu_loadState(); break;
-					case SHORTCUT_RESET_GAME: core.reset(); break;
+					case SHORTCUT_RESET_GAME: Core_reset(); break;
 					case SHORTCUT_SAVE_QUIT:
 						Menu_saveState();
 						quit = 1;
@@ -5309,120 +5303,6 @@ static int Menu_options(MenuList* list) {
 	return 0;
 }
 
-static void Menu_scale(SDL_Surface* src, SDL_Surface* dst) {
-	// LOG_info("Menu_scale src: %ix%i dst: %ix%i\n", src->w,src->h,dst->w,dst->h);
-	
-	uint16_t* s = src->pixels;
-	uint16_t* d = dst->pixels;
-	
-	int sw = src->w;
-	int sh = src->h;
-	int sp = src->pitch / FIXED_BPP;
-	
-	int dw = dst->w;
-	int dh = dst->h;
-	int dp = dst->pitch / FIXED_BPP;
-	
-	int rx = 0;
-	int ry = 0;
-	int rw = dw;
-	int rh = dh;
-	
-	int scaling = screen_scaling;
-	if (scaling==SCALE_NATIVE) {
-		// LOG_info("native\n");
-		
-		rx = renderer.dst_x;
-		ry = renderer.dst_y;
-		rw = renderer.src_w;
-		rh = renderer.src_h;
-		if (renderer.scale) {
-			// LOG_info("scale: %i\n", renderer.scale);
-			rw *= renderer.scale;
-			rh *= renderer.scale;
-		}
-		else {
-			// LOG_info("forced crop\n"); // eg. fc on nano, vb on smart
-			rw -= renderer.src_x * 2;
-			rh -= renderer.src_y * 2;
-			sw = rw;
-			sh = rh;
-		}
-		
-		if (dw==DEVICE_WIDTH/2) {
-			// LOG_info("halve\n");
-			rx /= 2;
-			ry /= 2;
-			rw /= 2;
-			rh /= 2;
-		}
-	}
-	
-	if (scaling==SCALE_ASPECT || rw>dw || rh>dh) {
-		// LOG_info("aspect\n");
-		double fixed_aspect_ratio = ((double)DEVICE_WIDTH) / DEVICE_HEIGHT;
-		int core_aspect = core.aspect_ratio * 1000;
-		int fixed_aspect = fixed_aspect_ratio * 1000;
-		
-		if (core_aspect>fixed_aspect) {
-			// LOG_info("letterbox\n");
-			rw = dw;
-			rh = rw / core.aspect_ratio;
-			rh += rh%2;
-		}
-		else if (core_aspect<fixed_aspect) {
-			// LOG_info("pillarbox\n");
-			rh = dh;
-			rw = rh * core.aspect_ratio;
-			rw += rw%2;
-			rw = (rw/8)*8; // probably necessary here since we're not scaling by an integer
-		}
-		else {
-			// LOG_info("perfect match\n");
-			rw = dw;
-			rh = dh;
-		}
-		
-		rx = (dw - rw) / 2;
-		ry = (dh - rh) / 2;
-	}
-	
-	// LOG_info("Menu_scale (r): %i,%i %ix%i\n",rx,ry,rw,rh);
-	// LOG_info("offset: %i,%i\n", renderer.src_x, renderer.src_y);
-
-	// dumb nearest neighbor scaling
-	int mx = (sw << 16) / rw;
-	int my = (sh << 16) / rh;
-	int ox = (renderer.src_x << 16);
-	int sx = ox;
-	int sy = (renderer.src_y << 16);
-	int lr = -1;
-	int sr = 0;
-	int dr = ry * dp;
-	int cp = dp * FIXED_BPP;
-	
-	// LOG_info("Menu_scale (s): %i,%i %ix%i\n",sx,sy,sw,sh);
-	// LOG_info("mx:%i my:%i sx>>16:%i sy>>16:%i\n",mx,my,((sx+mx) >> 16),((sy+my) >> 16));
-
-	for (int dy=0; dy<rh; dy++) {
-		sx = ox;
-		sr = (sy >> 16) * sp;
-		if (sr==lr) {
-			memcpy(d+dr,d+dr-dp,cp);
-		}
-		else {
-	        for (int dx=0; dx<rw; dx++) {
-	            d[dr + rx + dx] = s[sr + (sx >> 16)];
-				sx += mx;
-	        }
-		}
-		lr = sr;
-		sy += my;
-		dr += dp;
-    }
-	
-	// LOG_info("successful\n");
-}
 
 static void Menu_initState(void) {
 	if (exists(menu.slot_path)) menu.slot = getInt(menu.slot_path);
@@ -5751,7 +5631,7 @@ static void Menu_loop(void) {
 						//LOG_info("MENU: Changing disc from %d to %d - %s\n", rom_disc, menu.disc, disc_path);
 						Game_changeDisc(menu.disc);
 						sleep(2);
-						core.reset();
+						Core_reset();
 					}
 					else {
 						status = STATUS_CONT;
@@ -5779,7 +5659,7 @@ static void Menu_loop(void) {
 				break;*/
 				case ITEM_OPTS: {
 					if (simple_mode) {
-						core.reset();
+						Core_reset();
 						status = STATUS_RESET;
 						show_menu = 0;
 					}
@@ -6049,32 +5929,6 @@ static void Menu_loop(void) {
 	PWR_disableAutosleep();
 	firstframe = 1;
 }
-
-// TODO: move to PWR_*?
-static unsigned getUsage(void) { // from picoarch
-	long unsigned ticks = 0;
-	long ticksps = 0;
-	FILE *file = NULL;
-
-	file = fopen("/proc/self/stat", "r");
-	if (!file)
-		goto finish;
-
-	if (!fscanf(file, "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu", &ticks))
-		goto finish;
-
-	ticksps = sysconf(_SC_CLK_TCK);
-
-	if (ticksps)
-		ticks = ticks * 100 / ticksps;
-	
-finish:
-	if (file)
-		fclose(file);
-
-	return ticks;
-}
-
 
 
 static void trackFPS(void) {
