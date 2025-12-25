@@ -152,6 +152,8 @@ static int is353v = 0;
 static int is353p = 0;
 static int isg350 = 0;
 static int isrgb30 = 0;
+static int isr40xx = 0;
+static int isr36splus = 0;
 
 static int _R1_RAW, _R2_RAW, _L3_RAW, _R3_RAW, _START_RAW, _SELECT_RAW, _MENU_RAW;
 
@@ -496,6 +498,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	is353v = 0;
 	is353p = 0;
 	isrgb30 = 0;
+	isr40xx = 0;
+	isr36splus = 0;
 
 	if (access("/dev/input/by-path/platform-fdd40000.i2c-platform-rk805-pwrkey-event",F_OK)==0) {
 		//is the rk3566 based rg353v/353p/rgb30		
@@ -592,6 +596,7 @@ SDL_Surface* PLAT_initVideo(void) {
 				w = 720;
 				h = 720;
 				p = 1440;
+				isr36splus=1-isrgb30; //avoid to set isr36splus on rgb30
 			}
 			if ((conn->modes[c].vdisplay == 768) && (conn->modes[c].hdisplay == 1024) && (conn->modes[c].vrefresh == 61)) {
 				LOG_info("This is an r40xx pro max (4:3 4\"screen)\n");fflush(stdout);
@@ -606,6 +611,7 @@ SDL_Surface* PLAT_initVideo(void) {
 				h = 768;
 				p = 2048;
 				hz = 61;
+				isr40xx=1;
 			}
 			LOG_info("Found ConnectorID %i : mode %ux%u@%dHz\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
 			if (conn->modes[c].vdisplay == h && conn->modes[c].hdisplay == w && conn->modes[c].vrefresh == hz) {
@@ -1043,7 +1049,23 @@ int PLAT_pickSampleRate(int requested, int max) {
 }
 
 char* PLAT_getModel(void) {
-	return "R36S/RG353 ArkOS";
+	 if (is353v) {
+		if (is353p){
+			return "RG353P ArkOS";
+		} else {
+			return "RG353V ArkOS";
+		}
+	}
+	if (isrgb30) {
+		return "RGB30 ArkOS";
+	}
+	if (isr40xx) {
+		return "R40XX ArkOS";
+	}
+	if (isr36splus) {
+		return "R36S Plus ArkOS";
+	}
+	return "R36S ArkOS";
 }
 
 int PLAT_isOnline(void) {
