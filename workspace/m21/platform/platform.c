@@ -342,8 +342,8 @@ void get_fbinfo(void){
 		vid.vinfo.xres, vid.vinfo.yres, vid.vinfo.xres_virtual,
 		vid.vinfo.yres_virtual, vid.vinfo.bits_per_pixel,
 		vid.vinfo.red.length, vid.vinfo.red.offset,
-		vid.vinfo.blue.length,vid.vinfo.blue.offset,
 		vid.vinfo.green.length,vid.vinfo.green.offset,
+		vid.vinfo.blue.length,vid.vinfo.blue.offset,
 		vid.vinfo.transp.length,vid.vinfo.transp.offset,
 		vid.vinfo.width, vid.vinfo.height,
 		vid.vinfo.pixclock,
@@ -392,24 +392,7 @@ disp_layer_config config;
 static int platform_layer_id = -1;
 int swap_buffers_init(void){
 	memset(&config, 0, sizeof(config));
-	/* try to request a free layer from disp driver */
-	if (vid.dispfd >= 0) {
-		uint32_t req[2];
-		req[0] = 0; /* fb_id 0 */
-		req[1] = DISP_LAYER_WORK_MODE_NORMAL;
-		int lid = ioctl(vid.dispfd, DISP_CMD_LAYER_REQUEST, &req);
-		if (lid >= 0) {
-			platform_layer_id = lid;
-			config.layer_id = lid;
-			LOG_info("Requested display layer %d\n", lid);
-		} else {
-			LOG_info("Layer request failed (%d), falling back to layer 0\n", lid);
-			config.layer_id = 0;
-		}
-	} else {
-		config.layer_id = 0;
-	}
-
+	config.layer_id = 0;
 	config.channel = 0;
     config.enable = 1;
 	config.info.fb.align[0] = 4;//bytes
@@ -426,11 +409,11 @@ int swap_buffers_init(void){
     config.info.fb.crop.y = 0;
     config.info.fb.crop.width = (unsigned long long)(GAME_WIDTH) << 32;
     config.info.fb.crop.height = (unsigned long long)(GAME_HEIGHT) << 32;
-
     config.info.screen_win.x = 0;
     config.info.screen_win.y = 0;
     config.info.screen_win.width = GAME_WIDTH;
     config.info.screen_win.height = GAME_HEIGHT;
+	return 0;
 }
 // Funzione per swappare i buffer
 int firstswap = 1;
@@ -496,12 +479,14 @@ SDL_Surface* PLAT_initVideo(void) {
 	}
 
 	vid.fdfb = open("/dev/fb0", O_RDWR);
+	LOG_info("Opened /dev/fb0 with fd %d\n", vid.fdfb);fflush(stdout);
 	if (vid.fdfb < 0) {
 		LOG_info("Error opening /dev/fb0\n");
 		fflush(stdout);
 		return NULL;
 	}
 	vid.dispfd = open("/dev/disp", O_RDWR);
+	LOG_info("Opened /dev/disp with fd %d\n", vid.dispfd);fflush(stdout);
 	if (vid.dispfd < 0) {
 		LOG_info("Error opening /dev/disp\n");
 		fflush(stdout);
