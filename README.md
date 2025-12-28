@@ -14,6 +14,24 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+# Release 28/12/2025
+
+Some small but useful improvements
+
+Whats' new:
+
+### r36s:
+- reviewed cpu frequencies on RGB30, now aligned to the rg353
+- in high res screen such as 1024x768 of the 4" 4:3 the menu is downscaled to 720x540 for better readability
+
+### All:
+- in game DebugHUD now reports current cpu freq, the current cpu load for each enabled cpu core.
+- in game DebugHUD is now rotated according to the game orientation instead of the device orientation
+  (i.e. miyoomini is 180° rotated, the miyoo A30 is 270° rotated and the m22pro is 90° rotated.) 
+  so now it always look well oriented.
+
+
+
 # Release 23/12/2025
 
 This release fixes issues introduced with the previous 20251216 release.
