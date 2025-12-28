@@ -2684,207 +2684,6 @@ static void MSG_quit(void) {
 
 ///////////////////////////////
 
-/*
-static const char* bitmap_font[] = {
-	['0'] = 
-		" 111 "
-		"1   1"
-		"1   1"
-		"1  11"
-		"1 1 1"
-		"11  1"
-		"1   1"
-		"1   1"
-		" 111 ",
-	['1'] =
-		"   1 "
-		" 111 "
-		"   1 "
-		"   1 "
-		"   1 "
-		"   1 "
-		"   1 "
-		"   1 "
-		"   1 ",
-	['2'] =
-		" 111 "
-		"1   1"
-		"    1"
-		"   1 "
-		"  1  "
-		" 1   "
-		"1    "
-		"1    "
-		"11111",
-	['3'] =
-		" 111 "
-		"1   1"
-		"    1"
-		"    1"
-		" 111 "
-		"    1"
-		"    1"
-		"1   1"
-		" 111 ",
-	['4'] =
-		"1   1"
-		"1   1"
-		"1   1"
-		"1   1"
-		"1   1"
-		"1   1"
-		"11111"
-		"    1"
-		"    1",
-	['5'] =
-		"11111"
-		"1    "
-		"1    "
-		"1111 "
-		"    1"
-		"    1"
-		"    1"
-		"1   1"
-		" 111 ",
-	['6'] =
-		" 111 "
-		"1    "
-		"1    "
-		"1111 "
-		"1   1"
-		"1   1"
-		"1   1"
-		"1   1"
-		" 111 ",
-	['7'] =
-		"11111"
-		"    1"
-		"    1"
-		"   1 "
-		"  1  "
-		"  1  "
-		"  1  "
-		"  1  "
-		"  1  ",
-	['8'] =
-		" 111 "
-		"1   1"
-		"1   1"
-		"1   1"
-		" 111 "
-		"1   1"
-		"1   1"
-		"1   1"
-		" 111 ",
-	['9'] =
-		" 111 "
-		"1   1"
-		"1   1"
-		"1   1"
-		"1   1"
-		" 1111"
-		"    1"
-		"    1"
-		" 111 ",
-	['.'] = 
-		"     "
-		"     "
-		"     "
-		"     "
-		"     "
-		"     "
-		"     "
-		" 11  "
-		" 11  ",
-	[','] = 
-		"     "
-		"     "
-		"     "
-		"     "
-		"     "
-		"     "
-		"  1  "
-		"  1  "
-		" 1   ",
-	[' '] = 
-		"     "
-		"     "
-		"     "
-		"     "
-		"     "
-		"     "
-		"     "
-		"     "
-		"     ",
-	['('] = 
-		"   1 "
-		"  1  "
-		" 1   "
-		" 1   "
-		" 1   "
-		" 1   "
-		" 1   "
-		"  1  "
-		"   1 ",
-	[')'] = 
-		" 1   "
-		"  1  "
-		"   1 "
-		"   1 "
-		"   1 "
-		"   1 "
-		"   1 "
-		"  1  "
-		" 1   ",
-	['/'] = 
-		"   1 "
-		"   1 "
-		"   1 "
-		"  1  "
-		"  1  "
-		"  1  "
-		" 1   "
-		" 1   "
-		" 1   ",
-	['x'] = 
-		"     "
-		"     "
-		"1   1"
-		"1   1"
-		" 1 1 "
-		"  1  "
-		" 1 1 "
-		"1   1"
-		"1   1",
-	['%'] = 
-		" 1   "
-		"1 1  "
-		"1 1 1"
-		" 1 1 "
-		"  1  "
-		" 1 1 "
-		"1 1 1"
-		"  1 1"
-		"   1 ",
-	['T'] = 
-		"11111"
-		"  1  "
-		"  1  "
-		"  1  "
-		"  1  "
-		"  1  "
-		"  1  "
-		"  1  "
-		"  1  ",	
-};
-
-static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
-	#define CHAR_WIDTH 5
-	#define CHAR_HEIGHT 9
-	#define LETTERSPACING 1
-*/
-///////////////////////////////
-
 static const char* bitmap_font[] = {
 	['0'] = 
 		"  111111  "
@@ -3330,7 +3129,7 @@ static const char* bitmap_font[] = {
 		"1111111111",			
 };
 
-static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
+/*static void blitBitmapTextOrig(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
 	#define _CHAR_WIDTH 10
 	#define _CHAR_HEIGHT 16
 	#define _LETTERSPACING 2
@@ -3359,7 +3158,82 @@ static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int strid
 		}
 	}
 }
+*/
+int gamerotate = 0;
 
+static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int x, int y, int width, int height) {
+	#define _CHAR_WIDTH 10
+	#define _CHAR_HEIGHT 16
+	#define _LETTERSPACING 2
+
+	
+	int len = strlen(text);
+	int w = ((_CHAR_WIDTH+_LETTERSPACING)*len)-1;
+	int h = _CHAR_HEIGHT;
+	SDL_Surface *temp = SDL_CreateRGBSurface(SDL_SWSURFACE,w,h,FIXED_DEPTH,RGBA_MASK_565);
+	for (int y=0; y<_CHAR_HEIGHT; y++) {
+		uint16_t* row = temp->pixels + y * temp->pitch;
+		memset(row, 0, w);
+		for (int i=0; i<len; i++) {
+			const char* c = bitmap_font[text[i]];
+			for (int x=0; x<_CHAR_WIDTH; x++) {
+				int j = y * _CHAR_WIDTH + x;
+				if (c[j]=='1') *row = 0xffff;
+				row++;
+			}
+			row += _LETTERSPACING;
+		}
+	}
+	SDL_Surface* rotated;
+	
+//	int screenrotate = PLAT_getScreenRotation(0);
+//	LOG_info("systemrotate:%d system rotate game:%d Screen rotate:%d Game rotate:%d\n", renderer.rotate, renderer.rotategame, screenrotate, gamerotate);fflush(stdout);
+	switch (gamerotate) {
+
+		case 0:	//r36s/rg35xx
+		//		LOG_info("blitBitmapText180 rot0 Text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d \n", text, ox, oy, x, y, w, h, width, height);fflush(stdout);
+
+				if (ox<0) {ox = width+x-w+ox;} else { ox = x + ox; }
+				if (oy<0) {oy = height+y-h+oy;} else { oy = y + oy; }
+				SDL_BlitSurface(temp, NULL, surface, &(SDL_Rect){ox, oy});
+				break;
+			
+		case 1: //my282
+				rotated = rotateSurface90Degrees(temp, 3);
+		//		LOG_info("blitBitmapText180 rot1 text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d rotated_w:%d rotated_h:%d\n", text, ox, oy, x, y, w, h, width, height, rotated->w, rotated->h);fflush(stdout);
+
+				int fx = ox;
+				int fy = oy;
+
+				if (ox >= 0) { fy = height + y - w - ox; } else {fy = y - ox ; }
+				if (oy >= 0) { fx = x + oy; } else {fx = width + x - h + oy; }
+				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){fx,fy});
+				SDL_FreeSurface(rotated);
+				break;
+		case 2: //miyoomini
+				rotated = rotateSurface90Degrees(temp, 2);
+			//	LOG_info("blitBitmapText180 rot2 Text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d rotated_w:%d rotated_h:%d\n", text, ox, oy, x, y, w, h, width, height, rotated->w, rotated->h);fflush(stdout);
+
+				if (ox<0) {ox = x - ox;} else { ox = width  + x - ox - w; }
+				if (oy<0) {oy = y - oy;} else { oy = height + y - oy - h; }
+				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){ox,oy});
+				SDL_FreeSurface(rotated);
+				break;
+		case 3: //m22pro
+				rotated = rotateSurface90Degrees(temp, 1);
+			//	LOG_info("blitBitmapText180 rot3 Text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d rotated_w:%d rotated_h:%d\n", text, ox, oy, x, y, w, h, width, height, rotated->w, rotated->h);fflush(stdout);
+				int fax = ox;
+				int fay = oy;
+
+				if (ox >= 0) {fay = y + ox ; } else { fay = height + y - w + ox; }
+				if (oy >= 0) {fax = width + x - h  - oy; } else { fax = x - oy; }
+				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){fax,fay});
+				SDL_FreeSurface(rotated);
+				break;			
+	}
+	
+	SDL_FreeSurface(temp);
+}
 ///////////////////////////////
 
 //static int cpu_ticks = 0;
@@ -3635,31 +3509,31 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 
 	renderer.src = (void*)data;
 	struct timeval now, now1, now2, now3, now4, now5, now6;
-	gettimeofday(&now,NULL);
+//	gettimeofday(&now,NULL);
 	
 	//ok here I have renderer.src that points to the frame data to display, it is in RGB565 format
 	//quite sure it is the right moment to rotate it, before calling the selected scaler.
 	//video_refresh_callback_rotate((renderer.rotate + PLAT_getScreenRotation()) & 3, renderer.src, width, height, pitch);
 	video_refresh_callback_rotate(renderer.rotate, (uint16_t*)data, width, height, pitch);
-	gettimeofday(&now1,NULL);
+//	gettimeofday(&now1,NULL);
 	if (renderer.dst_p==0 || renderer.resize ==1) {
 		video_refresh_callback_resize();
 		GFX_clearAll();	
 	}
-	gettimeofday(&now2,NULL);
+//	gettimeofday(&now2,NULL);
 	GFX_blitRenderer(&renderer);
-	gettimeofday(&now3,NULL);
+//	gettimeofday(&now3,NULL);
 	// debug
 	if (show_debug) {
 		char debug_text[128];
 		sprintf(debug_text, "%ix%i %c%.1fx %d", renderer.src_w,renderer.src_h, resizemode, renderer.scale, backbuffer.depth);
-		blitBitmapText(debug_text,renderer.dst_x+2,renderer.dst_y+2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+		blitBitmapText(debug_text,2,2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
 		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.dst_w,renderer.dst_h);
-		blitBitmapText(debug_text,-2,renderer.dst_y+2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+		blitBitmapText(debug_text,-2,2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
 		sprintf(debug_text, "%.0f/%.0f", fps_double,fps2_double);
-		blitBitmapText(debug_text,renderer.dst_x+2,-22,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+		blitBitmapText(debug_text,2,-22,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
 		_now = SDL_GetTicks();
 
@@ -3667,13 +3541,13 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 			sec_start2 = _now;
 			getCPUusage(cpuload);
 		}	
-		blitBitmapText(cpuload,renderer.dst_x+2,-2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+		blitBitmapText(cpuload,2,-2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
 		sprintf(debug_text, "%s %i", effect_str,renderer.rotategame*90);
-		blitBitmapText(debug_text,-2,-2,screengame->pixels,screengame->pitch/2, renderer.dst_w+renderer.dst_x,renderer.dst_h+renderer.dst_y);
+		blitBitmapText(debug_text,-2,-2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 	}
 
-	gettimeofday(&now4,NULL);
+//	gettimeofday(&now4,NULL);
 	if (use_nofix) {
 		GFX_flipNoFix(screen);
 	} else {
@@ -3684,9 +3558,9 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		  	GFX_flip(screen);
 		}
 	}
-	gettimeofday(&now5,NULL);
+//	gettimeofday(&now5,NULL);
 	GFX_pan();
-	gettimeofday(&now6,NULL);
+//	gettimeofday(&now6,NULL);
 	last_flip_time = SDL_GetTicks();
 	if (!thread_video) render = 0;
 
@@ -5354,7 +5228,7 @@ static void Menu_saveState(void) {
 	
 	//SDL_Surface* bitmap = SDL_CreateRGBSurfaceFrom(renderer.src_surface->pixels, renderer.src_surface->w, renderer.src_surface->h, FIXED_DEPTH, renderer.src_surface->pitch, RGBA_MASK_565);
 	SDL_Surface *tmpbitmap = SDL_CreateRGBSurfaceFrom(renderer.src_surface->pixels, renderer.src_surface->w, renderer.src_surface->h, FIXED_DEPTH, renderer.src_surface->pitch, RGBA_MASK_565);
-	SDL_Surface *bitmap = rotozoomSurface(tmpbitmap, (4-PLAT_getScreenRotation(1))*90.0, 1.0, 1);
+	SDL_Surface *bitmap = rotozoomSurface(tmpbitmap, (4-PLAT_getScreenRotation(1))*90.0, 1.0, SMOOTHING_ON);
 	SDL_FreeSurface(tmpbitmap);
 	SDL_RWops* out =     SDL_RWFromFile(menu.bmp_path, "wb");
 #if defined (USE_SDL2)
@@ -5448,22 +5322,18 @@ static void Menu_loop(void) {
 	if (thread_video==1) {	
 		wait_For_Thread();
 	}
-
 	if (firstmenu) PLAT_clearAll();
 	firstmenu = 0;
-
-	menu.bitmap = rotozoomSurface(screengame, (4-PLAT_getScreenRotation(1))*90.0, 1.0, 1);
+	menu.bitmap = rotozoomSurface(screengame, (4-gamerotate)*90.0, 1.0, 1);
 	SDL_Surface* backing = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH,DEVICE_HEIGHT,FIXED_DEPTH,RGBA_MASK_565); 
 //	SDL_BlitSurface(menu.bitmap, NULL, backing, NULL);
 	SDL_BlitScaled(menu.bitmap, NULL, backing, NULL);
 	int restore_w = screen->w;
 	int restore_h = screen->h;
 	int restore_p = screen->pitch;
-	//if (restore_w!=DEVICE_WIDTH || restore_h!=DEVICE_HEIGHT || restore_p!=DEVICE_PITCH) {
 	
 	LOG_info("Menu_loop begin call GFX_resize %i %i %i\n",DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);fflush(stdout);
 	screen = GFX_resize(DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
-	//}
 	
 	SRAM_write();
 	RTC_write();
@@ -6062,7 +5932,7 @@ int main(int argc , char* argv[]) {
 	resume_slot=-1;
 	Menu_initState(); // make ready for state shortcuts
 	
-	
+	gamerotate = PLAT_getScreenRotation(1);
 	core_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 	core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 	pthread_create(&core_pt, NULL, &coreThread, NULL);
@@ -6076,8 +5946,8 @@ int main(int argc , char* argv[]) {
 	// force a vsync immediately before loop
 	// for better frame pacing?
 	GFX_clearAll();
-	GFX_flip(screen);
-	GFX_pan();
+	//GFX_flip(screen);
+	//GFX_pan();
 
 	sec_start = SDL_GetTicks();
 
