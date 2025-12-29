@@ -9,7 +9,7 @@ echo "" > $TMPFILE1
 
 #detect input events
 echo "##############################" >> $LOGFILE
-echo "Listing /dev/input/by-path/* devices:" > $LOGFILE
+echo "Listing /dev/input/by-path/* devices:" >> $LOGFILE
 ls -l /dev/input/by-path/* >> $LOGFILE
 #detect buttons 
 echo "##############################" >> $LOGFILE
