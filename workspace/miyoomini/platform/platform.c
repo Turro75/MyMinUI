@@ -169,6 +169,7 @@ static struct VID_Context {
 	void *fbmmap; //mmap address of the framebuffer, up to 2 pages
 	SDL_Surface* screen;  //swsurface to let sdl thinking it's the screen
 	SDL_Surface* screen2;
+	SDL_Surface* screen3;
 	SDL_Surface *screengame;
 	int linewidth;
 	int screen_size;
@@ -279,31 +280,38 @@ SDL_Surface* PLAT_initVideo(void) {
 	int p = FIXED_PITCH;
 	int w = FIXED_WIDTH;
 	int h = FIXED_HEIGHT;
-	if (IS_MINARCH) {
-		LOG_info("Is Minarch runnning\n");
-		if (is_miniv4) {
-			LOG_info("Miyoomini 2.8 v4 Found!, set the screen to 752x560\n");
-			w = 752;
-			h = 560;
-			p = w * FIXED_BPP;
-		}		
-	}
-  
+	vid.width = w;
+	vid.height = h;
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
-	DEVICE_PITCH = p;
-	vid.rotate = 2;	//no reason to change it.
-	get_fbinfo();	
 
 	if (exists(ROTATE_SYSTEM_PATH)) {
 		vid.rotate = getInt(ROTATE_SYSTEM_PATH) &3;
 	}
-	GAME_WIDTH = DEVICE_WIDTH;
-	GAME_HEIGHT = DEVICE_HEIGHT;
+
+	if (is_miniv4) {
+		LOG_info("Miyoomini 2.8 v4 Found!, set the game screen to 752x560\n");
+		w = 752;
+		h = 560;
+		vid.width = w;
+		vid.height = h;
+		DEVICE_WIDTH = FIXED_WIDTH;
+		DEVICE_HEIGHT = FIXED_HEIGHT;
+		p = w * FIXED_BPP;
+	}	
+
 	if (vid.rotate % 2 == 1) {
-		DEVICE_WIDTH = h;
-		DEVICE_HEIGHT = w;
+		DEVICE_WIDTH = FIXED_HEIGHT;
+		DEVICE_HEIGHT = FIXED_WIDTH;
 	}
+
+	DEVICE_PITCH = p;
+	vid.rotate = 2;	//no reason to change it.
+	get_fbinfo();	
+
+	GAME_WIDTH = w;
+	GAME_HEIGHT = h;	
+	
 	vid.rotategame = (4-vid.rotate)&3;
     vid.vinfo.xres=w;
     vid.vinfo.yres=h;
@@ -336,6 +344,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
+	vid.screen3 = SDL_CreateRGBSurface(0, vid.width, vid.height, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screengame = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
 	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
 
@@ -348,6 +357,7 @@ SDL_Surface* PLAT_initVideo(void) {
 void PLAT_quitVideo(void) {
 	SDL_FreeSurface(vid.screen);
 	SDL_FreeSurface(vid.screen2);
+	SDL_FreeSurface(vid.screen3);
 	SDL_FreeSurface(vid.screengame);
 	munmap(vid.fbmmap, 0);
     close(vid.fdfb);
@@ -356,12 +366,14 @@ void PLAT_quitVideo(void) {
 void PLAT_clearVideo(SDL_Surface* screen) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
+	SDL_FillRect(vid.screen3, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
 }
 
 void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
+	SDL_FillRect(vid.screen3, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
 	memset(vid.fbmmap, 0, vid.screen_size);
 }
@@ -444,27 +456,28 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
-		vid.targetRect.w = vid.screen->w;
-		vid.targetRect.h = vid.screen->h;
+		vid.targetRect.w = vid.width;
+		vid.targetRect.h = vid.height;
+		scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(vid.screen->pixels, vid.screen->w, vid.screen->h, vid.screen->pitch, vid.screen3->pixels, vid.screen3->w, vid.screen3->h, vid.screen3->pitch, 0,0, vid.width, vid.height);
 		if (vid.rotate == 0) 
 		{
 			// No Rotation
-			FlipRotate000(vid.screen, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);			
+			FlipRotate000(vid.screen3, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);			
 		}
 		if (vid.rotate == 1)
 		{
 			// 90 Rotation
-			FlipRotate090(vid.screen, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
+			FlipRotate090(vid.screen3, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
 		}
 		if (vid.rotate == 2)
 		{
 			// 180 Rotation
-			FlipRotate180(vid.screen, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
+			FlipRotate180(vid.screen3, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
 		}
 		if (vid.rotate == 3)
 		{
 			// 270 Rotation
-			FlipRotate270(vid.screen, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
+			FlipRotate270(vid.screen3, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
 		}
 		//to avoid flickering/tearing in menu.
 	} else {

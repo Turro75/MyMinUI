@@ -36,7 +36,6 @@ extern int GAME_WIDTH;
 extern int GAME_HEIGHT;
 extern int GAME_PITCH;
 extern int DEVICE_PITCH;
-extern int IS_MINARCH;
 extern uint32_t frame_start;
 extern int TARGET_FPS;
 extern uint32_t cur_cpu_freq;

@@ -27,7 +27,6 @@ int GAME_WIDTH;
 int GAME_HEIGHT;
 int DEVICE_PITCH;
 int TARGET_FPS;
-int IS_MINARCH = 0;
 uint32_t cur_cpu_freq;
 
 void LOG_note(int level, const char* fmt, ...) {
