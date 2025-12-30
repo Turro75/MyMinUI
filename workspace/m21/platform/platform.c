@@ -271,7 +271,7 @@ int PLAT_shouldWake(void) {
 
 static struct VID_Context {
 	int fdfb; // /dev/fb0 handler
-	int dispfd; // /dev/fb1 handler
+	int dispfd; // /dev/disp handler
 	struct fb_fix_screeninfo finfo;  //fixed fb info
 	struct fb_var_screeninfo vinfo;  //adjustable fb info
 	void *fbmmap[2]; //mmap address of the framebuffer
@@ -295,7 +295,7 @@ static struct VID_Context {
 } vid;
 
 void pan_display(int page){
-	vid.vinfo.yoffset = vid.vinfo.yres_virtual/2 * page;
+	vid.vinfo.yoffset = vid.vinfo.yres * page;
 	//vid.vinfo.yoffset = 0;
 	ioctl(vid.fdfb, FBIOPAN_DISPLAY, &vid.vinfo);
 }
@@ -386,65 +386,6 @@ int getHDMIStatus(void) {
     }
 	fclose(__stream);
 	return retvalue;
-}
-
-disp_layer_config config;
-static int platform_layer_id = -1;
-int swap_buffers_init(void){
-	memset(&config, 0, sizeof(config));
-	config.layer_id = 0;
-	config.channel = 0;
-    config.enable = 1;
-	config.info.fb.align[0] = 4;//bytes
-    config.info.mode = LAYER_MODE_BUFFER;
-    config.info.zorder = 0; // In primo piano
-    config.info.alpha_mode = 1;
-    config.info.alpha_value = 0xff;
-    config.info.fb.format = DISP_FORMAT_ARGB_8888;
-	config.info.fb.flags = DISP_BF_NORMAL;
-	config.info.fb.scan = DISP_SCAN_PROGRESSIVE;
-    config.info.fb.size[0].width = GAME_WIDTH;
-    config.info.fb.size[0].height = GAME_HEIGHT;
-    config.info.fb.crop.x = 0;
-    config.info.fb.crop.y = 0;
-    config.info.fb.crop.width = (unsigned long long)(GAME_WIDTH) << 32;
-    config.info.fb.crop.height = (unsigned long long)(GAME_HEIGHT) << 32;
-    config.info.screen_win.x = 0;
-    config.info.screen_win.y = 0;
-    config.info.screen_win.width = GAME_WIDTH;
-    config.info.screen_win.height = GAME_HEIGHT;
-	return 0;
-}
-// Funzione per swappare i buffer
-int firstswap = 1;
-void swap_buffers(int page)
-{
-	unsigned long arg[3];
- //   swap_buffers_init();
-	// The Sunxi driver expects physical framebuffer addresses (smem_start),
-	// not virtual mmap pointers. Use fb fixed info smem_start + page offset.
-//	if (vid.fdfb >= 0) {
-//		config.info.fb.addr[0] = (uintptr_t)vid.finfo.smem_start + ((uintptr_t)page * (uintptr_t)vid.offset);
-//	} else {
-		config.info.fb.addr[0] = (uintptr_t)vid.fbmmap[page];
-//	}
-
-	arg[0] = 0; // screen 0 (fb id)
-	arg[1] = (unsigned long)&config;
-	arg[2] = 1; // one layer
-	int ret = -1;
-	if (vid.dispfd >= 0) {
-		ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, (void*)arg);
-		if (firstswap == 1) {
-			firstswap = 0;
-			LOG_info("First swap_buffers completed\n");
-			LOG_info("swap_buffers: page=%d layer=%d platform_layer_id=%d ioctl_ret=%d\n", page, config.layer_id, platform_layer_id, ret);
-			LOG_info("swap_buffers: fb_paddr=0x%08lx fb_mmap=%p finfo.smem_start=0x%08lx offset=%u\n", (unsigned long)config.info.fb.addr[0], vid.fbmmap[page], (unsigned long)vid.finfo.smem_start, (unsigned)vid.offset);
-			fflush(stdout);
-		}
-	}
-		
-	//LOG_info("Swap_buffers retvalue = %d\n", ret);fflush(stdout);
 }
 
 int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max;
@@ -594,40 +535,63 @@ SDL_Surface* PLAT_initVideo(void) {
 	LOG_info("vid.screengame: %ix%i\n", vid.screengame->w, vid.screengame->h);fflush(stdout);
 	LOG_info("vid.screen2: %ix%i\n", vid.screen2->w, vid.screen2->h);fflush(stdout);
 
-//	vid.page = 0;
-//	pan_display(vid.page);
-//	swap_buffers_init();
-//	swap_buffers(vid.page);
 	vid.renderingGame = 0;
 
+/*
+	int error_code;
+	for (int i = 0; i < 11; i++) {
+		int cnow = SDL_GetTicks();
+		usleep(7000);
+		pan_display(0);
+		printf("FBIOPAN_DISPLAY took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
+	}
 	
-	vid.screen_size = vid.vinfo.yres_virtual * vid.finfo.line_length;
-	vid.offset = vid.screen_size/2;
+	for (int i = 0; i < 11; i++) {
+		int cnow = SDL_GetTicks();
+		usleep(7000);
+		set_fbinfo();
+		printf("FBIOPUT_VSCREENINFO took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
+	}
+
+	for (int i = 0; i < 11; i++) {
+		int cnow = SDL_GetTicks();
+		usleep(7000);
+		int _;
+		error_code = ioctl(vid.fdfb, FBIOBLANK, &_); 
+		printf("FBIOBLANK took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
+	}
+	
+	for (int i = 0; i < 11; i++) {
+		int cnow = SDL_GetTicks();
+		usleep(7000);
+		int _;
+		error_code = ioctl(vid.fdfb, FBIO_WAITFORVSYNC, &_); 
+		printf("FBIO_WAITFORVSYNC took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
+	}
+*/
+
+	vid.offset = vid.vinfo.yres * vid.finfo.line_length;
+	vid.screen_size = vid.offset;
 	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
-	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
-	vid.fbmmap[0] = mmap(NULL, vid.offset, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+   //create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
+    vid.fbmmap[0] = mmap(NULL, vid.screen_size*2, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 	if (vid.fbmmap[0] == MAP_FAILED) {
-		LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
+		LOG_info("Error mapping framebuffer 0 device to memory: %s\n", strerror(errno));
 		//return NULL;
 	}
 	/* Map the second page at an offset equal to one page size so the two
 	   mappings refer to distinct framebuffer pages. */
-	vid.fbmmap[1] = mmap(NULL, vid.offset, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
-	if (vid.fbmmap[1] == MAP_FAILED) {
-		LOG_info("Error mapping framebuffer device to memory: %s\n", strerror(errno));
+//	vid.fbmmap[1] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+//	if (vid.fbmmap[1] == MAP_FAILED) {
+//		LOG_info("Error mapping framebuffer 1 device to memory: %s\n", strerror(errno));
 		//return NULL;
-	}
+//	}
 	LOG_info("Address vid.fbmmap[0]: %p\n", vid.fbmmap[0]);fflush(stdout);
-	LOG_info("Address vid.fbmmap[1]: %p\n", vid.fbmmap[1]);fflush(stdout);
-	swap_buffers_init();
+//	LOG_info("Address vid.fbmmap[1]: %p\n", vid.fbmmap[1]);fflush(stdout);
 	vid.page = 0;
-	swap_buffers(vid.page);
+	pan_display(vid.page);
+	vid.page = 0;
 	vid.sharpness = SHARPNESS_SOFT;
-//	page[0] = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
-//	page[1] = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
-//	SDL_FillRect(page[0], &(SDL_Rect){0, 0, GAME_WIDTH/2, GAME_HEIGHT}, 0xffff00ff); // TODO: revisit
-//	SDL_FillRect(page[1], &(SDL_Rect){GAME_WIDTH/2, 0, GAME_WIDTH/2, GAME_HEIGHT}, 0xff00ffff); // TODO: revisit
-
 	return vid.screen;
 }
 
@@ -639,15 +603,7 @@ void PLAT_quitVideo(void) {
 //	SDL_FreeSurface(page[0]);
 //	SDL_FreeSurface(page[1]);
 	if (vid.fbmmap[0] && vid.fbmmap[0] != MAP_FAILED) munmap(vid.fbmmap[0], vid.offset);
-	if (vid.fbmmap[1] && vid.fbmmap[1] != MAP_FAILED) munmap(vid.fbmmap[1], vid.offset);
-	if (platform_layer_id >= 0 && vid.dispfd >= 0) {
-		uint32_t rel[2];
-		rel[0] = 0; /* fb id */
-		rel[1] = platform_layer_id;
-		ioctl(vid.dispfd, DISP_CMD_LAYER_RELEASE, &rel);
-		LOG_info("Released display layer %d\n", platform_layer_id);
-		platform_layer_id = -1;
-	}
+//	if (vid.fbmmap[1] && vid.fbmmap[1] != MAP_FAILED) munmap(vid.fbmmap[1], vid.offset);
 
 	if (vid.fdfb >= 0) close(vid.fdfb);
 	if (vid.dispfd >= 0) close(vid.dispfd);
@@ -664,7 +620,7 @@ void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen2, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
 	memset(vid.fbmmap[0], 0, vid.offset);
-	memset(vid.fbmmap[1], 0, vid.offset);
+//	memset(vid.fbmmap[1], 0, vid.offset);
 }
 
 void PLAT_setVsync(int vsync) {
@@ -703,7 +659,7 @@ void PLAT_vsync(int remaining) {
 	if (remaining>0) {
 		usleep(remaining*1000);
 	} else {
-		pan_display(0);
+		pan_display(vid.page);
 	}
 }
 
@@ -746,55 +702,42 @@ void PLAT_pan(void) {
 
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
-//	vid.page=0;
 	vid.page ^= 1;
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.screen->w;
 		vid.targetRect.h = vid.screen->h;
-//		vid.page = 0;
 		if (vid.rotate == 0)
 		{
 			// 90 Rotation
-			FlipRotate000(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
+			FlipRotate000(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 		}
 		if (vid.rotate == 1)
 		{
 			// 90 Rotation
-			FlipRotate090(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
+			FlipRotate090(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 		}
 		if (vid.rotate == 2)
 		{
 			// 180 Rotation
-			FlipRotate180(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
+			FlipRotate180(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 		}
 		if (vid.rotate == 3)
 		{
 			// 270 Rotation
-			FlipRotate270(vid.screen, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
+			FlipRotate270(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 		}
-		
+		pan_display(vid.page);
 	} else {
 		//maybe one Day I'll find the time to investigate on why neon copy functions aren't working here
 		// No Rotation
-			FlipRotate000(vid.screengame, vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
-	//		FlipRotate000(page[vid.page], vid.fbmmap[vid.page],vid.linewidth, vid.targetRect);
-//		if (vid.targetRect.w == vid.screen->w) {
-//			//fullscreen
-//			pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap[vid.page], vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
-//		} else {
-//			//window
-//			convert_rgb565_to_argb8888_neon_rect(vid.screengame->pixels, vid.fbmmap[vid.page], vid.screengame->w, vid.screengame->w, vid.targetRect.x, vid.targetRect.y, vid.targetRect.w, vid.targetRect.h);
-//		}
-		
-//		swap_buffers(vid.page);
-//		vid.page ^= 1;
-		
+			FlipRotate000(vid.screengame, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+		if (sync) {
+			pan_display(vid.page);
+		}
 	}	
 	vid.renderingGame = 0;
-	swap_buffers(vid.page);
-//	if (sync) pan_display(0);
 	//LOG_info("Total Flip TOOK: %imsec, Draw TOOK: %imsec\n", SDL_GetTicks()-now, now2-now);fflush(stdout);
 }
 ///////////////////////////////
