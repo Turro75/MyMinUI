@@ -58,7 +58,7 @@ export CPU_SPEED_PERF=1488000
 if $IS_PLUS; then
     export CPU_SPEED_MAX=1800000
 else
-    export CPU_SPEED_MAX=1700000
+    export CPU_SPEED_MAX=1600000
 fi
 echo userspace > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 overclock.elf $CPU_SPEED_PERF
@@ -94,7 +94,7 @@ export IS_MMV4
 #######################################
 
 # killall tee # NOTE: killing tee is somehow responsible for audioserver crashes
-rm -f "$SDCARD_PATH/update.log"
+#rm -f "$SDCARD_PATH/update.log"
 
 #######################################
 
