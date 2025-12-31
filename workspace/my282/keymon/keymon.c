@@ -90,8 +90,10 @@ int main (int argc, char *argv[]) {
 					case CODE_PWR:
 						file_log = fopen("/mnt/SDCARD/.userdata/my282/logs/keymon.log", "a+"); 
 						fprintf(file_log, "PWR BTN PRESSED Event BTN Code = %d\n",ev.code);
-						system("echo -n \"QUIT\" | nc -u -w1 127.0.0.1 55355");
 						fclose(file_log); 
+						system("rm -f /mnt/SDCARD/.system.json.log");
+						fflush(stdout);
+						system("echo -n \"QUIT\" | nc -u -w1 127.0.0.1 55355");
 					break;
 					case CODE_MINUS:
 						down_pressed = down_just_pressed = val;

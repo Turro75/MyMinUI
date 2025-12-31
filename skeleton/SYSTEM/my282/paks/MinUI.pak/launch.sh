@@ -39,8 +39,6 @@ while :; do
 	sleep 2
 done &
 
-rm -f "$SDCARD_PATH/update.log"
-
 #######################################
 
 keymon.elf & #> $LOGS_PATH/keymon.txt 2>&1 &
@@ -78,5 +76,5 @@ while [ -f "$EXEC_PATH" ]; do
 		sync
 	fi
 done
-
+rm -f "$SDCARD_PATH/.system.json.log"
 shutdown
