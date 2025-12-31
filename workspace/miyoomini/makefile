@@ -20,8 +20,11 @@ all: readmes
 	cd lumon && make
 	cd show && make
 	cd overclock && make
+#	cd $(REQUIRES_NDS) && make -f Makefile.miyoo_mini cfg
+#	cd $(REQUIRES_NDS) && make -f Makefile.miyoo_mini all
 	cd $(REQUIRES_NDS) && make -f Makefile.mini cfg
 	cd $(REQUIRES_NDS) && make -f Makefile.mini all
+
 	cp -L ${PREFIX}/lib/libjson-c.so.2 $(REQUIRES_NDS)/drastic/lib/
 
 early:  $(REQUIRES_NDS) #$(REQUIRES_SDL)
@@ -33,8 +36,8 @@ clean:
 	cd lumon && make clean
 	cd show && make clean
 	cd other/latency_reduction && make clean
+#	cd $(REQUIRES_NDS) && make -f Makefile.miyoo_mini clean
 	cd $(REQUIRES_NDS) && make -f Makefile.mini clean
-
 
 ###########################################################
 
@@ -45,7 +48,7 @@ $(REQUIRES_COMMANDER):
 
 $(REQUIRES_NDS):
 	rmdir -r $(REQUIRES_NDS) | true
-	git clone https://github.com/steward-fu/nds.git $(REQUIRES_NDS)
+	git clone https://github.com/Turro75/nds.git $(REQUIRES_NDS)
 	cd $(REQUIRES_NDS) && git checkout 55d45ea
 	cd $(REQUIRES_NDS) && patch -p1 < ../nds_19.patch
 

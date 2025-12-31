@@ -50,7 +50,7 @@ $(REQUIRES_LIBSAMPLERATE):
 
 $(REQUIRES_NDS):
 	rmdir -r $(REQUIRES_NDS) | true
-	git clone https://github.com/steward-fu/nds.git $(REQUIRES_NDS)
+	git clone https://github.com/Turro75/nds.git $(REQUIRES_NDS)
 	cd $(REQUIRES_NDS) && git checkout 55d45ea
 	cd $(REQUIRES_NDS) && patch -p1 < ../nds_19.patch
 	cd $(REQUIRES_NDS) && cp -r ../nds_add_libs/a30 ./drastic/lib/
