@@ -5177,8 +5177,8 @@ static int Menu_options(MenuList* list) {
 		else GFX_sync();
 	}
 	
-	// GFX_clearAll();
-	// GFX_flip(screen);
+	GFX_clearAll();
+	GFX_flip(screen);
 	
 	return 0;
 }
@@ -5665,14 +5665,13 @@ static void Menu_loop(void) {
 		}
 		else GFX_sync();
 	}
-	
+
 	SDL_FreeSurface(preview);
 	
 	PAD_reset();
-
-	GFX_clearAll();
 	PWR_warn(1);
-	
+	GFX_clearAll();
+	GFX_flip(screen);
 	if (!quit) {
 
 		LOG_info("Menu_loop exit from menu call GFX_resize %i %i %i\n", restore_w, restore_h, restore_p);fflush(stdout);
