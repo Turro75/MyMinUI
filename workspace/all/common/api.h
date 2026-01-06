@@ -458,6 +458,11 @@ int FlipRotate090bgr(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect
 int FlipRotate180bgr(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
 int FlipRotate270bgr(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
 
+int FlipRotate000_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+int FlipRotate090_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+int FlipRotate180_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+int FlipRotate270_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
+
 void rotateIMG(void *src, void*dst, int rotation, int srcw, int srch, int srcp);
 void convert_rgb565_to_argb8888_neon_rect(
     const uint16_t *src,

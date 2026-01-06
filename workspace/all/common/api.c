@@ -2417,6 +2417,37 @@ void convert_argb1555_to_rgb565_neon(
     }
 }
 
+int FlipRotate000_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
+	//this is actually a no rotation conversion.
+	
+	//copy a surface to the screen and flip it
+	//it must be the same resolution, the bpp16 is then converted to 32bpp
+	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y, widthminus_1, heightminus_1;
+	widthminus_1 = buffer->w - 1;
+	heightminus_1 = buffer->h - 1;
+	uint16_t *dsttmp;
+	uint16_t *srctmp;
+	//ok start conversion assuming it is RGB565		
+	for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+		dsttmp = (uint16_t *)fbmmap + y * linewidth;
+		srctmp = (uint16_t *)buffer->pixels + y * thispitch;
+		for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
+			uint16_t pixel = *((uint16_t *)srctmp + x);
+			*((uint16_t *)dsttmp + x ) = (uint16_t)pixel;
+		//	uint32_t r = (pixel & 0xF800) << 8;
+		//	uint32_t g = (pixel & 0x7E0) << 5;
+		//	uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
+		//	*((uint32_t *)dsttmp + x ) = (uint32_t)( r | g | ba);
+		}
+	}	
+	return 0;	
+}
+
+
 int FlipRotate000(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
 	//this is actually a no rotation conversion.
 	
@@ -2472,6 +2503,33 @@ int FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect ta
 	return 0;	
 }
 
+int FlipRotate270_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {	
+	//this is actually a 90deg rotation
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y, widthminus_1, heightminus_1;
+	widthminus_1 = buffer->w - 1;
+	heightminus_1 = buffer->h - 1;
+	uint16_t *dsttmp;
+	uint16_t *srctmp;
+		//ok start conversion assuming it is RGB565		
+	for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+		dsttmp = (uint16_t *)fbmmap + y + widthminus_1 * linewidth;
+		srctmp = (uint16_t *)buffer->pixels + y * thispitch;
+		for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
+			int tmp1 = x * linewidth;
+			uint16_t pixel = *((uint16_t *)srctmp + x);
+		//	uint32_t r = (pixel & 0xF800) << 8;
+		//	uint32_t g = (pixel & 0x7E0) << 5;
+		//	uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
+			*((uint16_t *)dsttmp - tmp1) = (uint16_t)(pixel);
+		}
+	}
+	return 0;	
+}
+
+
 int FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
 	//this is actually a 180deg rotation
 	
@@ -2501,6 +2559,35 @@ int FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect ta
 	return 0;	
 }
 
+int FlipRotate180_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
+	//this is actually a 180deg rotation
+	
+	//copy a surface to the screen and flip it
+	//it must be the same resolution, the bpp16 is then converted to 32bpp
+	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y, widthminus_1, heightminus_1;
+	widthminus_1 = buffer->w - 1;
+	heightminus_1 = buffer->h - 1;
+	uint16_t *dsttmp;
+	uint16_t *srctmp;
+	//ok start conversion assuming it is RGB565		
+	for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+		dsttmp = (uint16_t *)fbmmap + (heightminus_1 - y) * linewidth + widthminus_1;
+		srctmp = (uint16_t *)buffer->pixels + y * thispitch;
+		for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
+			uint16_t pixel = *((uint16_t *)srctmp + x);
+			//uint32_t r = (pixel & 0xF800) << 8;
+			//uint32_t g = (pixel & 0x7E0) << 5;
+			//uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
+			*((uint16_t *)dsttmp - x) = (uint16_t)( pixel);
+		}
+	}
+	return 0;	
+}
+
 int FlipRotate090(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
 	//this is actually a 270deg rotation
 
@@ -2521,6 +2608,31 @@ int FlipRotate090(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect ta
 			uint32_t g = (pixel & 0x7E0) << 5;
 			uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
 			*((uint32_t *)dsttmp + x  * linewidth) = (uint32_t)( r | g | ba);
+		}
+	}	
+	return 0;	
+}
+
+int FlipRotate090_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
+	//this is actually a 270deg rotation
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y, widthminus_1, heightminus_1;
+	widthminus_1 = buffer->w - 1;
+	heightminus_1 = buffer->h - 1;
+	uint16_t *dsttmp;
+	uint16_t *srctmp;
+		//ok start conversion assuming it is RGB565		
+	for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+		dsttmp = (uint16_t *)fbmmap + heightminus_1 - y;
+		srctmp = (uint16_t *)buffer->pixels + y * thispitch;
+		for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
+			uint16_t pixel = *((uint16_t *)srctmp + x);
+		//	uint32_t r = (pixel & 0xF800) << 8;
+		//	uint32_t g = (pixel & 0x7E0) << 5;
+		//	uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
+			*((uint16_t *)dsttmp + x  * linewidth) = (uint16_t)( pixel);
 		}
 	}	
 	return 0;	

@@ -101,7 +101,7 @@ if [ -f ${ROOTFS_MOUNTPOINT}/bin/busybox ]; then
 
     if [ "${MOUNTED}" = "0" ]; then
     #mount all other fs as minui on rg35xx og
-	for f in dev dev/pts proc sys mnt/SDCARD tmp
+	for f in dev dev/pts dev/usb-ffs/adb proc sys sys/kernel/debug sys/kernel/config mnt/SDCARD tmp
 	do
 		mount -o bind /${f} ${ROOTFS_MOUNTPOINT}/${f}
 	done

@@ -16,6 +16,7 @@
 #include "api.h"
 #include "utils.h"
 #include "sunxi_display2.h"
+#include "sunxi_ion.h"
 
 #define ISM22_PATH "/mnt/SDCARD/m21/thisism22"
 
@@ -272,9 +273,16 @@ int PLAT_shouldWake(void) {
 static struct VID_Context {
 	int fdfb; // /dev/fb0 handler
 	int dispfd; // /dev/disp handler
+	int ionfd; // /dev/ion handler
+	int cedarfd; // /dev/cedar_dev handler
+	struct ion_memory ion_mem; // ion mem handlers
+	struct user_iommu_param iommu_param; //iommu for physical address
+	struct disp_layer_config layer_config; //for layer handling
+	struct disp_layer_config layer_config_orig; //for layer handling
+	int ionmmapfailed;
 	struct fb_fix_screeninfo finfo;  //fixed fb info
 	struct fb_var_screeninfo vinfo;  //adjustable fb info
-	void *fbmmap[2]; //mmap address of the framebuffer
+	void *fbmmap; //mmap address of the framebuffer
 	SDL_Surface* screen;  //swsurface to let sdl thinking it's the screen
 	SDL_Surface* screen2;  //used to apply screen_effect
 	SDL_Surface *screengame;  //used to apply screen_effect
@@ -283,7 +291,13 @@ static struct VID_Context {
 	int width;  //current width 
 	int height; // current height
 	int pitch;  //sdl bpp
-	
+	// store original fb values
+	uint32_t orig_screenwidth;
+	uint32_t orig_screenheight;
+	uint32_t orig_fbwidth;
+	uint32_t orig_fbheight;
+	uint32_t orig_fbwidthvirtual;
+	uint32_t orig_fbheightvirtual;
 	int sharpness; //let's see if it works
 	int rotate;
 	int rotategame;
@@ -294,67 +308,236 @@ static struct VID_Context {
 	int renderingGame;
 } vid;
 
+int my_ion_release( void ){
+     if (vid.cedarfd >= 0 )
+    {
+        int ret = ioctl(vid.cedarfd, IOCTL_ENGINE_REL, 0 );
+	   	if (ret < 0) {
+			LOG_info("CEDAR IOCTL_ENGINE_REL failed %d - %s\n", ret, strerror(errno));
+		} else {
+			LOG_info("CEDAR_IOCTL_ENGINE_REL success %d\n", ret); 		
+		}
+		LOG_info("close /dev/cedar_dev\n");
+        close(vid.cedarfd);
+        vid.cedarfd = -1 ;
+    }
+    
+    if (vid.ionfd >= 0 )
+    {
+		LOG_info("close /dev/ion\n");
+        close(vid.ionfd);
+        vid.ionfd = -1 ;
+    }
+    return  0 ;
+}
+
+
+int my_ion_init( void ){
+
+	my_ion_release();
+
+	vid.ionfd = open( "/dev/ion" , O_RDWR);
+	LOG_info("Opened /dev/ion with fd %d\n", vid.ionfd);fflush(stdout);
+	if (vid.ionfd < 0) {
+		LOG_info("Error opening /dev/ion\n");fflush(stdout);		
+	}
+
+	vid.cedarfd = open("/dev/cedar_dev", O_RDONLY);
+	LOG_info("Opened /dev/cedar_dev with fd %d\n", vid.cedarfd);fflush(stdout);
+	if (vid.cedarfd < 0) {
+		LOG_info("Error opening /dev/cedar_dev\n");fflush(stdout);		
+	}
+    
+    int ret = ioctl(vid.cedarfd, IOCTL_ENGINE_REQ, 0 );
+	if (ret < 0) {
+		LOG_info("CEDAR IOCTL_ENGINE_REQ failed %d - %s\n", ret, strerror(errno));
+	} else {
+		LOG_info("CEDAR_IOCTL_ENGINE_REQ success %d\n", ret);
+	}
+
+	return  0 ;
+}
+
+int my_ion_alloc(unsigned int size){
+	int retvalue = 0;
+    struct ion_allocation_data alloc_data;
+    alloc_data.len = size;
+    alloc_data.heap_id_mask = 1 << ION_HEAP_TYPE_SYSTEM;
+    alloc_data.flags = ION_CACHED_FLAG | ION_CACHED_NEEDS_SYNC_FLAG;
+    alloc_data.fd = 0 ;
+    alloc_data.unused = 0 ;
+    if (ioctl(vid.ionfd, ION_IOC_ALLOC, &alloc_data) < 0) {
+		LOG_info("ION_IOC_ALLOC failed - ioctl 0x%X - %s\n", ION_IOC_ALLOC , strerror(errno));
+		fflush(stdout);
+		retvalue = -1;
+	} else {
+		LOG_info("ION_IOC_ALLOC succeeded - allocated %llu bytes from heap mask 0x%X - fd=%d\n", alloc_data.len, alloc_data.heap_id_mask, alloc_data.fd);fflush(stdout);
+	}
+
+    //ok now mmap to provided file descriptor
+	LOG_info("Trying to map mem_ion fd %d to userspace\n", alloc_data.fd);fflush(stdout);
+    void * virt_addr = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, alloc_data.fd, 0);
+	
+	if (virt_addr == MAP_FAILED) {
+		LOG_info("ion mmap failed: %s\n", strerror(errno));
+		retvalue = -1;
+	} else {
+		LOG_info("ion mmap succeeded - mapped %llu bytes at address %p\n", alloc_data.len, virt_addr);
+	}	
+    
+    struct user_iommu_param iommu_param;
+    iommu_param.fd = alloc_data.fd;
+    iommu_param.iommu_addr = 0 ;
+    int ret = ioctl(vid.cedarfd, IOCTL_GET_IOMMU_ADDR, (unsigned long)&iommu_param);
+	if (ret < 0) {
+		LOG_info("CEDAR IOCTL_GET_IOMMU_ADDR failed %d - %s\n", ret, strerror(errno));
+		retvalue = -1;
+	} else {
+		LOG_info("CEDAR IOCTL_GET_IOMMU_ADDR success %d\n", ret);
+		LOG_info("iommu_param: addr=%p, fd=%d\n", iommu_param.iommu_addr, iommu_param.fd);				
+	}
+	fflush(stdout);
+
+    vid.ion_mem.size = size;
+    vid.ion_mem.fd = alloc_data.fd;
+	vid.ion_mem.virt_addr = virt_addr;
+    vid.ion_mem.phy_addr = iommu_param.iommu_addr;
+    return  retvalue;
+}
+
+int my_ion_free(void){
+    if (vid.ion_mem.fd == - 1 ) return  0 ;
+    LOG_info("Cleaning ION\n");
+    vid.iommu_param.fd = vid.ion_mem.fd;
+    int ret = ioctl(vid.cedarfd, IOCTL_FREE_IOMMU_ADDR, & vid.iommu_param);
+    if (ret < 0){
+		LOG_info("IOCTL_FREE_IOMMU_ADDR Failed - %s\n", strerror(errno));
+	} else {
+		LOG_info("IOCTL_FREE_IOMMU_ADDR Success!\n");
+	}
+
+	LOG_info("munmap ion_mem.fd %d with address %p ",vid.ion_mem.fd, vid.ion_mem.virt_addr);
+    ret = munmap(vid.ion_mem.virt_addr, vid.ion_mem.size);
+    if (ret < 0){
+		LOG_info("Failed - %s\n", strerror(errno));
+	} else {
+		LOG_info("Success!\n");
+	}
+    close(vid.ion_mem.fd);
+    
+    vid.ion_mem.size = 0 ;
+    vid.ion_mem.fd = -1 ;
+    vid.ion_mem.virt_addr = NULL ;
+    vid.ion_mem.phy_addr = 0 ;
+    return  0 ;
+}
+
+void print_disp_layer_config(const struct disp_layer_config *config) {
+    if (!config) {
+        LOG_info("Invalid disp_layer_config pointer\n");
+        return;
+    }
+
+    LOG_info("disp_layer_config:\n");
+    LOG_info("  enable: %s\n", config->enable ? "true" : "false");
+    LOG_info("  channel: %u\n", config->channel);
+    LOG_info("  layer_id: %u\n", config->layer_id);
+
+    // Stampa i campi della struttura disp_layer_info
+    LOG_info("  disp_layer_info:\n");
+    LOG_info("    mode: %d\n", config->info.mode);
+    LOG_info("    zorder: %u\n", config->info.zorder);
+    LOG_info("    alpha_mode: %u\n", config->info.alpha_mode);
+    LOG_info("    alpha_value: %u\n", config->info.alpha_value);
+    LOG_info("    screen_win: x=%d, y=%d, width=%u, height=%u\n",
+             config->info.screen_win.x, config->info.screen_win.y,
+             config->info.screen_win.width, config->info.screen_win.height);
+    LOG_info("    b_trd_out: %s\n", config->info.b_trd_out ? "true" : "false");
+    LOG_info("    out_trd_mode: %d\n", config->info.out_trd_mode);
+
+    if (config->info.mode == LAYER_MODE_COLOR) {
+        LOG_info("    color: 0x%x\n", config->info.color);
+    } else if (config->info.mode == LAYER_MODE_BUFFER) {
+        LOG_info("    framebuffer info:\n");
+        LOG_info("      format: %d\n", config->info.fb.format);
+        LOG_info("      color_space: %d\n", config->info.fb.color_space);
+        LOG_info("      crop: x=%lld, y=%lld, width=%lld, height=%lld\n",
+                 config->info.fb.crop.x, config->info.fb.crop.y,
+                 config->info.fb.crop.width, config->info.fb.crop.height);
+        LOG_info("      addr[0]: 0x%llx\n", config->info.fb.addr[0]);
+		LOG_info("      size[0]: width=%d height=%d\n", config->info.fb.size[0].width,config->info.fb.size[0].height);
+		LOG_info("      align[0] = %d\n",config->info.fb.align[0]);
+        LOG_info("      addr[1]: 0x%llx\n", config->info.fb.addr[1]);
+		LOG_info("      size[1]: width=%d height=%d\n", config->info.fb.size[1].width,config->info.fb.size[1].height);
+		LOG_info("      align[1] = %d\n",config->info.fb.align[1]);
+        LOG_info("      addr[2]: 0x%llx\n", config->info.fb.addr[2]);
+		LOG_info("      size[2]: width=%d height=%d\n", config->info.fb.size[2].width,config->info.fb.size[2].height);
+		LOG_info("      align[2] = %d\n",config->info.fb.align[2]);		
+    }
+}
+
 void pan_display(int page){
 	vid.vinfo.yoffset = vid.vinfo.yres * page;
 	//vid.vinfo.yoffset = 0;
 	ioctl(vid.fdfb, FBIOPAN_DISPLAY, &vid.vinfo);
 }
 
+void print_fb_info(const struct fb_var_screeninfo *vinfo, const struct fb_fix_screeninfo *finfo) {
+    if (!vinfo || !finfo) {
+        LOG_info("Invalid vinfo or finfo pointer\n");
+        return;
+    }
+
+    // Stampa i campi di fb_var_screeninfo
+    LOG_info("fb_var_screeninfo:\n");
+    LOG_info("  xres: %u\n", vinfo->xres);
+    LOG_info("  yres: %u\n", vinfo->yres);
+    LOG_info("  xres_virtual: %u\n", vinfo->xres_virtual);
+    LOG_info("  yres_virtual: %u\n", vinfo->yres_virtual);
+    LOG_info("  xoffset: %u\n", vinfo->xoffset);
+    LOG_info("  yoffset: %u\n", vinfo->yoffset);
+    LOG_info("  bits_per_pixel: %u\n", vinfo->bits_per_pixel);
+    LOG_info("  grayscale: %u\n", vinfo->grayscale);
+    LOG_info("  red: offset=%u, length=%u, msb_right=%u\n", vinfo->red.offset, vinfo->red.length, vinfo->red.msb_right);
+    LOG_info("  green: offset=%u, length=%u, msb_right=%u\n", vinfo->green.offset, vinfo->green.length, vinfo->green.msb_right);
+    LOG_info("  blue: offset=%u, length=%u, msb_right=%u\n", vinfo->blue.offset, vinfo->blue.length, vinfo->blue.msb_right);
+    LOG_info("  transp: offset=%u, length=%u, msb_right=%u\n", vinfo->transp.offset, vinfo->transp.length, vinfo->transp.msb_right);
+    LOG_info("  height: %u mm\n", vinfo->height);
+    LOG_info("  width: %u mm\n", vinfo->width);
+    LOG_info("  pixclock: %u ps\n", vinfo->pixclock);
+    LOG_info("  left_margin: %u\n", vinfo->left_margin);
+    LOG_info("  right_margin: %u\n", vinfo->right_margin);
+    LOG_info("  upper_margin: %u\n", vinfo->upper_margin);
+    LOG_info("  lower_margin: %u\n", vinfo->lower_margin);
+    LOG_info("  hsync_len: %u\n", vinfo->hsync_len);
+    LOG_info("  vsync_len: %u\n", vinfo->vsync_len);
+    LOG_info("  sync: %u\n", vinfo->sync);
+    LOG_info("  vmode: %u\n", vinfo->vmode);
+
+    // Stampa i campi di fb_fix_screeninfo
+    LOG_info("fb_fix_screeninfo:\n");
+    LOG_info("  id: %s\n", finfo->id);
+    LOG_info("  smem_start: 0x%lx\n", (unsigned long)finfo->smem_start);
+    LOG_info("  smem_len: %u\n", finfo->smem_len);
+    LOG_info("  type: %u\n", finfo->type);
+    LOG_info("  type_aux: %u\n", finfo->type_aux);
+    LOG_info("  visual: %u\n", finfo->visual);
+    LOG_info("  xpanstep: %u\n", finfo->xpanstep);
+    LOG_info("  ypanstep: %u\n", finfo->ypanstep);
+    LOG_info("  ywrapstep: %u\n", finfo->ywrapstep);
+    LOG_info("  line_length: %u\n", finfo->line_length);
+    LOG_info("  mmio_start: 0x%lx\n", (unsigned long)finfo->mmio_start);
+    LOG_info("  mmio_len: %u\n", finfo->mmio_len);
+    LOG_info("  accel: %u\n", finfo->accel);
+	fflush(stdout);
+}
+
+
+
 void get_fbinfo(void){
     ioctl(vid.fdfb, FBIOGET_FSCREENINFO, &vid.finfo);
-    ioctl(vid.fdfb, FBIOGET_VSCREENINFO, &vid.vinfo);
-	
-    fprintf(stdout, "Fixed screen informations\n"
-		"-------------------------\n"
-		"Id string: %s\n"
-		"FB start memory: %p\n"
-		"FB memory size: %d\n"
-		"FB LineLength: %d\n"
-		"FB mmio_start: %p\n"
-		"FB mmio_len: %d\n",
-		vid.finfo.id, (void *)vid.finfo.smem_start, vid.finfo.smem_len,vid.finfo.line_length, (void *)vid.finfo.mmio_start, vid.finfo.mmio_len);
-
-	fprintf(stdout, "Variable screen informations\n"
-		"----------------------------\n"
-		"xres: %d\n"
-		"yres: %d\n"
-		"xres_virtual: %d\n"
-		"yres_virtual: %d\n"
-		"bits_per_pixel: %d\n\n"
-		"RED: L=%d, O=%d\n"
-		"GREEN: L=%d, O=%d\n"
-		"BLUE: L=%d, O=%d\n"            
-		"ALPHA: L=%d, O=%d\n\n"
-
-		"width: %d\n"
-		"height: %d\n"
-		"pixclock: %d\n"
-		"left_margin: %d\n"
-		"right_margin: %d\n"
-		"upper_margin: %d\n"
-		"lower_margin: %d\n"
-		"hsync_len: %d\n"
-		"vsync_len: %d\n"
-		"sync: %d\n"
-		"vmode: %d\n"
-		"rotate: %d\n"
-		"colorspace: %d\n",
-		vid.vinfo.xres, vid.vinfo.yres, vid.vinfo.xres_virtual,
-		vid.vinfo.yres_virtual, vid.vinfo.bits_per_pixel,
-		vid.vinfo.red.length, vid.vinfo.red.offset,
-		vid.vinfo.green.length,vid.vinfo.green.offset,
-		vid.vinfo.blue.length,vid.vinfo.blue.offset,
-		vid.vinfo.transp.length,vid.vinfo.transp.offset,
-		vid.vinfo.width, vid.vinfo.height,
-		vid.vinfo.pixclock,
-		vid.vinfo.left_margin, vid.vinfo.right_margin,
-		vid.vinfo.upper_margin, vid.vinfo.lower_margin,
-		vid.vinfo.hsync_len, vid.vinfo.vsync_len
-		,vid.vinfo.sync, vid.vinfo.vmode, vid.vinfo.rotate, vid.vinfo.colorspace
-	);
-
-    //fprintf(stdout, "PixelFormat is %d\n", vinfo.pixelformat);
-    fflush(stdout);
+    ioctl(vid.fdfb, FBIOGET_VSCREENINFO, &vid.vinfo);	
+	print_fb_info(&vid.vinfo, &vid.finfo);
 }
 
 void set_fbinfo(void){
@@ -388,8 +571,125 @@ int getHDMIStatus(void) {
 	return retvalue;
 }
 
+
+int swap_buffers_init(void){
+
+	if (vid.dispfd < 0) {
+		LOG_info("swap_buffers_init: invalid dispfd\n");
+		return -1;
+	} else {
+		LOG_info("swap_buffers_init: valid dispfd %d\n", vid.dispfd);
+	}
+
+	uint32_t args[4] = {0};
+
+	memset(&vid.layer_config, 0, sizeof(vid.layer_config));
+	args[0] = 0;
+	args[1] = (uintptr_t)&vid.layer_config;
+	args[2] = 1;
+	args[3] = 0;
+	vid.layer_config.enable = 1;
+	vid.layer_config.channel = 1;
+	vid.layer_config.layer_id = 0;
+
+    int ret = ioctl(vid.dispfd, DISP_LAYER_GET_CONFIG, args);
+    if (ret < 0) {
+		LOG_info("swap_buffers_init:ORIG DISP_LAYER_GET_CONFIG failed %d - %s\n", ret, strerror(errno));		
+	} else {
+		LOG_info("swap_buffers_init:ORIG DISP_LAYER_GET_CONFIG success %d\n", ret);
+	}
+	print_disp_layer_config(&vid.layer_config);fflush(stdout);
+//	args[1] = (uintptr_t)&vid.layer_config;
+//    vid.layer_config.enable = 0;
+//	vid.layer_config.channel = 1;
+//    ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, args);
+//	if (ret < 0) {
+//		LOG_info("swap_buffers_init: DISP_LAYER_SET_CONFIG failed %d - %s\n", ret, strerror(errno));
+//	} else {
+//		LOG_info("swap_buffers_init: DISP_LAYER_SET_CONFIG success %d\n", ret);
+//	}
+	
+
+	//arg7[2] = 0; //one layer
+//	ret = ioctl(vid.dispfd, DISP_LAYER_GET_CONFIG, args);
+//	if (ret < 0) {
+//		LOG_info("swap_buffers_init: DISP_LAYER_GET_CONFIG failed %d - %s\n", ret, strerror(errno));
+//		return -1;
+//	} else {
+//		LOG_info("swap_buffers_init: DISP_LAYER_GET_CONFIG success %d\n", ret);
+//	//	LOG_info("config info: enable=%d, mode=%d, color=0x%X, zorder=%d, alpha_mode=%d, alpha_value=%d\n"
+//	//		"fb.addr[0]=%p, fb.format=%d, fb.size=%dx%d, screen_win=%dx%d+%d+%d\n",
+//	//		config.enable, config.info.mode, config.info.color, config.info.zorder,
+//	//		config.info.alpha_mode, config.info.alpha_value,
+//	//		(void*)config.info.fb.addr[0], config.info.fb.format,
+//	//		config.info.fb.size[0].width, config.info.fb.size[0].height,
+//	//		config.info.screen_win.width, config.info.screen_win.height,
+//	//		config.info.screen_win.x, config.info.screen_win.y
+//	//		);
+//	}
+	memset(&vid.layer_config, 0, sizeof(vid.layer_config));
+	args[1] = (uintptr_t)&vid.layer_config;
+	vid.layer_config.layer_id = 0;
+	vid.layer_config.channel = 1;
+    vid.layer_config.enable = 1;
+	vid.layer_config.info.id = 0;	
+    vid.layer_config.info.mode = LAYER_MODE_BUFFER;
+	//config.info.mode = LAYER_MODE_COLOR;
+	//config.info.color = 0xffff0000*page + 0xffff*(1-page); //white
+	vid.layer_config.info.zorder = 0; // In primo piano
+    vid.layer_config.info.alpha_mode = 1;
+    vid.layer_config.info.alpha_value = 0xff;
+	vid.layer_config.info.fb.align[0] = 4;//bytes
+    //vid.layer_config.info.fb.format = DISP_FORMAT_ARGB_8888;
+	vid.layer_config.info.fb.format = DISP_FORMAT_RGB_565;
+	vid.layer_config.info.fb.flags = DISP_BF_NORMAL;
+	vid.layer_config.info.fb.scan = DISP_SCAN_PROGRESSIVE;
+    vid.layer_config.info.fb.size[0].width = vid.orig_fbwidth; //have to find a way to get this value from sys
+    vid.layer_config.info.fb.size[0].height = vid.orig_fbheight; //have to find a way to get this value from sys
+    vid.layer_config.info.fb.crop.x = 0;
+    vid.layer_config.info.fb.crop.y = 0;
+    vid.layer_config.info.fb.crop.width = (unsigned long long)(GAME_WIDTH) << 32;
+    vid.layer_config.info.fb.crop.height = (unsigned long long)(GAME_HEIGHT) << 32;
+    vid.layer_config.info.screen_win.x = 0;
+    vid.layer_config.info.screen_win.y = 0;
+    vid.layer_config.info.screen_win.width = vid.orig_screenwidth;
+    vid.layer_config.info.screen_win.height = vid.orig_screenheight;
+
+	ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, args);
+	if (ret < 0) {
+		LOG_info("swap_buffers_init: DISP_LAYER_SET_CONFIG failed %d - %s\n", ret, strerror(errno));
+	} else {
+		LOG_info("swap_buffers_init: DISP_LAYER_SET_CONFIG success %d\n", ret);fflush(stdout);
+	}
+	return 0;
+}
+struct cache_range mycache_range;
+int swap_buffers(int page){
+	int ret;
+	mycache_range.start = (uintptr_t)(vid.ion_mem.virt_addr + vid.screen_size*page);
+	mycache_range.end = (uintptr_t)(vid.ion_mem.virt_addr + vid.screen_size*2-vid.screen_size*(1-page));
+	ret = ioctl(vid.cedarfd, IOCTL_FLUSH_CACHE_RANGE, &mycache_range);
+	if (ret < 0) {
+		LOG_info("swap_buffers: CEDAR IOCTL_FLUSH_CACHE_RANGE failed %d - %s\n", ret, strerror(errno));fflush(stdout);
+	} 
+	//else {
+	//	LOG_info("swap_buffers: CEDAR IOCTL_FLUSH_CACHE_RANGE success %d\n", ret);	fflush(stdout);	  		
+	//} 
+
+	vid.layer_config.info.fb.addr[0]=vid.ion_mem.phy_addr + page*vid.screen_size;
+
+	uint32_t args[4] = {0, (uintptr_t)&vid.layer_config, 1, 0};
+	ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, args);
+	if (ret < 0) {
+		LOG_info("swap_buffers: DISP_LAYER_SET_CONFIG failed %d - %s\n", ret, strerror(errno));
+	} 
+	return 0;
+}
+
+
 int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max;
-SDL_Surface * page[2];
+//SDL_Surface * page[2];
+
 SDL_Surface* PLAT_initVideo(void) {
 
 	//looks for environment cpu frequencies
@@ -417,24 +717,52 @@ SDL_Surface* PLAT_initVideo(void) {
 		if (tmpfd >= 0) {
 			close(tmpfd);
 		}
+		vid.orig_fbheight = 1280;
+		vid.orig_fbwidth = 1280;
+		vid.orig_fbheightvirtual = 2560;
+		vid.orig_fbwidthvirtual = 1280;
 	}
+
+	vid.fdfb = -1;
+	vid.cedarfd = -1;
+	vid.dispfd = -1;
+	vid.ionfd = -1;
 
 	vid.fdfb = open("/dev/fb0", O_RDWR);
 	LOG_info("Opened /dev/fb0 with fd %d\n", vid.fdfb);fflush(stdout);
 	if (vid.fdfb < 0) {
 		LOG_info("Error opening /dev/fb0\n");
 		fflush(stdout);
-		return NULL;
 	}
 	vid.dispfd = open("/dev/disp", O_RDWR);
 	LOG_info("Opened /dev/disp with fd %d\n", vid.dispfd);fflush(stdout);
 	if (vid.dispfd < 0) {
 		LOG_info("Error opening /dev/disp\n");
 		fflush(stdout);
-		return NULL;
+	}
+/*
+	vid.ionfd = open("/dev/ion", O_RDONLY);
+	LOG_info("Opened /dev/ion with fd %d\n", vid.ionfd);fflush(stdout);
+	if (vid.ionfd < 0) {
+		LOG_info("Error opening /dev/ion\n");
+		fflush(stdout);
+	//	return NULL;
+	}
+
+	vid.cedarfd = open("/dev/cedar_dev", O_RDWR);
+	LOG_info("Opened /dev/cedar_dev with fd %d\n", vid.cedarfd);fflush(stdout);
+	if (vid.cedarfd < 0) {
+		LOG_info("Error opening /dev/cedar_dev\n");
+		fflush(stdout);
+	//	return NULL;
 	}
 
 	
+
+	LOG_info("ION IOCTLS values:\n"
+		"ION_IOC_ALLOC = 0x%X\n"
+		"ION_IOC_HEAP_QUERY = 0x%X\n", ION_IOC_ALLOC,  ION_IOC_HEAP_QUERY);fflush(stdout);
+*/
 	//system("cat /sys/class/disp/disp/attr/sys > /mnt/SDCARD/sysA.txt");
 	int w,h,p,hz = 0;
 	if (getHDMIStatus() || (ism22)) {
@@ -484,7 +812,16 @@ SDL_Surface* PLAT_initVideo(void) {
 		GAME_WIDTH = h;
 		GAME_HEIGHT = w;
 	}
-	get_fbinfo();	
+	get_fbinfo();
+//	vid.orig_fbwidth = vid.vinfo.xres;
+//	vid.orig_fbheight = vid.vinfo.yres;
+//	vid.orig_fbheightvirtual = vid.vinfo.yres_virtual;
+//	vid.orig_fbwidthvirtual = vid.vinfo.xres_virtual;
+
+	uint32_t args[4] = {0};
+	vid.orig_screenwidth = ioctl(vid.dispfd, DISP_GET_SCN_WIDTH, (void*)args); //1080
+	vid.orig_screenheight = ioctl(vid.dispfd, DISP_GET_SCN_HEIGHT, (void*)args); //1920
+	LOG_info("Physical screen size detected WxH:%dx%d\n", vid.orig_screenwidth, vid.orig_screenheight);
 
 	if (exists( ROTATE_SYSTEM_PATH )) {
 		vid.rotate = getInt( ROTATE_SYSTEM_PATH ) & 3;
@@ -537,59 +874,38 @@ SDL_Surface* PLAT_initVideo(void) {
 
 	vid.renderingGame = 0;
 
-/*
-	int error_code;
-	for (int i = 0; i < 11; i++) {
-		int cnow = SDL_GetTicks();
-		usleep(7000);
-		pan_display(0);
-		printf("FBIOPAN_DISPLAY took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
-	}
-	
-	for (int i = 0; i < 11; i++) {
-		int cnow = SDL_GetTicks();
-		usleep(7000);
-		set_fbinfo();
-		printf("FBIOPUT_VSCREENINFO took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
-	}
-
-	for (int i = 0; i < 11; i++) {
-		int cnow = SDL_GetTicks();
-		usleep(7000);
-		int _;
-		error_code = ioctl(vid.fdfb, FBIOBLANK, &_); 
-		printf("FBIOBLANK took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
-	}
-	
-	for (int i = 0; i < 11; i++) {
-		int cnow = SDL_GetTicks();
-		usleep(7000);
-		int _;
-		error_code = ioctl(vid.fdfb, FBIO_WAITFORVSYNC, &_); 
-		printf("FBIO_WAITFORVSYNC took %i msec, error code is %i\n", SDL_GetTicks()-cnow, error_code);fflush(stdout);
-	}
-*/
-
 	vid.offset = vid.vinfo.yres * vid.finfo.line_length;
 	vid.screen_size = vid.offset;
 	vid.linewidth = vid.finfo.line_length/(vid.vinfo.bits_per_pixel/8);
-   //create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
-    vid.fbmmap[0] = mmap(NULL, vid.screen_size*2, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
-	if (vid.fbmmap[0] == MAP_FAILED) {
-		LOG_info("Error mapping framebuffer 0 device to memory: %s\n", strerror(errno));
-		//return NULL;
+
+	my_ion_init();
+	vid.ionmmapfailed = my_ion_alloc(vid.screen_size*2);	
+	vid.ionmmapfailed=1;
+	if (vid.ionmmapfailed != 0) {
+		LOG_info("Falling back to standard framebuffer mmap\n");fflush(stdout);
+		my_ion_free();
+		my_ion_release();
+		//try standard fb mmap
+    	vid.fbmmap = mmap(NULL, vid.screen_size*2, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
+		if (vid.fbmmap == MAP_FAILED) {
+			LOG_info("Error mapping framebuffer 0 device to memory: %s\n", strerror(errno));fflush(stdout);
+		}
+	} else {
+	//	if (vid.fdfb >= 0) close(vid.fdfb);
+		vid.fbmmap = vid.ion_mem.virt_addr;
 	}
-	/* Map the second page at an offset equal to one page size so the two
-	   mappings refer to distinct framebuffer pages. */
-//	vid.fbmmap[1] = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
-//	if (vid.fbmmap[1] == MAP_FAILED) {
-//		LOG_info("Error mapping framebuffer 1 device to memory: %s\n", strerror(errno));
-		//return NULL;
-//	}
-	LOG_info("Address vid.fbmmap[0]: %p\n", vid.fbmmap[0]);fflush(stdout);
-//	LOG_info("Address vid.fbmmap[1]: %p\n", vid.fbmmap[1]);fflush(stdout);
+
+	LOG_info("Address vid.fbmmap: %p\n", vid.fbmmap);fflush(stdout);
 	vid.page = 0;
 	pan_display(vid.page);
+	if (vid.ionmmapfailed==0)
+	{
+		swap_buffers_init();
+		swap_buffers(vid.page);
+
+	} else {
+		pan_display(vid.page);
+ 	}	//
 	vid.page = 0;
 	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
@@ -600,11 +916,55 @@ void PLAT_quitVideo(void) {
 	SDL_FreeSurface(vid.screen2);
 	SDL_FreeSurface(vid.screengame);
 
-//	SDL_FreeSurface(page[0]);
-//	SDL_FreeSurface(page[1]);
-	if (vid.fbmmap[0] && vid.fbmmap[0] != MAP_FAILED) munmap(vid.fbmmap[0], vid.offset);
-//	if (vid.fbmmap[1] && vid.fbmmap[1] != MAP_FAILED) munmap(vid.fbmmap[1], vid.offset);
-
+	if (vid.ionmmapfailed!=0){
+		if (vid.fbmmap && vid.fbmmap != MAP_FAILED) { munmap(vid.fbmmap, vid.offset*2);}
+	} else {
+		//deactivate layer
+		memset(&vid.layer_config, 0, sizeof(vid.layer_config));
+		uint32_t args[4] = {0, (uintptr_t)&vid.layer_config, 1, 0};
+		vid.layer_config.channel = 1;
+		vid.layer_config.layer_id = 0;
+		vid.layer_config.enable = 1;
+		vid.layer_config.info.mode = LAYER_MODE_BUFFER;
+		vid.layer_config.info.zorder = 16;
+		vid.layer_config.info.fb.format = 0;
+		vid.layer_config.info.alpha_mode = 0;
+		vid.layer_config.info.alpha_value = 0xff;
+		vid.layer_config.info.fb.format = 0;
+		vid.layer_config.info.fb.crop.x = 0;
+		vid.layer_config.info.fb.crop.y = 0;
+		vid.layer_config.info.fb.crop.width = ((long long)vid.orig_fbwidth) << 32;
+		vid.layer_config.info.fb.crop.height =((long long)vid.orig_fbheight) << 32;
+		vid.layer_config.info.screen_win.x = 0;
+		vid.layer_config.info.screen_win.y = 0;
+		vid.layer_config.info.screen_win.width = vid.orig_screenwidth;
+		vid.layer_config.info.screen_win.height = vid.orig_screenheight;
+		vid.layer_config.info.fb.addr[0] = 0;
+		vid.layer_config.info.fb.flags = DISP_BF_NORMAL;
+		vid.layer_config.info.fb.scan = DISP_SCAN_PROGRESSIVE;
+		vid.layer_config.info.fb.size[0].width = vid.orig_fbwidth;
+		vid.layer_config.info.fb.size[0].height = vid.orig_fbheight;
+		vid.layer_config.info.fb.size[1].width = vid.orig_fbwidth;
+		vid.layer_config.info.fb.size[1].height = vid.orig_fbheight;
+		vid.layer_config.info.fb.size[2].width = vid.orig_fbwidth;
+		vid.layer_config.info.fb.size[2].height = vid.orig_fbheight;
+		vid.layer_config.info.fb.color_space = DISP_BT601;
+		int ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, args);
+		if (ret < 0){
+			LOG_info("Unable to restore orig layer %s\n", strerror(errno));
+		}
+		my_ion_free();
+		my_ion_release();
+	}	
+		//restore fb values
+//	vid.vinfo.yres = vid.orig_fbheight;
+//	vid.vinfo.xres = vid.orig_fbwidth;
+//	vid.vinfo.xres_virtual = vid.orig_fbwidthvirtual;
+//	vid.vinfo.yres_virtual = vid.orig_fbheightvirtual;
+	vid.vinfo.xoffset=0;
+	vid.vinfo.yoffset=0;
+	set_fbinfo();
+	get_fbinfo();
 	if (vid.fdfb >= 0) close(vid.fdfb);
 	if (vid.dispfd >= 0) close(vid.dispfd);
 }
@@ -619,8 +979,7 @@ void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
-	memset(vid.fbmmap[0], 0, vid.offset);
-//	memset(vid.fbmmap[1], 0, vid.offset);
+	memset(vid.fbmmap, 0, vid.screen_size*2);
 }
 
 void PLAT_setVsync(int vsync) {
@@ -655,6 +1014,7 @@ void PLAT_setSharpness(int sharpness) {
 void PLAT_setEffect(int effect) {
 	next_effect = effect;
 }
+
 void PLAT_vsync(int remaining) {
 	if (remaining>0) {
 		usleep(remaining*1000);
@@ -702,7 +1062,9 @@ void PLAT_pan(void) {
 
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
+//	pan_display(vid.page);	
 	vid.page ^= 1;
+	
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
@@ -711,30 +1073,56 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		if (vid.rotate == 0)
 		{
 			// 90 Rotation
-			FlipRotate000(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			if (vid.ionmmapfailed!=0){
+			FlipRotate000(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			} else {
+			FlipRotate000_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			}
 		}
 		if (vid.rotate == 1)
 		{
 			// 90 Rotation
-			FlipRotate090(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			if (vid.ionmmapfailed!=0){
+			FlipRotate090(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			} else {
+			FlipRotate090_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			}
 		}
 		if (vid.rotate == 2)
 		{
 			// 180 Rotation
-			FlipRotate180(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			if (vid.ionmmapfailed!=0){
+			FlipRotate180(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			} else {
+			FlipRotate180_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			}
 		}
 		if (vid.rotate == 3)
 		{
 			// 270 Rotation
-			FlipRotate270(vid.screen, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			if (vid.ionmmapfailed!=0){
+			FlipRotate270(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			} else {
+			FlipRotate270_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			}
 		}
-		pan_display(vid.page);
+		if (vid.ionmmapfailed!=0){
+			pan_display(vid.page);			
+		} else {
+			swap_buffers(vid.page);
+		}
+		
 	} else {
 		//maybe one Day I'll find the time to investigate on why neon copy functions aren't working here
 		// No Rotation
-			FlipRotate000(vid.screengame, vid.fbmmap[0]+vid.offset*vid.page,vid.linewidth, vid.targetRect);
-		if (sync) {
-			pan_display(vid.page);
+		if (vid.ionmmapfailed!=0){
+			FlipRotate000(vid.screengame, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			if (sync) {
+				pan_display(vid.page);
+			}
+		} else {
+			FlipRotate000_16(vid.screengame, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			swap_buffers(vid.page);
 		}
 	}	
 	vid.renderingGame = 0;
