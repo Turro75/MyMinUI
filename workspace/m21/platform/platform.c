@@ -288,6 +288,7 @@ static struct VID_Context {
 	SDL_Surface *screengame;  //used to apply screen_effect
 	int linewidth;
 	int screen_size;
+	int ishdmi;
 	int width;  //current width 
 	int height; // current height
 	int pitch;  //sdl bpp
@@ -369,7 +370,7 @@ int my_ion_alloc(unsigned int size){
     if (ioctl(vid.ionfd, ION_IOC_ALLOC, &alloc_data) < 0) {
 		LOG_info("ION_IOC_ALLOC failed - ioctl 0x%X - %s\n", ION_IOC_ALLOC , strerror(errno));
 		fflush(stdout);
-		retvalue = -1;
+		retvalue = 1;
 	} else {
 		LOG_info("ION_IOC_ALLOC succeeded - allocated %llu bytes from heap mask 0x%X - fd=%d\n", alloc_data.len, alloc_data.heap_id_mask, alloc_data.fd);fflush(stdout);
 	}
@@ -380,7 +381,7 @@ int my_ion_alloc(unsigned int size){
 	
 	if (virt_addr == MAP_FAILED) {
 		LOG_info("ion mmap failed: %s\n", strerror(errno));
-		retvalue = -1;
+		retvalue = 1;
 	} else {
 		LOG_info("ion mmap succeeded - mapped %llu bytes at address %p\n", alloc_data.len, virt_addr);
 	}	
@@ -391,7 +392,7 @@ int my_ion_alloc(unsigned int size){
     int ret = ioctl(vid.cedarfd, IOCTL_GET_IOMMU_ADDR, (unsigned long)&iommu_param);
 	if (ret < 0) {
 		LOG_info("CEDAR IOCTL_GET_IOMMU_ADDR failed %d - %s\n", ret, strerror(errno));
-		retvalue = -1;
+		retvalue = 1;
 	} else {
 		LOG_info("CEDAR IOCTL_GET_IOMMU_ADDR success %d\n", ret);
 		LOG_info("iommu_param: addr=%p, fd=%d\n", iommu_param.iommu_addr, iommu_param.fd);				
@@ -461,18 +462,18 @@ void print_disp_layer_config(const struct disp_layer_config *config) {
         LOG_info("    framebuffer info:\n");
         LOG_info("      format: %d\n", config->info.fb.format);
         LOG_info("      color_space: %d\n", config->info.fb.color_space);
-        LOG_info("      crop: x=%lld, y=%lld, width=%lld, height=%lld\n",
+        LOG_info("      crop: x=%llu, y=%llu, width=%llu, height=%llu\n",
                  config->info.fb.crop.x, config->info.fb.crop.y,
-                 config->info.fb.crop.width, config->info.fb.crop.height);
+                 (config->info.fb.crop.width >> 32) & 0xffffffff, (config->info.fb.crop.height >> 32) & 0xffffffff);
         LOG_info("      addr[0]: 0x%llx\n", config->info.fb.addr[0]);
-		LOG_info("      size[0]: width=%d height=%d\n", config->info.fb.size[0].width,config->info.fb.size[0].height);
-		LOG_info("      align[0] = %d\n",config->info.fb.align[0]);
+		LOG_info("      size[0]: width=%u height=%u\n", config->info.fb.size[0].width,config->info.fb.size[0].height);
+		LOG_info("      align[0] = %u\n",config->info.fb.align[0]);
         LOG_info("      addr[1]: 0x%llx\n", config->info.fb.addr[1]);
-		LOG_info("      size[1]: width=%d height=%d\n", config->info.fb.size[1].width,config->info.fb.size[1].height);
-		LOG_info("      align[1] = %d\n",config->info.fb.align[1]);
+		LOG_info("      size[1]: width=%u height=%u\n", config->info.fb.size[1].width,config->info.fb.size[1].height);
+		LOG_info("      align[1] = %u\n",config->info.fb.align[1]);
         LOG_info("      addr[2]: 0x%llx\n", config->info.fb.addr[2]);
-		LOG_info("      size[2]: width=%d height=%d\n", config->info.fb.size[2].width,config->info.fb.size[2].height);
-		LOG_info("      align[2] = %d\n",config->info.fb.align[2]);		
+		LOG_info("      size[2]: width=%u height=%u\n", config->info.fb.size[2].width,config->info.fb.size[2].height);
+		LOG_info("      align[2] = %u\n",config->info.fb.align[2]);		
     }
 }
 
@@ -599,34 +600,7 @@ int swap_buffers_init(void){
 		LOG_info("swap_buffers_init:ORIG DISP_LAYER_GET_CONFIG success %d\n", ret);
 	}
 	print_disp_layer_config(&vid.layer_config);fflush(stdout);
-//	args[1] = (uintptr_t)&vid.layer_config;
-//    vid.layer_config.enable = 0;
-//	vid.layer_config.channel = 1;
-//    ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, args);
-//	if (ret < 0) {
-//		LOG_info("swap_buffers_init: DISP_LAYER_SET_CONFIG failed %d - %s\n", ret, strerror(errno));
-//	} else {
-//		LOG_info("swap_buffers_init: DISP_LAYER_SET_CONFIG success %d\n", ret);
-//	}
-	
 
-	//arg7[2] = 0; //one layer
-//	ret = ioctl(vid.dispfd, DISP_LAYER_GET_CONFIG, args);
-//	if (ret < 0) {
-//		LOG_info("swap_buffers_init: DISP_LAYER_GET_CONFIG failed %d - %s\n", ret, strerror(errno));
-//		return -1;
-//	} else {
-//		LOG_info("swap_buffers_init: DISP_LAYER_GET_CONFIG success %d\n", ret);
-//	//	LOG_info("config info: enable=%d, mode=%d, color=0x%X, zorder=%d, alpha_mode=%d, alpha_value=%d\n"
-//	//		"fb.addr[0]=%p, fb.format=%d, fb.size=%dx%d, screen_win=%dx%d+%d+%d\n",
-//	//		config.enable, config.info.mode, config.info.color, config.info.zorder,
-//	//		config.info.alpha_mode, config.info.alpha_value,
-//	//		(void*)config.info.fb.addr[0], config.info.fb.format,
-//	//		config.info.fb.size[0].width, config.info.fb.size[0].height,
-//	//		config.info.screen_win.width, config.info.screen_win.height,
-//	//		config.info.screen_win.x, config.info.screen_win.y
-//	//		);
-//	}
 	memset(&vid.layer_config, 0, sizeof(vid.layer_config));
 	args[1] = (uintptr_t)&vid.layer_config;
 	vid.layer_config.layer_id = 0;
@@ -648,13 +622,14 @@ int swap_buffers_init(void){
     vid.layer_config.info.fb.size[0].height = vid.orig_fbheight; //have to find a way to get this value from sys
     vid.layer_config.info.fb.crop.x = 0;
     vid.layer_config.info.fb.crop.y = 0;
-    vid.layer_config.info.fb.crop.width = (unsigned long long)(GAME_WIDTH) << 32;
-    vid.layer_config.info.fb.crop.height = (unsigned long long)(GAME_HEIGHT) << 32;
+    vid.layer_config.info.fb.crop.width = (unsigned long long)GAME_WIDTH << 32;
+    vid.layer_config.info.fb.crop.height = (unsigned long long)GAME_HEIGHT << 32;
+	vid.layer_config.info.fb.color_space = DISP_BT601_F;
     vid.layer_config.info.screen_win.x = 0;
     vid.layer_config.info.screen_win.y = 0;
     vid.layer_config.info.screen_win.width = vid.orig_screenwidth;
     vid.layer_config.info.screen_win.height = vid.orig_screenheight;
-
+	
 	ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, args);
 	if (ret < 0) {
 		LOG_info("swap_buffers_init: DISP_LAYER_SET_CONFIG failed %d - %s\n", ret, strerror(errno));
@@ -666,23 +641,54 @@ int swap_buffers_init(void){
 struct cache_range mycache_range;
 int swap_buffers(int page){
 	int ret;
-	mycache_range.start = (uintptr_t)(vid.ion_mem.virt_addr + vid.screen_size*page);
-	mycache_range.end = (uintptr_t)(vid.ion_mem.virt_addr + vid.screen_size*2-vid.screen_size*(1-page));
+	mycache_range.start = (uintptr_t)(vid.fbmmap + vid.screen_size*page);
+	mycache_range.end = (uintptr_t)(vid.fbmmap + vid.screen_size*2 + vid.screen_size*(page-1));
 	ret = ioctl(vid.cedarfd, IOCTL_FLUSH_CACHE_RANGE, &mycache_range);
 	if (ret < 0) {
 		LOG_info("swap_buffers: CEDAR IOCTL_FLUSH_CACHE_RANGE failed %d - %s\n", ret, strerror(errno));fflush(stdout);
 	} 
 	//else {
-	//	LOG_info("swap_buffers: CEDAR IOCTL_FLUSH_CACHE_RANGE success %d\n", ret);	fflush(stdout);	  		
+	//	LOG_info("swap_buffers: CEDAR IOCTL_FLUSH_CACHE_RANGE success %d\n", ret); 		
 	//} 
-
-	vid.layer_config.info.fb.addr[0]=vid.ion_mem.phy_addr + page*vid.screen_size;
+	memset(&vid.layer_config, 0, sizeof(vid.layer_config));
+	vid.layer_config.layer_id = 0;
+	vid.layer_config.channel = 1;
+    vid.layer_config.enable = 1;
+	vid.layer_config.info.id = 0;	
+    vid.layer_config.info.mode = LAYER_MODE_BUFFER;
+	//config.info.mode = LAYER_MODE_COLOR;
+	//config.info.color = 0xffff0000*page + 0xffff*(1-page); //white
+	vid.layer_config.info.zorder = 0; // In primo piano
+    vid.layer_config.info.alpha_mode = 1;
+    vid.layer_config.info.alpha_value = 0xff;
+	vid.layer_config.info.fb.align[0] = 4;//bytes
+    //vid.layer_config.info.fb.format = DISP_FORMAT_ARGB_8888;
+	vid.layer_config.info.fb.format = DISP_FORMAT_RGB_565;
+	vid.layer_config.info.fb.flags = DISP_BF_NORMAL;
+	vid.layer_config.info.fb.scan = DISP_SCAN_PROGRESSIVE;
+    vid.layer_config.info.fb.size[0].width = vid.orig_fbwidth; //have to find a way to get this value from sys
+    vid.layer_config.info.fb.size[0].height = vid.orig_fbheight; //have to find a way to get this value from sys
+    vid.layer_config.info.fb.crop.x = 0;
+    vid.layer_config.info.fb.crop.y = 0;
+    vid.layer_config.info.fb.crop.width = (unsigned long long)GAME_WIDTH << 32;
+    vid.layer_config.info.fb.crop.height = (unsigned long long)GAME_HEIGHT << 32;
+    vid.layer_config.info.screen_win.x = 0;
+    vid.layer_config.info.screen_win.y = 0;
+    vid.layer_config.info.screen_win.width = vid.orig_screenwidth;
+    vid.layer_config.info.screen_win.height = vid.orig_screenheight;
+	vid.layer_config.info.fb.color_space = DISP_BT601_F;
+	vid.layer_config.info.fb.addr[0]=(uintptr_t)(vid.ion_mem.phy_addr + page*vid.screen_size);
 
 	uint32_t args[4] = {0, (uintptr_t)&vid.layer_config, 1, 0};
 	ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, args);
 	if (ret < 0) {
 		LOG_info("swap_buffers: DISP_LAYER_SET_CONFIG failed %d - %s\n", ret, strerror(errno));
 	} 
+	//else {
+	//	LOG_info("SETCONFIG SUCCESS!!!!\n");
+	//}
+	//system("cat /sys/class/disp/disp/attr/sys >> /mnt/SDCARD/outsys.txt");
+	//fflush(stdout);
 	return 0;
 }
 
@@ -705,6 +711,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
 
 	ism22 = 0;
+	/* Disable cursor blinking so it's not visible. */
+    //system("setterm -cursor off &> mnt/SDCARD/setterm.txt");
 
 	if (exists(SYSTEM_PATH "/menumissing.txt")) {
 		unlink(SYSTEM_PATH "/menumissing.txt");
@@ -765,6 +773,7 @@ SDL_Surface* PLAT_initVideo(void) {
 */
 	//system("cat /sys/class/disp/disp/attr/sys > /mnt/SDCARD/sysA.txt");
 	int w,h,p,hz = 0;
+	vid.ishdmi = getHDMIStatus();
 	if (getHDMIStatus() || (ism22)) {
 		char hdmimode[64];
 		w = _HDMI_WIDTH;
@@ -861,7 +870,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	vid.vinfo.xres_virtual=vid.vinfo.xres;
 	vid.vinfo.yres_virtual=vid.vinfo.yres*2;
 	vid.vinfo.bits_per_pixel=32;	
-	//at the beginning set the screen size to 640x480
+	
     set_fbinfo();
 	get_fbinfo();
 
@@ -880,42 +889,40 @@ SDL_Surface* PLAT_initVideo(void) {
 
 	my_ion_init();
 	vid.ionmmapfailed = my_ion_alloc(vid.screen_size*2);	
-	vid.ionmmapfailed=1;
+//	vid.ionmmapfailed=1; //force standard mmap on framebuffer till I understand how to get layers working even on hdmi output
+	vid.ionmmapfailed += vid.ishdmi; //always use framebuffer in case of hdmi output, let's see if it improves.
+	vid.ionmmapfailed = vid.ionmmapfailed>0 ? 1 : 0;
 	if (vid.ionmmapfailed != 0) {
 		LOG_info("Falling back to standard framebuffer mmap\n");fflush(stdout);
 		my_ion_free();
+		usleep(20000);
 		my_ion_release();
+		usleep(20000);
 		//try standard fb mmap
     	vid.fbmmap = mmap(NULL, vid.screen_size*2, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 		if (vid.fbmmap == MAP_FAILED) {
 			LOG_info("Error mapping framebuffer 0 device to memory: %s\n", strerror(errno));fflush(stdout);
 		}
 	} else {
-	//	if (vid.fdfb >= 0) close(vid.fdfb);
+		//point mmap memory to the ion allocated memory which is the way to get a physical address so layers can be doublebuffered
 		vid.fbmmap = vid.ion_mem.virt_addr;
 	}
-
 	LOG_info("Address vid.fbmmap: %p\n", vid.fbmmap);fflush(stdout);
+
 	vid.page = 0;
-	pan_display(vid.page);
 	if (vid.ionmmapfailed==0)
 	{
 		swap_buffers_init();
-		swap_buffers(vid.page);
-
-	} else {
-		pan_display(vid.page);
- 	}	//
-	vid.page = 0;
+	} 
+	pan_display(vid.page * vid.ionmmapfailed);
+	vid.page = 1;
 	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
 }
 
 void PLAT_quitVideo(void) {
-	SDL_FreeSurface(vid.screen);
-	SDL_FreeSurface(vid.screen2);
-	SDL_FreeSurface(vid.screengame);
-
+	//system("cat /sys/class/disp/disp/attr/sys >> /mnt/SDCARD/dispsys.txt");
+	PLAT_clearAll();
 	if (vid.ionmmapfailed!=0){
 		if (vid.fbmmap && vid.fbmmap != MAP_FAILED) { munmap(vid.fbmmap, vid.offset*2);}
 	} else {
@@ -928,13 +935,13 @@ void PLAT_quitVideo(void) {
 		vid.layer_config.info.mode = LAYER_MODE_BUFFER;
 		vid.layer_config.info.zorder = 16;
 		vid.layer_config.info.fb.format = 0;
-		vid.layer_config.info.alpha_mode = 0;
+		vid.layer_config.info.alpha_mode = 1;
 		vid.layer_config.info.alpha_value = 0xff;
 		vid.layer_config.info.fb.format = 0;
 		vid.layer_config.info.fb.crop.x = 0;
 		vid.layer_config.info.fb.crop.y = 0;
-		vid.layer_config.info.fb.crop.width = ((long long)vid.orig_fbwidth) << 32;
-		vid.layer_config.info.fb.crop.height =((long long)vid.orig_fbheight) << 32;
+		vid.layer_config.info.fb.crop.width = (unsigned long long)vid.orig_fbwidth << 32;
+		vid.layer_config.info.fb.crop.height = (unsigned long long)vid.orig_fbheight << 32;
 		vid.layer_config.info.screen_win.x = 0;
 		vid.layer_config.info.screen_win.y = 0;
 		vid.layer_config.info.screen_win.width = vid.orig_screenwidth;
@@ -948,12 +955,14 @@ void PLAT_quitVideo(void) {
 		vid.layer_config.info.fb.size[1].height = vid.orig_fbheight;
 		vid.layer_config.info.fb.size[2].width = vid.orig_fbwidth;
 		vid.layer_config.info.fb.size[2].height = vid.orig_fbheight;
-		vid.layer_config.info.fb.color_space = DISP_BT601;
+		vid.layer_config.info.fb.color_space = DISP_BT601_F;
 		int ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, args);
 		if (ret < 0){
 			LOG_info("Unable to restore orig layer %s\n", strerror(errno));
 		}
+		usleep(20000);
 		my_ion_free();
+		usleep(20000);
 		my_ion_release();
 	}	
 		//restore fb values
@@ -961,12 +970,13 @@ void PLAT_quitVideo(void) {
 //	vid.vinfo.xres = vid.orig_fbwidth;
 //	vid.vinfo.xres_virtual = vid.orig_fbwidthvirtual;
 //	vid.vinfo.yres_virtual = vid.orig_fbheightvirtual;
-	vid.vinfo.xoffset=0;
-	vid.vinfo.yoffset=0;
-	set_fbinfo();
-	get_fbinfo();
+
 	if (vid.fdfb >= 0) close(vid.fdfb);
 	if (vid.dispfd >= 0) close(vid.dispfd);
+
+	SDL_FreeSurface(vid.screen);
+	SDL_FreeSurface(vid.screen2);
+	SDL_FreeSurface(vid.screengame);
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {
@@ -1019,7 +1029,7 @@ void PLAT_vsync(int remaining) {
 	if (remaining>0) {
 		usleep(remaining*1000);
 	} else {
-		pan_display(vid.page);
+		pan_display(vid.page * vid.ionmmapfailed);
 	}
 }
 
@@ -1063,7 +1073,7 @@ void PLAT_pan(void) {
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
 //	pan_display(vid.page);	
-	vid.page ^= 1;
+	
 	
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
@@ -1072,28 +1082,35 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		vid.targetRect.h = vid.screen->h;
 		if (vid.rotate == 0)
 		{
-			// 90 Rotation
+			// No Rotation
 			if (vid.ionmmapfailed!=0){
+	//			LOG_info("Executing 0deg 32\n");
 			FlipRotate000(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			} else {
+	//			LOG_info("Executing 90deg 16\n");
 			FlipRotate000_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			}
 		}
 		if (vid.rotate == 1)
 		{
 			// 90 Rotation
+			
 			if (vid.ionmmapfailed!=0){
-			FlipRotate090(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+	//			LOG_info("Executing 90deg 32\n");
+				FlipRotate090(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			} else {
-			FlipRotate090_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+	//			LOG_info("Executing 90deg 16\n");
+				FlipRotate090_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			}
 		}
 		if (vid.rotate == 2)
 		{
 			// 180 Rotation
 			if (vid.ionmmapfailed!=0){
+	//			LOG_info("Executing 180deg 32\n");
 			FlipRotate180(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			} else {
+	//			LOG_info("Executing 180deg 16\n");
 			FlipRotate180_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			}
 		}
@@ -1101,23 +1118,28 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		{
 			// 270 Rotation
 			if (vid.ionmmapfailed!=0){
+	//			LOG_info("Executing 270deg 32\n");
 			FlipRotate270(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			} else {
+	//			LOG_info("Executing 270deg 16\n");
 			FlipRotate270_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			}
 		}
-		if (vid.ionmmapfailed!=0){
-			pan_display(vid.page);			
+		//fflush(stdout);
+		if (vid.ionmmapfailed==0){
+			swap_buffers(vid.page);		
+			pan_display(vid.page*vid.ionmmapfailed);	
 		} else {
-			swap_buffers(vid.page);
+			pan_display(vid.page);
 		}
+		
 		
 	} else {
 		//maybe one Day I'll find the time to investigate on why neon copy functions aren't working here
 		// No Rotation
 		if (vid.ionmmapfailed!=0){
 			FlipRotate000(vid.screengame, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
-			if (sync) {
+			if (sync && vid.ishdmi) { //if is on hdmi, follow the setting, otherwise skip vsync as it isn't fast enough on internal screen (38fps on m22, 51fps on m21)
 				pan_display(vid.page);
 			}
 		} else {
@@ -1126,6 +1148,8 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		}
 	}	
 	vid.renderingGame = 0;
+	vid.page ^= 1;
+	
 	//LOG_info("Total Flip TOOK: %imsec, Draw TOOK: %imsec\n", SDL_GetTicks()-now, now2-now);fflush(stdout);
 }
 ///////////////////////////////

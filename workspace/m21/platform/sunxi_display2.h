@@ -341,10 +341,10 @@ enum disp_transform {
 };
 
 struct disp_rect64 {
-	long long x;
-	long long y;
-	long long width;
-	long long height;
+	unsigned long long x;
+	unsigned long long y;
+	unsigned long long width;
+	unsigned long long height;
 };
 
 struct disp_lbc_info {
