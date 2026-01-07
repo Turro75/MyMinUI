@@ -61,6 +61,8 @@ static int loadgamesuccess = 0;
 static int can_dupe = false;
 uint32_t *mutedaudiodata;
 
+static int playAsPlayer = 0;
+
 static pthread_t		core_pt, flip_pt;
 static pthread_mutex_t	core_mx, flip_mx;
 static pthread_cond_t	core_rq, flip_rq; 
@@ -1041,6 +1043,13 @@ static char* max_ff_labels[] = {
 	"8x",
 	NULL,
 };
+static char* play_as_player_labels[] = {
+	"1",
+	"2",
+	"3",
+	"4",
+	NULL
+};
 
 ///////////////////////////////
 
@@ -1055,6 +1064,7 @@ enum {
 	FE_OPT_THREAD,
 	FE_OPT_DEBUG,
 	FE_OPT_MAXFF,
+	FE_OPT_PLAYAS,
 	FE_OPT_COUNT,
 };
 
@@ -1323,6 +1333,16 @@ static struct Config {
 				.values = max_ff_labels,
 				.labels = max_ff_labels,
 			},
+			[FE_OPT_PLAYAS] = {
+				.key	= "minarch_play_as_player",
+				.name	= "Play as Player",
+				.desc	= "Set the current player controller\ncan be changed during the game\ndepending on game and emulator.",
+				.default_value = 0, // 1
+				.value = 0, // 1
+				.count = 4,
+				.values = play_as_player_labels,
+				.labels = play_as_player_labels
+			},
 			[FE_OPT_COUNT] = {NULL}
 		}
 	},
@@ -1440,6 +1460,10 @@ static void Config_syncFrontend(char* key, int value) {
 	else if (exactMatch(key,config.frontend.options[FE_OPT_MAXFF].key)) {
 		max_ff_speed = value;
 		i = FE_OPT_MAXFF;
+	}
+	else if (exactMatch(key,config.frontend.options[FE_OPT_PLAYAS].key)) {
+		playAsPlayer = value;
+		i = FE_OPT_PLAYAS;
 	}
 	if (i==-1) return;
 	Option* option = &config.frontend.options[i];
@@ -2177,15 +2201,15 @@ static void input_poll_callback(void) {
 }
 static int16_t input_state_callback(unsigned port, unsigned device, unsigned index, unsigned id) {
 	// id == RETRO_DEVICE_ID_JOYPAD_MASK or RETRO_DEVICE_ID_JOYPAD_*
-	if (port == 0 && device == RETRO_DEVICE_JOYPAD && index == 0) {
+	if (port == playAsPlayer & device == RETRO_DEVICE_JOYPAD && index == 0) {
 		if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return buttons;
 		return (buttons >> id) & 1;
 	}
-	if (port == 0 && device == RETRO_DEVICE_ANALOG && index<2){
+	if (port == playAsPlayer && device == RETRO_DEVICE_ANALOG && index<2){
 	//	LOG_info("Returned analog <2 %d\n", analogs[index*2+id]);
 		return analogs[index*2+id];
 	}	
-	if (port == 0 && device == RETRO_DEVICE_ANALOG && index>1){
+	if (port == playAsPlayer && device == RETRO_DEVICE_ANALOG && index>1){
 	//	LOG_info("Returned analog %d=%d\n", id, analogs[id]);
 		return analogs[id];
 	}	
@@ -2211,7 +2235,7 @@ static void Input_init(const struct retro_input_descriptor *vars) {
 		// identify buttons available in this core
 		for (int i=0; vars[i].description; i++) {
 			const struct retro_input_descriptor* var = &vars[i];
-			if (var->port!=0 || var->device!=RETRO_DEVICE_JOYPAD || var->index!=0) continue;
+			if (var->port!=playAsPlayer || var->device!=RETRO_DEVICE_JOYPAD || var->index!=0) continue;
 
 			// TODO: don't ignore unavailable buttons, just override them to BTN_ID_NONE!
 			if (var->id>=RETRO_BUTTON_COUNT) {
