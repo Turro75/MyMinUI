@@ -890,8 +890,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	my_ion_init();
 	vid.ionmmapfailed = my_ion_alloc(vid.screen_size*2);	
 //	vid.ionmmapfailed=1; //force standard mmap on framebuffer till I understand how to get layers working even on hdmi output
-	vid.ionmmapfailed += vid.ishdmi; //always use framebuffer in case of hdmi output, let's see if it improves.
-	vid.ionmmapfailed = vid.ionmmapfailed>0 ? 1 : 0;
+//	vid.ionmmapfailed += vid.ishdmi; //always use framebuffer in case of hdmi output, let's see if it improves.
+//	vid.ionmmapfailed = vid.ionmmapfailed>0 ? 1 : 0;
 	if (vid.ionmmapfailed != 0) {
 		LOG_info("Falling back to standard framebuffer mmap\n");fflush(stdout);
 		my_ion_free();
@@ -1072,9 +1072,7 @@ void PLAT_pan(void) {
 
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
-//	pan_display(vid.page);	
-	
-	
+
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
@@ -1128,23 +1126,20 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		//fflush(stdout);
 		if (vid.ionmmapfailed==0){
 			swap_buffers(vid.page);		
-			pan_display(vid.page*vid.ionmmapfailed);	
-		} else {
-			pan_display(vid.page);
 		}
-		
+		pan_display(vid.page * vid.ionmmapfailed);
 		
 	} else {
 		//maybe one Day I'll find the time to investigate on why neon copy functions aren't working here
 		// No Rotation
 		if (vid.ionmmapfailed!=0){
 			FlipRotate000(vid.screengame, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
-			if (sync && vid.ishdmi) { //if is on hdmi, follow the setting, otherwise skip vsync as it isn't fast enough on internal screen (38fps on m22, 51fps on m21)
-				pan_display(vid.page);
-			}
 		} else {
 			FlipRotate000_16(vid.screengame, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			swap_buffers(vid.page);
+		}
+		if (sync && vid.ishdmi) { //if is on hdmi, follow the setting, otherwise skip vsync as it isn't fast enough on internal screen (38fps on m22, 51fps on m21)
+			pan_display(vid.page * vid.ionmmapfailed);
 		}
 	}	
 	vid.renderingGame = 0;
