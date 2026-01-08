@@ -39,6 +39,9 @@
 #define RAW_R2		295 //SDL_SCANCODE_SEMICOLON
 #define RAW_PLUS	12 //SDL_SCANCODE_MINUS
 #define RAW_MINUS	11 //SDL_SCANCODE_0
+#define RAW_L3		-1
+#define RAW_R3		-1
+#define RAW_POWER	-1
 
 #define NUM_INPUTS 2
 
@@ -46,6 +49,32 @@ static int inputs[NUM_INPUTS] = {-1};
 
 void PLAT_initInput(void) {
 	LOG_info("PLAT_initInput\n");
+	//assign RAW button values to local vars
+	//this generic code would be copy&paste to every platform.c file as is.
+	USER_BTN_A = RAW_A;
+	USER_BTN_B = RAW_B;
+	USER_BTN_X = RAW_X;
+	USER_BTN_Y = RAW_Y;
+	USER_BTN_UP = RAW_UP;
+	USER_BTN_DOWN = RAW_DOWN;
+	USER_BTN_LEFT = RAW_LEFT;
+	USER_BTN_RIGHT = RAW_RIGHT;
+	USER_BTN_L1 = RAW_L1;
+	USER_BTN_L2 = RAW_L2;
+	USER_BTN_L3 = RAW_L3;
+	USER_BTN_R1 = RAW_R1;
+	USER_BTN_R2 = RAW_R2;
+	USER_BTN_R3 = RAW_R3;
+	USER_BTN_MENU = RAW_MENU;
+	USER_BTN_SELECT = RAW_SELECT;
+	USER_BTN_START = RAW_START;
+	USER_BTN_VOLUMEUP = RAW_PLUS;
+	USER_BTN_VOLUMEDOWN = RAW_MINUS;
+	USER_BTN_POWER = RAW_POWER;	
+	PAD_readCustomButtonMapping();
+	
+	
+
 	char path[64];
 	for (int i=0; i<NUM_INPUTS; i++) {
 		if (inputs[i]>=0) {
@@ -57,12 +86,13 @@ void PLAT_initInput(void) {
 		sprintf(path, "/dev/input/event%d", i+1);
 		inputs[i] = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 		if (inputs[i] < 0) {
-			LOG_info("failed to open /dev/input/event%d with error \n", i+1);system("sync");
+			LOG_info("failed to open /dev/input/event%d with error %s\n", i+1, strerror(errno));fflush(stdout);
 		}
 	}
 	LOG_info("PLAT_initInput success!\n");
 	fflush(stdout);
 }
+
 void PLAT_quitInput(void) {
 	LOG_info("PLAT_quitInput\n");
 	for (int i=0; i<NUM_INPUTS; i++) {
@@ -141,8 +171,8 @@ void PLAT_pollInput(void) {
 				if ((i > 0) || (ism22 == 1)) { //external controllers or is the m22 which doesn't have the menu button
 				//special handling as the sjgam external controller does not provide menu button but only select+start, 
 				//let's find a way to simulate menu button when select+start is detected
-					if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; pressed ? selectstartstatus[i]++ : selectstartstatus[i]--; } 
-				    if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; pressed ? selectstartstatus[i]++ : selectstartstatus[i]--;}
+					if (code==USER_BTN_START)	{ btn = BTN_START; 		id = BTN_ID_START; pressed ? selectstartstatus[i]++ : selectstartstatus[i]--; } 
+				    if (code==USER_BTN_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; pressed ? selectstartstatus[i]++ : selectstartstatus[i]--;}
 					if (selectstartstatus[i] == 2) {
 						if (selectstartlaststatus[i] != selectstartstatus[i]) {
 							//LOG_info("SEL+START event detected, generating MENU event stause: %d\n", pressed);fflush(stdout);
@@ -173,25 +203,25 @@ void PLAT_pollInput(void) {
 									//printf("pwr released and pwr button event generated\n");			
 								} 
 					}	
-					if (code==RAW_A)		{ btn = BTN_B; 			id = BTN_ID_B; }
-					if (code==RAW_B)		{ btn = BTN_A; 			id = BTN_ID_A; }
+					if (code==USER_BTN_A)		{ btn = BTN_A; 			id = BTN_ID_A; } 
+					if (code==USER_BTN_B)		{ btn = BTN_B; 			id = BTN_ID_B; } 
 				} 
 				else { //internal controls, standard behavior
-					if 		(code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
-				    else if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
-					else if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
-					else if (code==RAW_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
+					if 		(code==USER_BTN_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
+				    else if (code==USER_BTN_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
+					else if (code==USER_BTN_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
+					else if (code==USER_BTN_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
 				}
 
 				//LOG_info("key event: %i (%i)\n", code,pressed);fflush(stdout);
-				     if (code==RAW_UP) 		{ btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
-	 			else if (code==RAW_DOWN)	{ btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
-				else if (code==RAW_LEFT)	{ btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
-				else if (code==RAW_RIGHT)	{ btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; }
-				else if (code==RAW_X)		{ btn = BTN_Y; 			id = BTN_ID_Y; }
-				else if (code==RAW_Y)		{ btn = BTN_X; 			id = BTN_ID_X; }
+				     if (code==USER_BTN_UP) 		{ btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
+	 			else if (code==USER_BTN_DOWN)	{ btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
+				else if (code==USER_BTN_LEFT)	{ btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
+				else if (code==USER_BTN_RIGHT)	{ btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; }
+				else if (code==USER_BTN_X)		{ btn = BTN_X; 			id = BTN_ID_X; }
+				else if (code==USER_BTN_Y)		{ btn = BTN_Y; 			id = BTN_ID_Y; }
 				
-				else if (code==RAW_MENU)	{ 
+				else if (code==USER_BTN_MENU)	{ 
 							btn = BTN_MENU; 		id = BTN_ID_MENU; 
 							// hack to generate a pwr button
 							if (pressed){
@@ -208,12 +238,12 @@ void PLAT_pollInput(void) {
 								} 
 							}					
 					}
-				else if (code==RAW_L1)		{ btn = BTN_L1; 		id = BTN_ID_L1; }
-				else if (code==RAW_L2)		{ btn = BTN_L2; 		id = BTN_ID_L2; }
-				else if (code==RAW_R1)		{ btn = BTN_R1; 		id = BTN_ID_R1; }
-				else if (code==RAW_R2)		{ btn = BTN_R2; 		id = BTN_ID_R2; }
-				else if (code==RAW_PLUS)	{ btn = BTN_PLUS; 		id = BTN_ID_PLUS; }
-				else if (code==RAW_MINUS)	{ btn = BTN_MINUS; 		id = BTN_ID_MINUS; }
+				else if (code==USER_BTN_L1)		{ btn = BTN_L1; 		id = BTN_ID_L1; }
+				else if (code==USER_BTN_L2)		{ btn = BTN_L2; 		id = BTN_ID_L2; }
+				else if (code==USER_BTN_R1)		{ btn = BTN_R1; 		id = BTN_ID_R1; }
+				else if (code==USER_BTN_R2)		{ btn = BTN_R2; 		id = BTN_ID_R2; }
+				else if (code==USER_BTN_VOLUMEUP)	{ btn = BTN_PLUS; 		id = BTN_ID_PLUS; }
+				else if (code==USER_BTN_VOLUMEDOWN)	{ btn = BTN_MINUS; 		id = BTN_ID_MINUS; }
 			}
 			if (type==EV_ABS) {
 				if (code==1) {
@@ -308,6 +338,8 @@ static struct VID_Context {
 	SDL_Rect targetRect;
 	int renderingGame;
 } vid;
+
+//this code sample literally saved me from the allwinner ion traps: https://www.cnblogs.com/RYSBlog/p/18285467
 
 int my_ion_release( void ){
      if (vid.cedarfd >= 0 )
@@ -432,6 +464,21 @@ int my_ion_free(void){
     vid.ion_mem.phy_addr = 0 ;
     return  0 ;
 }
+
+int my_ion_flushWrite(void){
+    struct dma_buf_sync sync;
+    sync.flags = DMA_BUF_SYNC_END | DMA_BUF_SYNC_RW;
+    ioctl(vid.ion_mem.fd, DMA_BUF_IOCTL_SYNC, &sync);
+    return  0;
+}
+
+int my_ion_prepareWrite(void){
+    struct dma_buf_sync sync;
+    sync.flags = DMA_BUF_SYNC_START | DMA_BUF_SYNC_RW;
+    ioctl(vid.ion_mem.fd, DMA_BUF_IOCTL_SYNC, &sync);
+    return  0;
+}
+
 
 void print_disp_layer_config(const struct disp_layer_config *config) {
     if (!config) {
@@ -914,6 +961,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	{
 		swap_buffers_init();
 	} 
+	PLAT_clearAll();
 	pan_display(vid.page * vid.ionmmapfailed);
 	vid.page = 1;
 	vid.sharpness = SHARPNESS_SOFT;
@@ -989,7 +1037,9 @@ void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
+	my_ion_prepareWrite();
 	memset(vid.fbmmap, 0, vid.screen_size*2);
+	my_ion_flushWrite();
 }
 
 void PLAT_setVsync(int vsync) {
@@ -1072,7 +1122,7 @@ void PLAT_pan(void) {
 
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
-
+	my_ion_prepareWrite();
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
@@ -1125,6 +1175,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		}
 		//fflush(stdout);
 		if (vid.ionmmapfailed==0){
+			my_ion_flushWrite();
 			swap_buffers(vid.page);		
 		}
 		pan_display(vid.page * vid.ionmmapfailed);
@@ -1136,6 +1187,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			FlipRotate000(vid.screengame, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 		} else {
 			FlipRotate000_16(vid.screengame, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			my_ion_flushWrite();
 			swap_buffers(vid.page);
 		}
 		if (sync && vid.ishdmi) { //if is on hdmi, follow the setting, otherwise skip vsync as it isn't fast enough on internal screen (38fps on m22, 51fps on m21)

@@ -25,6 +25,8 @@ export PATH=$SYSTEM_PATH/bin:$PATH
 export LD_LIBRARY_PATH=$SYSTEM_PATH/lib:$LD_LIBRARY_PATH
 export SDL_NOMOUSE=1
 
+source "$SYSTEM_PATH/custombuttonmapping.env"
+
 #######################################
 
 

@@ -29,6 +29,31 @@ int DEVICE_PITCH;
 int TARGET_FPS;
 uint32_t cur_cpu_freq;
 
+////////////////////////////////
+
+int USER_BTN_UP;
+int USER_BTN_DOWN;
+int USER_BTN_LEFT;
+int USER_BTN_RIGHT;
+int USER_BTN_A;
+int USER_BTN_B;
+int USER_BTN_X;
+int USER_BTN_Y;
+int USER_BTN_L1;
+int USER_BTN_L2;
+int USER_BTN_R1;
+int USER_BTN_R2;
+int USER_BTN_L3;
+int USER_BTN_R3;
+int USER_BTN_START;
+int USER_BTN_SELECT;
+int USER_BTN_MENU;
+int USER_BTN_VOLUMEUP;
+int USER_BTN_VOLUMEDOWN;
+int USER_BTN_POWER;
+
+////////////////////////////////
+
 void LOG_note(int level, const char* fmt, ...) {
 	char buf[1024] = {0};
 	va_list args;
@@ -1879,6 +1904,151 @@ int PAD_tappedMenu(uint32_t now) {
 	}
 	return (!ignore_menu && PAD_justReleased(BTN_MENU) && now-menu_start<MENU_DELAY);
 }
+
+ void PAD_readCustomButtonMapping(void){
+ 	//check if there are any custom setting for system button mapping
+ 	char *env;
+
+	LOG_info("Default USER_BTN_A = %d\n", USER_BTN_A);
+    env = getenv("USER_BTN_A");
+    if(env!=NULL) {
+ 		USER_BTN_A = atoi(env);
+ 		LOG_info("Override BTN_A with value %d\n", USER_BTN_A);
+ 	}
+	
+	LOG_info("Default USER_BTN_B = %d\n", USER_BTN_B);
+	env = getenv("USER_BTN_B");
+    if(env!=NULL) {
+ 		USER_BTN_B = atoi(env);
+ 		LOG_info("Override BTN_B with value %d\n", USER_BTN_B);
+ 	}
+	
+	LOG_info("Default USER_BTN_X = %d\n", USER_BTN_X);
+	env = getenv("USER_BTN_X");
+    if(env!=NULL) {
+ 		USER_BTN_X = atoi(env);
+ 		LOG_info("Override BTN_X with value %d\n", USER_BTN_X);
+ 	}
+	
+	LOG_info("Default USER_BTN_Y = %d\n", USER_BTN_Y);
+	env = getenv("USER_BTN_Y");
+    if(env!=NULL) {
+ 		USER_BTN_Y = atoi(env);
+ 		LOG_info("Override BTN_Y with value %d\n", USER_BTN_Y);
+ 	}
+	
+	LOG_info("Default USER_BTN_UP = %d\n", USER_BTN_UP);
+	env = getenv("USER_BTN_UP");
+    if(env!=NULL) {
+ 		USER_BTN_UP = atoi(env);
+ 		LOG_info("Override BTN_UP with value %d\n", USER_BTN_UP);
+ 	}
+
+	LOG_info("Default USER_BTN_DOWN = %d\n", USER_BTN_DOWN);
+	env = getenv("USER_BTN_DOWN");
+    if(env!=NULL) {
+ 		USER_BTN_DOWN = atoi(env);
+ 		LOG_info("Override BTN_DOWN with value %d\n", USER_BTN_DOWN);
+ 	}
+
+	LOG_info("Default USER_BTN_LEFT = %d\n", USER_BTN_LEFT);
+	env = getenv("USER_BTN_LEFT");
+    if(env!=NULL) {
+ 		USER_BTN_LEFT = atoi(env);
+ 		LOG_info("Override BTN_LEFT with value %d\n", USER_BTN_LEFT);
+ 	}
+
+	LOG_info("Default USER_BTN_RIGHT = %d\n", USER_BTN_RIGHT);
+	env = getenv("USER_BTN_RIGHT");
+    if(env!=NULL) {
+ 		USER_BTN_RIGHT= atoi(env);
+ 		LOG_info("Override BTN_RIGHT with value %d\n", USER_BTN_RIGHT);
+ 	}
+
+	LOG_info("Default USER_BTN_R1 = %d\n", USER_BTN_R1);
+	env = getenv("USER_BTN_R1");
+	if(env!=NULL) {
+ 		USER_BTN_R1 = atoi(env);
+ 		LOG_info("Override BTN_R1 with value %d\n", USER_BTN_R1);
+ 	}
+
+	LOG_info("Default USER_BTN_R2 = %d\n", USER_BTN_R2);
+	env = getenv("USER_BTN_R2");
+    if(env!=NULL) {
+ 		USER_BTN_R2= atoi(env);
+ 		LOG_info("Override BTN_R2 with value %d\n", USER_BTN_R2);
+ 	}
+
+	LOG_info("Default USER_BTN_R3 = %d\n", USER_BTN_R3);
+	env = getenv("USER_BTN_R3");
+    if(env!=NULL) {
+ 		USER_BTN_R3= atoi(env);
+ 		LOG_info("Override BTN_R3 with value %d\n", USER_BTN_R3);
+ 	}
+
+	LOG_info("Default USER_BTN_L1 = %d\n", USER_BTN_L1);
+	env = getenv("USER_BTN_L1");
+	if(env!=NULL) {
+ 		USER_BTN_L1 = atoi(env);
+ 		LOG_info("Override BTN_L1 with value %d\n", USER_BTN_L1);
+ 	}
+
+	LOG_info("Default USER_BTN_L2 = %d\n", USER_BTN_L2);
+	env = getenv("USER_BTN_L2");
+    if(env!=NULL) {
+ 		USER_BTN_L2= atoi(env);
+ 		LOG_info("Override BTN_L2 with value %d\n", USER_BTN_L2);
+ 	}
+
+	LOG_info("Default USER_BTN_L3 = %d\n", USER_BTN_L3);
+	env = getenv("USER_BTN_L3");
+    if(env!=NULL) {
+ 		USER_BTN_L3= atoi(env);
+ 		LOG_info("Override BTN_L3 with value %d\n", USER_BTN_L3);
+ 	}
+
+	LOG_info("Default USER_BTN_SELECT = %d\n", USER_BTN_SELECT);
+	env = getenv("USER_BTN_SELECT");
+	if(env!=NULL) {
+ 		USER_BTN_SELECT = atoi(env);
+ 		LOG_info("Override BTN_SELECT with value %d\n", USER_BTN_SELECT);
+ 	}
+
+	LOG_info("Default USER_BTN_START = %d\n", USER_BTN_START);
+	env = getenv("USER_BTN_START");
+    if(env!=NULL) {
+ 		USER_BTN_START= atoi(env);
+ 		LOG_info("Override BTN_START with value %d\n", USER_BTN_START);
+ 	}
+
+	LOG_info("Default USER_BTN_MENU = %d\n", USER_BTN_MENU);
+	env = getenv("USER_BTN_MENU");
+    if(env!=NULL) {
+ 		USER_BTN_MENU= atoi(env);
+ 		LOG_info("Override BTN_MENU with value %d\n", USER_BTN_MENU);
+ 	}
+
+	LOG_info("Default USER_BTN_VOLUMEUP = %d\n", USER_BTN_VOLUMEUP);
+	env = getenv("USER_BTN_VOLUMEUP");
+    if(env!=NULL) {
+ 		USER_BTN_VOLUMEUP= atoi(env);
+ 		LOG_info("Override BTN_VOLUMEUP with value %d\n", USER_BTN_VOLUMEUP);
+ 	}
+
+	LOG_info("Default USER_BTN_VOLUMEDOWN = %d\n", USER_BTN_VOLUMEDOWN);
+	env = getenv("USER_BTN_VOLUMEDOWN");
+    if(env!=NULL) {
+ 		USER_BTN_VOLUMEDOWN= atoi(env);
+ 		LOG_info("Override BTN_VOLUMEDOWN with value %d\n", USER_BTN_VOLUMEDOWN);
+ 	}
+
+	LOG_info("Default USER_BTN_POWER = %d\n", USER_BTN_POWER);
+	env = getenv("USER_BTN_POWER");
+    if(env!=NULL) {
+ 		USER_BTN_POWER= atoi(env);
+ 		LOG_info("Override BTN_POWER with value %d\n", USER_BTN_POWER);
+ 	}
+ }
 
 ///////////////////////////////
 

@@ -30,6 +30,31 @@ void LOG_note(int level, const char* fmt, ...);
 
 ///////////////////////////////
 
+extern int USER_BTN_UP;
+extern int USER_BTN_DOWN;
+extern int USER_BTN_LEFT;
+extern int USER_BTN_RIGHT;
+extern int USER_BTN_A;
+extern int USER_BTN_B;
+extern int USER_BTN_X;
+extern int USER_BTN_Y;
+extern int USER_BTN_L1;
+extern int USER_BTN_L2;
+extern int USER_BTN_L3;
+extern int USER_BTN_R1;
+extern int USER_BTN_R2;
+extern int USER_BTN_R3;
+extern int USER_BTN_START;
+extern int USER_BTN_SELECT;
+extern int USER_BTN_MENU;
+extern int USER_BTN_VOLUMEUP;
+extern int USER_BTN_VOLUMEDOWN;
+extern int USER_BTN_POWER;
+
+
+
+///////////////////////////////
+
 extern int DEVICE_WIDTH;
 extern int DEVICE_HEIGHT;
 extern int GAME_WIDTH;
@@ -344,6 +369,7 @@ int PAD_justReleased(int btn);
 int PAD_justRepeated(int btn);
 
 int PAD_tappedMenu(uint32_t now); // special case, returns 1 on release of BTN_MENU within 250ms if BTN_PLUS/BTN_MINUS haven't been pressed
+void PAD_readCustomButtonMapping(void);
 
 #ifdef __cplusplus
 }

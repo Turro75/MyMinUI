@@ -20,6 +20,14 @@
 #define CODE_MINUS		11
 #define CODE_PWR		-1
 
+
+int USER_BTN_MENU = CODE_MENU;
+int	USER_BTN_SELECT = CODE_SELECT;
+int USER_BTN_START = CODE_START;
+int USER_BTN_VOLUMEUP = CODE_PLUS;
+int USER_BTN_VOLUMEDOWN = CODE_MINUS;
+int USER_BTN_POWER = CODE_PWR;
+
 //	for ev.value
 #define RELEASED	0
 #define PRESSED		1
@@ -30,8 +38,56 @@ static int inputs[INPUT_COUNT];
 static struct input_event ev;
 FILE *file_log;
 
+void PAD_readCustomButtonMapping(void){
+ 	//check if there are any custom setting for system button mapping
+ 	char *env;
+	printf("Default USER_BTN_SELECT = %d\n", USER_BTN_SELECT);
+	env = getenv("USER_BTN_SELECT");
+	if(env!=NULL) {
+ 		USER_BTN_SELECT = atoi(env);
+ 		printf("Override BTN_SELECT with value %d\n", USER_BTN_SELECT);
+ 	}
+
+	printf("Default USER_BTN_START = %d\n", USER_BTN_START);
+	env = getenv("USER_BTN_START");
+    if(env!=NULL) {
+ 		USER_BTN_START= atoi(env);
+ 		printf("Override BTN_START with value %d\n", USER_BTN_START);
+ 	}
+
+	printf("Default USER_BTN_MENU = %d\n", USER_BTN_MENU);
+	env = getenv("USER_BTN_MENU");
+    if(env!=NULL) {
+ 		USER_BTN_MENU= atoi(env);
+ 		printf("Override BTN_MENU with value %d\n", USER_BTN_MENU);
+ 	}
+
+	printf("Default USER_BTN_VOLUMEUP = %d\n", USER_BTN_VOLUMEUP);
+	env = getenv("USER_BTN_VOLUMEUP");
+    if(env!=NULL) {
+ 		USER_BTN_VOLUMEUP= atoi(env);
+ 		printf("Override BTN_VOLUMEUP with value %d\n", USER_BTN_VOLUMEUP);
+ 	}
+
+	printf("Default USER_BTN_VOLUMEDOWN = %d\n", USER_BTN_VOLUMEDOWN);
+	env = getenv("USER_BTN_VOLUMEDOWN");
+    if(env!=NULL) {
+ 		USER_BTN_VOLUMEDOWN= atoi(env);
+ 		printf("Override BTN_VOLUMEDOWN with value %d\n", USER_BTN_VOLUMEDOWN);
+ 	}
+
+	printf("Default USER_BTN_POWER = %d\n", USER_BTN_POWER);
+	env = getenv("USER_BTN_POWER");
+    if(env!=NULL) {
+ 		USER_BTN_POWER= atoi(env);
+ 		printf("Override BTN_POWER with value %d\n", USER_BTN_POWER);
+ 	}
+ }
+
+
 int main (int argc, char *argv[]) {
 	InitSettings();
+	PAD_readCustomButtonMapping();
 	// TODO: will require two inputs
 	// input_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	inputs[0] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
@@ -76,29 +132,16 @@ int main (int argc, char *argv[]) {
 
 				if (( ev.type != EV_KEY ) || ( val > REPEAT )) continue;
 	//			printf("Code: %i (%i)\n", ev.code, val); fflush(stdout);
-				switch (ev.code) {
-					case CODE_MENU:
-						menu_pressed = val;
-					break;
-					case CODE_SELECT:
-						select_pressed = val;
-					break;
-					case CODE_START:
-						start_pressed = val;
-					break;
-					case CODE_PLUS:
-						up_pressed = up_just_pressed = val;
-						if (val) up_repeat_at = now + 300;
-					break;
-					case CODE_MINUS:
-						down_pressed = down_just_pressed = val;
-						if (val) down_repeat_at = now + 300;
-					break;
-					default:
-						//file_log = fopen("/mnt/SDCARD/.userdata/m21/logs/keymon.log", "a+"); 
-						//fprintf(file_log, "Event BTN Code = %d\n",ev.code);
-						//fclose(file_log); system("sync");
-					break;
+				if (ev.code == USER_BTN_MENU) menu_pressed = val;
+				else if (ev.code == USER_BTN_SELECT) select_pressed = val;
+				else if (ev.code == USER_BTN_START) start_pressed = val;
+				else if (ev.code == USER_BTN_VOLUMEUP) {
+					up_pressed = up_just_pressed = val;
+					if (val) up_repeat_at = now + 300;
+				} 
+				else if (ev.code == USER_BTN_VOLUMEDOWN) {
+					down_pressed = down_just_pressed = val;
+					if (val) down_repeat_at = now + 300;
 				}
 			}
 		}
