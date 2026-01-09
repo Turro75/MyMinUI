@@ -25,12 +25,7 @@ libretro-common
 workspace/hash.txt
 workspace/readmes
 
-
-
 workspace/rg35xx/boot/output
-toolchains/rg35xx-toolchain/.build
-toolchains/miyoomini-toolchain/.build
-toolchains/my282-toolchain/.build
 toolchains/my282-toolchain/support/my282_toolchain.tar.gz
 
 workspace/m21/other/test
@@ -43,10 +38,19 @@ toolchains/m21-toolchain/support/m21_toolchain_musl.tar.gz
 toolchains/rg35xx-toolchain/support/rg35xx-toolchain.tar.gz
 toolchains/rg35xx-toolchain/support/rg35xx-buildroot-2017.11.config.ok
 toolchains/miyoomini-toolchain/support/miyoomini_toolchain_glibc.tar.gz
-toolchains/m21-toolchain/workspace/m21_toolchain_glibc.tar.gz
-toolchains/r36s-toolchain/.build
-workspace/my282/other/libsamplerate/libsamplerate.so.0
+
+workspace/my282/other/libsamplerate
 workspace/r36s/log_r36.txt
 workspace/r36s/log_rg353v.txt
 workspace/r36s/log_rgb30.txt
-toolchains/m21-toolchain/workspace/m21_toolchain_musl.tar.gz
+toolchains/m21-toolchain/workspace
+toolchains/r36s-toolchain/workspace
+toolchains/miyoomini-toolchain/workspace
+toolchains/rg35xx-toolchain/workspace
+toolchains/my282-toolchain/workspace
+toolchains/r36s-toolchain/.build
+oolchains/m21-toolchain/.build
+toolchains/miyoomini-toolchain/.build
+toolchains/rg35xx-toolchain/.build
+toolchains/my282-toolchain/.build
+
