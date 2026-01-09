@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "sunxi_display2.h"
 #include "sunxi_ion.h"
+#include <sys/time.h>
 
 #define ISM22_PATH "/mnt/SDCARD/m21/thisism22"
 
@@ -72,8 +73,6 @@ void PLAT_initInput(void) {
 	USER_BTN_VOLUMEDOWN = RAW_MINUS;
 	USER_BTN_POWER = RAW_POWER;	
 	PAD_readCustomButtonMapping();
-	
-	
 
 	char path[64];
 	for (int i=0; i<NUM_INPUTS; i++) {
@@ -291,7 +290,7 @@ int PLAT_shouldWake(void) {
 	static struct input_event event;
 	if (inputs[0] >= 0) {
 		while (read(inputs[0], &event, sizeof(event))==sizeof(event)) {
-		if (event.type==EV_KEY && (event.code==RAW_MENU || ( ism22 && event.code==RAW_SELECT)) && event.value==0) {
+		if (event.type==EV_KEY && (event.code==USER_BTN_MENU || ( ism22 && event.code==USER_BTN_SELECT)) && event.value==0) {
 			return 1;
 		}
 	}	
@@ -338,6 +337,27 @@ static struct VID_Context {
 	SDL_Rect targetRect;
 	int renderingGame;
 } vid;
+
+//read current graphic status
+void readDispSys(void){
+	FILE *fp;
+    char _buffer[256];
+	char *outstr;
+
+    // Esegue 'ls -l' e legge l'output
+    fp = popen("cat /sys/class/disp/disp/attr/sys", "r");
+    if (fp == NULL) {
+        LOG_info("popen failed - %s\n", strerror(errno));
+    }
+	LOG_info("/sys/class/disp/disp/attr/sys:");
+    // Legge l'output riga per riga
+    while (fgets(_buffer, sizeof(_buffer), fp) != NULL) {
+        fprintf(stdout,"%s", _buffer);
+    }
+	fprintf(stdout,"\n");
+    // Chiude lo stream e ottiene lo stato di uscita
+    int status = pclose(fp);
+}
 
 //this code sample literally saved me from the allwinner ion traps: https://www.cnblogs.com/RYSBlog/p/18285467
 
@@ -688,12 +708,12 @@ int swap_buffers_init(void){
 struct cache_range mycache_range;
 int swap_buffers(int page){
 	int ret;
-	mycache_range.start = (uintptr_t)(vid.fbmmap + vid.screen_size*page);
-	mycache_range.end = (uintptr_t)(vid.fbmmap + vid.screen_size*2 + vid.screen_size*(page-1));
-	ret = ioctl(vid.cedarfd, IOCTL_FLUSH_CACHE_RANGE, &mycache_range);
-	if (ret < 0) {
-		LOG_info("swap_buffers: CEDAR IOCTL_FLUSH_CACHE_RANGE failed %d - %s\n", ret, strerror(errno));fflush(stdout);
-	} 
+//	mycache_range.start = (uintptr_t)(vid.fbmmap + vid.screen_size*page);
+//	mycache_range.end = (uintptr_t)(vid.fbmmap + vid.screen_size*2 + vid.screen_size*(page-1));
+//	ret = ioctl(vid.cedarfd, IOCTL_FLUSH_CACHE_RANGE, &mycache_range);
+//	if (ret < 0) {
+//		LOG_info("swap_buffers: CEDAR IOCTL_FLUSH_CACHE_RANGE failed %d - %s\n", ret, strerror(errno));fflush(stdout);
+//	} 
 	//else {
 	//	LOG_info("swap_buffers: CEDAR IOCTL_FLUSH_CACHE_RANGE success %d\n", ret); 		
 	//} 
@@ -744,6 +764,8 @@ int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max;
 //SDL_Surface * page[2];
 
 SDL_Surface* PLAT_initVideo(void) {
+
+	readDispSys();
 
 	//looks for environment cpu frequencies
 	cpufreq_menu = atoi(getenv("CPU_SPEED_MENU"));
@@ -920,6 +942,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	
     set_fbinfo();
 	get_fbinfo();
+	readDispSys();
 
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screengame =  SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
@@ -941,10 +964,11 @@ SDL_Surface* PLAT_initVideo(void) {
 //	vid.ionmmapfailed = vid.ionmmapfailed>0 ? 1 : 0;
 	if (vid.ionmmapfailed != 0) {
 		LOG_info("Falling back to standard framebuffer mmap\n");fflush(stdout);
+		usleep(100000);
 		my_ion_free();
-		usleep(20000);
+		usleep(100000);
 		my_ion_release();
-		usleep(20000);
+		usleep(100000);
 		//try standard fb mmap
     	vid.fbmmap = mmap(NULL, vid.screen_size*2, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 		if (vid.fbmmap == MAP_FAILED) {
@@ -960,6 +984,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	if (vid.ionmmapfailed==0)
 	{
 		swap_buffers_init();
+		usleep(100000);
 	} 
 	PLAT_clearAll();
 	pan_display(vid.page * vid.ionmmapfailed);
@@ -1008,10 +1033,11 @@ void PLAT_quitVideo(void) {
 		if (ret < 0){
 			LOG_info("Unable to restore orig layer %s\n", strerror(errno));
 		}
-		usleep(20000);
+		usleep(100000);
 		my_ion_free();
-		usleep(20000);
+		usleep(100000);
 		my_ion_release();
+		usleep(100000);
 	}	
 		//restore fb values
 //	vid.vinfo.yres = vid.orig_fbheight;
@@ -1025,6 +1051,7 @@ void PLAT_quitVideo(void) {
 	SDL_FreeSurface(vid.screen);
 	SDL_FreeSurface(vid.screen2);
 	SDL_FreeSurface(vid.screengame);
+	readDispSys();
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {
@@ -1037,9 +1064,9 @@ void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
-	my_ion_prepareWrite();
+	if (!vid.ionmmapfailed) my_ion_prepareWrite();
 	memset(vid.fbmmap, 0, vid.screen_size*2);
-	my_ion_flushWrite();
+	if (!vid.ionmmapfailed) my_ion_flushWrite();
 }
 
 void PLAT_setVsync(int vsync) {
@@ -1122,7 +1149,7 @@ void PLAT_pan(void) {
 
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
-	my_ion_prepareWrite();
+	if (!vid.ionmmapfailed) my_ion_prepareWrite();
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
