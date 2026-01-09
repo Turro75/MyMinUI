@@ -673,6 +673,21 @@ int swap_buffers_init(void){
 	vid.layer_config.layer_id = 0;
 	vid.layer_config.channel = 1;
     vid.layer_config.enable = 1;
+	vid.layer_config.info.fb.addr[0] = 0;
+	vid.layer_config.info.id = 0;	
+	ret = ioctl(vid.dispfd, DISP_LAYER_SET_CONFIG, args);
+	if (ret < 0) {
+		LOG_info("swap_buffers_init: DISP_LAYER_SET_CONFIG to reset failed %d - %s\n", ret, strerror(errno));
+	} else {
+		LOG_info("swap_buffers_init: DISP_LAYER_SET_CONFIG to reset success %d\n", ret);fflush(stdout);
+	}
+	//usleep(20000);
+
+	memset(&vid.layer_config, 0, sizeof(vid.layer_config));
+	args[1] = (uintptr_t)&vid.layer_config;
+	vid.layer_config.layer_id = 0;
+	vid.layer_config.channel = 1;
+    vid.layer_config.enable = 1;
 	vid.layer_config.info.id = 0;	
     vid.layer_config.info.mode = LAYER_MODE_BUFFER;
 	//config.info.mode = LAYER_MODE_COLOR;
@@ -703,6 +718,7 @@ int swap_buffers_init(void){
 	} else {
 		LOG_info("swap_buffers_init: DISP_LAYER_SET_CONFIG success %d\n", ret);fflush(stdout);
 	}
+	readDispSys();
 	return 0;
 }
 struct cache_range mycache_range;
@@ -942,7 +958,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	
     set_fbinfo();
 	get_fbinfo();
-	readDispSys();
+//	readDispSys();
 
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screengame =  SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
@@ -964,11 +980,11 @@ SDL_Surface* PLAT_initVideo(void) {
 //	vid.ionmmapfailed = vid.ionmmapfailed>0 ? 1 : 0;
 	if (vid.ionmmapfailed != 0) {
 		LOG_info("Falling back to standard framebuffer mmap\n");fflush(stdout);
-		usleep(100000);
+		usleep(40000);
 		my_ion_free();
-		usleep(100000);
+		usleep(40000);
 		my_ion_release();
-		usleep(100000);
+		usleep(40000);
 		//try standard fb mmap
     	vid.fbmmap = mmap(NULL, vid.screen_size*2, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 		if (vid.fbmmap == MAP_FAILED) {
@@ -984,7 +1000,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	if (vid.ionmmapfailed==0)
 	{
 		swap_buffers_init();
-		usleep(100000);
+		usleep(30000);
 	} 
 	PLAT_clearAll();
 	pan_display(vid.page * vid.ionmmapfailed);
@@ -995,6 +1011,7 @@ SDL_Surface* PLAT_initVideo(void) {
 
 void PLAT_quitVideo(void) {
 	//system("cat /sys/class/disp/disp/attr/sys >> /mnt/SDCARD/dispsys.txt");
+	system("echo 1 > /sys/class/disp/disp/attr/colorbar");
 	PLAT_clearAll();
 	if (vid.ionmmapfailed!=0){
 		if (vid.fbmmap && vid.fbmmap != MAP_FAILED) { munmap(vid.fbmmap, vid.offset*2);}
@@ -1004,9 +1021,9 @@ void PLAT_quitVideo(void) {
 		uint32_t args[4] = {0, (uintptr_t)&vid.layer_config, 1, 0};
 		vid.layer_config.channel = 1;
 		vid.layer_config.layer_id = 0;
-		vid.layer_config.enable = 1;
+		vid.layer_config.enable = 0;
 		vid.layer_config.info.mode = LAYER_MODE_BUFFER;
-		vid.layer_config.info.zorder = 16;
+		vid.layer_config.info.zorder = 0;
 		vid.layer_config.info.fb.format = 0;
 		vid.layer_config.info.alpha_mode = 1;
 		vid.layer_config.info.alpha_value = 0xff;
@@ -1033,11 +1050,11 @@ void PLAT_quitVideo(void) {
 		if (ret < 0){
 			LOG_info("Unable to restore orig layer %s\n", strerror(errno));
 		}
-		usleep(100000);
+		usleep(40000);
 		my_ion_free();
-		usleep(100000);
+		usleep(40000);
 		my_ion_release();
-		usleep(100000);
+		usleep(40000);
 	}	
 		//restore fb values
 //	vid.vinfo.yres = vid.orig_fbheight;
@@ -1146,9 +1163,13 @@ void PLAT_pan(void) {
 //	}
 }
 
-
+int firstflip=1;
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
+	if (firstflip==1){
+		system("echo 0 > /sys/class/disp/disp/attr/colorbar");
+		firstflip = 0;
+	}
 	if (!vid.ionmmapfailed) my_ion_prepareWrite();
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;

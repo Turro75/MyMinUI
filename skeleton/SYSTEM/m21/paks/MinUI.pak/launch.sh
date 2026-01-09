@@ -20,7 +20,7 @@ mkdir -p "$CHEATS_PATH"
 mkdir -p "$LOGS_PATH"
 mkdir -p "$SHARED_USERDATA_PATH/.minui"
 
-
+echo 1 > /sys/class/disp/disp/attr/colorbar
 export PATH=$SYSTEM_PATH/bin:$PATH
 export LD_LIBRARY_PATH=$SYSTEM_PATH/lib:$LD_LIBRARY_PATH
 export SDL_NOMOUSE=1
