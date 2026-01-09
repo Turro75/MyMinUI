@@ -2919,7 +2919,7 @@ int FlipRotate090bgr(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect
 	return 0;	
 }
 
-void rotateIMG(void *src, void*dst, int rotation, int srcw, int srch, int srcp) {
+void rotateIMGScalar(void *src, void*dst, int rotation, int srcw, int srch, int srcp) {
 	int x, y, thispitch, width_minus_1, height_minus_1;
 	thispitch = srcp / 2;
 	width_minus_1 = srcw - 1;
@@ -2958,12 +2958,375 @@ void rotateIMG(void *src, void*dst, int rotation, int srcw, int srch, int srcp) 
 	} else
 	if (rotation == 3) {
 	//	gettimeofday(&now2,NULL);
-		for (y = 0; y < srch; y++) {
-			dsttmp = (uint16_t *)dst + height_minus_1 - y;
-			srctmp = (uint16_t *)src + y * thispitch;
-			for (x = 0; x < srcw; x++) {
-				*((uint16_t *)dsttmp  + x  *  srch) = *((uint16_t *)srctmp + x );
-			}
+		dsttmp = (uint16_t *)dst + height_minus_1 - y;
+		srctmp = (uint16_t *)src + y * thispitch;
+		for (x = 0; x < srcw; x++) {
+			*((uint16_t *)dsttmp  + x  *  srch) = *((uint16_t *)srctmp + x );
 		}
 	}
+}
+
+static inline void rotate270Block_NEON(
+    uint16_t *src, uint16_t *dst,
+    int srcw, int srch, int src_pitch,
+    int dstw, int tx, int ty, int bw, int bh)
+{
+    uint16_t tmp[8];
+    for (int y = 0; y < bh; y++) {
+        int ys = ty + y;
+        uint16_t *src_row = src + ys * src_pitch + tx;
+        // xd segue semplicemente ys
+        int xd = ys;
+
+        for (int x = 0; x < bw; x += 8) {
+            int n = (x + 8 <= bw) ? 8 : (bw - x);
+            uint16x8_t v = vld1q_u16(src_row + x);
+            vst1q_u16(tmp, v);
+
+            for (int i = 0; i < n; i++) {
+                // yd è invertito rispetto a xs
+                int yd = (srcw - 1) - (tx + x + i);
+                dst[yd * dstw + xd] = tmp[i];
+            }
+        }
+    }
+}
+
+static inline void rotate180Block_NEON(
+    uint16_t *src, uint16_t *dst,
+    int srcw, int srch, int src_pitch,
+    int tx, int ty, int bw, int bh)
+{
+    uint16_t tmp[8];
+    for (int y = 0; y < bh; y++) {
+        int ys = ty + y;
+        uint16_t *src_row = src + ys * src_pitch + tx;
+        // La riga di destinazione è specchiata verticalmente
+        int yd = (srch - 1) - ys;
+        uint16_t *dst_row = dst + yd * src_pitch; 
+
+        for (int x = 0; x < bw; x += 8) {
+            int n = (x + 8 <= bw) ? 8 : (bw - x);
+            uint16x8_t v = vld1q_u16(src_row + x);
+            vst1q_u16(tmp, v);
+
+            for (int i = 0; i < n; i++) {
+                // La colonna di destinazione è specchiata orizzontalmente
+                int xd = (srcw - 1) - (tx + x + i);
+                dst_row[xd] = tmp[i];
+            }
+        }
+    }
+}
+
+static inline void rotate180Block_NEON_Fast(
+    uint16_t *src, uint16_t *dst,
+    int srcw, int srch, int src_pitch,
+    int tx, int ty, int bw, int bh)
+{
+    for (int y = 0; y < bh; y++) {
+        int ys = ty + y;
+        uint16_t *src_row = src + ys * src_pitch + tx;
+        
+        // La riga di destinazione è simmetrica rispetto all'asse Y
+        int yd = (srch - 1) - ys;
+        uint16_t *dst_row = dst + yd * src_pitch;
+
+        for (int x = 0; x < bw; x += 8) {
+            int n = (x + 8 <= bw) ? 8 : (bw - x);
+            
+            if (n == 8) {
+                // Carichiamo 8 pixel (128 bit)
+                uint16x8_t v = vld1q_u16(src_row + x);
+                
+                // Invertiamo l'ordine dei pixel a blocchi di 64 bit
+                // Esempio: [0,1,2,3 | 4,5,6,7] -> [3,2,1,0 | 7,6,5,4]
+                uint16x8_t rev = vrev64q_u16(v);
+                
+                // Scambiamo la parte alta con la parte bassa per finire l'inversione
+                // [3,2,1,0 | 7,6,5,4] -> [7,6,5,4,3,2,1,0]
+                uint16x4_t low = vget_low_u16(rev);
+                uint16x4_t high = vget_high_u16(rev);
+                uint16x8_t final_v = vcombine_u16(high, low);
+
+                // Calcoliamo la posizione di destinazione (specchiata in X)
+                // Se src_row+x è l'inizio del blocco, la fine del blocco in dst 
+                // è (srcw - 1) - (tx + x) - 7
+                int xd_end = (srcw - 1) - (tx + x) - 7;
+                vst1q_u16(dst_row + xd_end, final_v);
+            } else {
+                // Gestione residui (se il blocco non è multiplo di 8)
+                for (int i = 0; i < n; i++) {
+                    int xd = (srcw - 1) - (tx + x + i);
+                    dst_row[xd] = src_row[x + i];
+                }
+            }
+        }
+    }
+}
+
+static inline void rotate090Block_NEON(
+    uint16_t *src, uint16_t *dst,
+    int srcw, int srch,
+    int src_pitch,
+    int dstw,
+    int tx, int ty,
+    int bw, int bh)
+{
+    uint16_t tmp[8];
+
+    for (int y = 0; y < bh; y++) {
+        int ys = ty + y;
+        uint16_t *src_row = src + ys * src_pitch + tx;
+        int xd = (srch - 1) - ys;
+
+        for (int x = 0; x < bw; x += 8) {
+            int n = (x + 8 <= bw) ? 8 : (bw - x);
+
+            uint16x8_t v = vld1q_u16(src_row + x);
+            vst1q_u16(tmp, v);
+
+            for (int i = 0; i < n; i++) {
+                int yd = tx + x + i;
+                dst[yd * dstw + xd] = tmp[i];
+            }
+        }
+    }
+}
+/* 
+static inline void rotateBlockClockwise_NEON(
+    uint16_t *src, uint16_t *dst,
+    int srcw, int srch,
+    int src_pitch,
+    int dstw,
+    int tx, int ty,
+    int bw, int bh)
+{
+    uint16_t tmp[8];
+
+    for (int y = 0; y < bh; y++) {
+        int ys = ty + y;
+        uint16_t *src_row = src + ys * src_pitch + tx;
+        int xd = (srch - 1) - ys;
+
+        for (int x = 0; x < bw; x += 8) {
+            int n = (x + 8 <= bw) ? 8 : (bw - x);
+
+            uint16x8_t v = vld1q_u16(src_row + x);
+            vst1q_u16(tmp, v);
+
+            for (int i = 0; i < n; i++) {
+                int yd = tx + x + i;
+                dst[yd * dstw + xd] = tmp[i];
+            }
+        }
+    }
+}
+
+void rotateIMG_NEON_TILED(
+    void *src, void *dst,
+    int srcw, int srch, int srcp)
+{
+    uint16_t *src16 = (uint16_t *)src;
+    uint16_t *dst16 = (uint16_t *)dst;
+
+    int src_pitch = srcp / 2;
+    int dstw = srch;
+
+    const int TILE = 16;
+
+    for (int ty = 0; ty < srch; ty += TILE) {
+        for (int tx = 0; tx < srcw; tx += TILE) {
+
+            int bw = (tx + TILE <= srcw) ? TILE : (srcw - tx);
+            int bh = (ty + TILE <= srch) ? TILE : (srch - ty);
+
+            rotateBlockClockwise_NEON(
+                src16, dst16,
+                srcw, srch,
+                src_pitch,
+                dstw,
+                tx, ty,
+                bw, bh);
+        }
+    }
+}
+
+
+static inline void neon_transpose8x8_u16(uint16x8_t r[8])
+{
+    uint16x8x2_t t0 = vtrnq_u16(r[0], r[1]);
+    uint16x8x2_t t1 = vtrnq_u16(r[2], r[3]);
+    uint16x8x2_t t2 = vtrnq_u16(r[4], r[5]);
+    uint16x8x2_t t3 = vtrnq_u16(r[6], r[7]);
+
+    uint32x4x2_t u0 = vtrnq_u32(vreinterpretq_u32_u16(t0.val[0]),
+                               vreinterpretq_u32_u16(t1.val[0]));
+    uint32x4x2_t u1 = vtrnq_u32(vreinterpretq_u32_u16(t0.val[1]),
+                               vreinterpretq_u32_u16(t1.val[1]));
+    uint32x4x2_t u2 = vtrnq_u32(vreinterpretq_u32_u16(t2.val[0]),
+                               vreinterpretq_u32_u16(t3.val[0]));
+    uint32x4x2_t u3 = vtrnq_u32(vreinterpretq_u32_u16(t2.val[1]),
+                               vreinterpretq_u32_u16(t3.val[1]));
+
+    r[0] = vreinterpretq_u16_u32(u0.val[0]);
+    r[1] = vreinterpretq_u16_u32(u2.val[0]);
+    r[2] = vreinterpretq_u16_u32(u1.val[0]);
+    r[3] = vreinterpretq_u16_u32(u3.val[0]);
+    r[4] = vreinterpretq_u16_u32(u0.val[1]);
+    r[5] = vreinterpretq_u16_u32(u2.val[1]);
+    r[6] = vreinterpretq_u16_u32(u1.val[1]);
+    r[7] = vreinterpretq_u16_u32(u3.val[1]);
+}
+
+static inline void rotate8x8_clockwise_NEON(
+    uint16_t *src,
+    uint16_t *dst,
+    int src_pitch,
+    int dstw,
+    int xs, int ys,
+    int srch)
+{
+    uint16x8_t r[8];
+    uint16_t tmp[8];
+
+    // 1) load 8 righe sorgente
+    for (int i = 0; i < 8; i++) {
+        r[i] = vld1q_u16(src + (ys + i) * src_pitch + xs);
+    }
+
+    // 2) transpose 8x8
+    neon_transpose8x8_u16(r);
+
+    // 3) store pixel-per-pixel (mapping corretto)
+    for (int i = 0; i < 8; i++) {
+        int dst_col = (srch - 1) - (ys + i);
+
+        vst1q_u16(tmp, r[i]);
+
+        for (int j = 0; j < 8; j++) {
+            int dst_row = xs + j;
+            dst[dst_row * dstw + dst_col] = tmp[j];
+        }
+    }
+}
+
+
+
+void rotateIMG_NEON_TILED2(
+    void *src,
+    void *dst,
+    int srcw,
+    int srch,
+    int srcp)   // pitch in byte
+{
+    uint16_t *src16 = (uint16_t *)src;
+    uint16_t *dst16 = (uint16_t *)dst;
+
+    int src_pitch = srcp / 2;   // pitch in pixel
+    int dstw = srch;            // dopo rotazione -90°
+
+    const int TILE = 16;
+
+    for (int ty = 0; ty < srch; ty += TILE) {
+        for (int tx = 0; tx < srcw; tx += TILE) {
+
+            int bh = (ty + TILE <= srch) ? TILE : (srch - ty);
+            int bw = (tx + TILE <= srcw) ? TILE : (srcw - tx);
+
+            // sottoblocchi 8x8
+            for (int by = 0; by < bh; by += 8) {
+                for (int bx = 0; bx < bw; bx += 8) {
+
+                    // bordi: fallback scalare
+                    if (by + 8 > bh || bx + 8 > bw) {
+                        for (int y = 0; y < bh - by; y++) {
+                            for (int x = 0; x < bw - bx; x++) {
+                                int xs = tx + bx + x;
+                                int ys = ty + by + y;
+
+                                int xd = (srch - 1) - ys;
+                                int yd = xs;
+
+                                dst16[yd * dstw + xd] =
+                                    src16[ys * src_pitch + xs];
+                            }
+                        }
+                    } else {
+                        rotate8x8_clockwise_NEON(
+                            src16,
+                            dst16,
+                            src_pitch,
+                            dstw,
+                            tx + bx,
+                            ty + by,
+                            srch);
+                    }
+                }
+            }
+        }
+    }
+}
+  */
+
+static inline void rotate000Block_NEON(
+    uint16_t *src, uint16_t *dst,
+    int src_pitch, // Aggiunto dst_pitch per sicurezza
+    int tx, int ty, 
+    int bw, int bh)
+{
+     for (int y = 0; y < bh; y++) {
+        int ys = ty + y;
+        uint16_t *src_row = src + ys * src_pitch + tx;
+        uint16_t *dst_row = dst + ys * src_pitch + tx;
+
+        for (int x = 0; x < bw; x += 8) {
+            int n = (x + 8 <= bw) ? 8 : (bw - x);
+            
+            if (n == 8) {
+                // Copia diretta di 8 pixel (128 bit) via registri
+                uint16x8_t v = vld1q_u16(src_row + x);
+                vst1q_u16(dst_row + x, v);
+            } else {
+                // Gestione bordi
+                for (int i = 0; i < n; i++) {
+                    dst_row[x + i] = src_row[x + i];
+                }
+            }
+        }
+    } 
+/*
+	// Test diagnostico
+	for (int y = 0; y < bh; y++) {
+    	memcpy(dst + (ty + y) * src_pitch + tx, 
+           src + (ty + y) * src_pitch + tx, 
+           bw * sizeof(uint16_t));
+	}
+*/
+}
+
+void rotateIMG(void *src, void *dst, int rotation, int srcw, int srch, int srcp )
+{
+    uint16_t *src16 = (uint16_t *)src;
+    uint16_t *dst16 = (uint16_t *)dst;
+    int src_pitch = srcp / 2;
+    const int TILE = 16;
+	
+
+    for (int ty = 0; ty < srch; ty += TILE) {
+        for (int tx = 0; tx < srcw; tx += TILE) {
+            int bw = (tx + TILE <= srcw) ? TILE : (srcw - tx);
+            int bh = (ty + TILE <= srch) ? TILE : (srch - ty);
+
+            if (rotation == 3) {
+                rotate090Block_NEON(src16, dst16, srcw, srch, src_pitch, srch, tx, ty, bw, bh);
+            } else if (rotation == 2) {
+                rotate180Block_NEON_Fast(src16, dst16, srcw, srch, src_pitch, tx, ty, bw, bh);
+            } else if (rotation == 1) {
+                rotate270Block_NEON(src16, dst16, srcw, srch, src_pitch, srch, tx, ty, bw, bh);
+            } else if (rotation == 0) {
+				rotate000Block_NEON(src16, dst16, src_pitch, tx, ty, bw, bh);
+			}
+        }
+    }
 }

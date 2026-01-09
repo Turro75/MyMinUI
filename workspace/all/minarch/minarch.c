@@ -5787,7 +5787,7 @@ static void* flipThread(void *arg) {
 	while (!quit) {
 		pthread_mutex_lock(&flip_mx);
 		run = should_run_flip;
-		render_ = render;
+		//render_ = render;
 		pthread_mutex_unlock(&flip_mx);
 #ifdef M210
 		if (run && render_) {
