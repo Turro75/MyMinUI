@@ -4,6 +4,8 @@
 
 ## DISCLAIMER: if something goes wrong the below can brick Your device, do it at your own risk! 
 
+## ONLY VALID ON M22PRO, DON'T DO IT ON M21, IT WILL BRICK THE DEVICE!
+
 
 The stock dtb set the screen parameters at 38fps on the m22pro
 <pre>
@@ -151,7 +153,7 @@ here the details of the changes:
 		};
 </pre>
 
-With the help og google gemini I've change the pixclock frequency from 90MHz to 162MHz plus I've adjusted some timing values to make the image stable and centered on the display
+With the help of google gemini I've change the pixclock frequency from 90MHz to 162MHz plus I've adjusted some timing values to make the image stable and centered on the display
 
 some references:
 
@@ -162,4 +164,14 @@ https://forum.digikey.com/t/lcd-tft-displays-timing-parameters-explained/47147
 https://linux-sunxi.org/LCD
 
 <img src="sunxi display timing.png" width=640 />
+
+During the test I bricked mine as sometimes with the wrong values the screen refused to switch on, ususally is not a problem if you let enough time to the flashing process to finish (I suggest to wait at least 2 minutes before rebooting), I didn't wait enough resulting in corrupted mtd0 partition corrupted so I won a bricked device. 
+I've been able to recover it by using a nor spi chip reader which I previously used to make the full backup of the system flash.
+
+this is the modded device I used
+https://www.youtube.com/watch?v=qXLmrmb0BJc&list=PLtJQzQbL-WYI-gBoDxbK_ZHbsFIBjm3uJ&index=3
+
+with this sw tool to read and write the flash chip.
+
+https://github.com/McMCCRU/SNANDer
 
