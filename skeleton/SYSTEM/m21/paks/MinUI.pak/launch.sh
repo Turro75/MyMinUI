@@ -20,6 +20,14 @@ mkdir -p "$CHEATS_PATH"
 mkdir -p "$LOGS_PATH"
 mkdir -p "$SHARED_USERDATA_PATH/.minui"
 
+#check if newdtb is loaded
+TMPSTR=$(cat /sys/class/disp/disp/attr/sys | grep fps:38) 
+if [ "${TMPSTR}NULL" = "NULL" ]; then
+	export NEWDTB=1
+else
+	export NEWDTB=0
+fi
+
 echo 1 > /sys/class/disp/disp/attr/colorbar
 export PATH=$SYSTEM_PATH/bin:$PATH
 export LD_LIBRARY_PATH=$SYSTEM_PATH/lib:$LD_LIBRARY_PATH

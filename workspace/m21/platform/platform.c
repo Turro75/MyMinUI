@@ -777,12 +777,13 @@ int swap_buffers(int page){
 
 
 int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max;
+int isnewdtb;
 //SDL_Surface * page[2];
 
 SDL_Surface* PLAT_initVideo(void) {
 
 	readDispSys();
-
+	isnewdtb = 0;
 	//looks for environment cpu frequencies
 	cpufreq_menu = atoi(getenv("CPU_SPEED_MENU"));
 	LOG_info("CPU_SPEED_MENU = %d\n", cpufreq_menu);
@@ -805,6 +806,7 @@ SDL_Surface* PLAT_initVideo(void) {
 
 	if (exists(ISM22_PATH)) {
 		ism22 = 1;
+		isnewdtb = atoi(getenv("NEWDTB"));
 		//crrate the file menumissing.txt
 		int tmpfd = open(SYSTEM_PATH "/menumissing.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
 		if (tmpfd >= 0) {
@@ -833,30 +835,7 @@ SDL_Surface* PLAT_initVideo(void) {
 		LOG_info("Error opening /dev/disp\n");
 		fflush(stdout);
 	}
-/*
-	vid.ionfd = open("/dev/ion", O_RDONLY);
-	LOG_info("Opened /dev/ion with fd %d\n", vid.ionfd);fflush(stdout);
-	if (vid.ionfd < 0) {
-		LOG_info("Error opening /dev/ion\n");
-		fflush(stdout);
-	//	return NULL;
-	}
 
-	vid.cedarfd = open("/dev/cedar_dev", O_RDWR);
-	LOG_info("Opened /dev/cedar_dev with fd %d\n", vid.cedarfd);fflush(stdout);
-	if (vid.cedarfd < 0) {
-		LOG_info("Error opening /dev/cedar_dev\n");
-		fflush(stdout);
-	//	return NULL;
-	}
-
-	
-
-	LOG_info("ION IOCTLS values:\n"
-		"ION_IOC_ALLOC = 0x%X\n"
-		"ION_IOC_HEAP_QUERY = 0x%X\n", ION_IOC_ALLOC,  ION_IOC_HEAP_QUERY);fflush(stdout);
-*/
-	//system("cat /sys/class/disp/disp/attr/sys > /mnt/SDCARD/sysA.txt");
 	int w,h,p,hz = 0;
 	vid.ishdmi = getHDMIStatus();
 	if (getHDMIStatus() || (ism22)) {
@@ -1238,7 +1217,8 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			my_ion_flushWrite();
 			swap_buffers(vid.page);
 		}
-		if (sync && vid.ishdmi) { //if is on hdmi, follow the setting, otherwise skip vsync as it isn't fast enough on internal screen (38fps on m22, 51fps on m21)
+		//if (sync && vid.ishdmi) { //if is on hdmi, follow the setting, otherwise skip vsync as it isn't fast enough on internal screen (38fps on m22, 51fps on m21)
+		if ((sync && vid.ishdmi) || (sync && isnewdtb)) { //if is on hdmi, follow the setting, otherwise skip vsync as it isn't fast enough on internal screen (38fps on m22, 51fps on m21)
 			pan_display(vid.page * vid.ionmmapfailed);
 		}
 	}	
