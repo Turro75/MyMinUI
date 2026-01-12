@@ -807,7 +807,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	if (exists(ISM22_PATH)) {
 		ism22 = 1;
 		isnewdtb = atoi(getenv("NEWDTB"));
-		//crrate the file menumissing.txt
+		//create the file menumissing.txt
 		int tmpfd = open(SYSTEM_PATH "/menumissing.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
 		if (tmpfd >= 0) {
 			close(tmpfd);
@@ -1000,7 +1000,7 @@ void PLAT_quitVideo(void) {
 		uint32_t args[4] = {0, (uintptr_t)&vid.layer_config, 1, 0};
 		vid.layer_config.channel = 1;
 		vid.layer_config.layer_id = 0;
-		vid.layer_config.enable = 0;
+		vid.layer_config.enable = 1;
 		vid.layer_config.info.mode = LAYER_MODE_BUFFER;
 		vid.layer_config.info.zorder = 0;
 		vid.layer_config.info.fb.format = 0;

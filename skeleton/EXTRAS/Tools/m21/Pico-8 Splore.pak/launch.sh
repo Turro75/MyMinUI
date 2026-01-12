@@ -32,7 +32,7 @@ else
     echo "transform_screen 0" >> "${progdir}/.lexaloffle/pico-8/config.txt"
 fi
 
-
+echo 0 > /sys/class/disp/disp/attr/colorbar
 HOME="${progdir}" "${BIOS_PATH}/P8/pico8_dyn" -v -splore -root_path "${romdir}" &> $LOGS_PATH/pico8_splore.txt
-
+echo 1 > /sys/class/disp/disp/attr/colorbar
 overclock.elf $CPU_SPEED_MENU
