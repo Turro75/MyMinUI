@@ -2587,14 +2587,8 @@ void convert_argb1555_to_rgb565_neon(
     }
 }
 
-int FlipRotate000_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
-	//this is actually a no rotation conversion.
-	
-	//copy a surface to the screen and flip it
-	//it must be the same resolution, the bpp16 is then converted to 32bpp
-	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+int FlipRotate000_16_(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
 
-	//the alpha channel must be set to 0xff
 	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
 	int x, y, widthminus_1, heightminus_1;
 	widthminus_1 = buffer->w - 1;
@@ -2608,44 +2602,11 @@ int FlipRotate000_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect
 		for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 			uint16_t pixel = *((uint16_t *)srctmp + x);
 			*((uint16_t *)dsttmp + x ) = (uint16_t)pixel;
-		//	uint32_t r = (pixel & 0xF800) << 8;
-		//	uint32_t g = (pixel & 0x7E0) << 5;
-		//	uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
-		//	*((uint32_t *)dsttmp + x ) = (uint32_t)( r | g | ba);
 		}
 	}	
 	return 0;	
 }
 
-
-int FlipRotate000(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
-	//this is actually a no rotation conversion.
-	
-	//copy a surface to the screen and flip it
-	//it must be the same resolution, the bpp16 is then converted to 32bpp
-	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
-
-	//the alpha channel must be set to 0xff
-	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
-	int x, y, widthminus_1, heightminus_1;
-	widthminus_1 = buffer->w - 1;
-	heightminus_1 = buffer->h - 1;
-	uint32_t *dsttmp;
-	uint16_t *srctmp;
-	//ok start conversion assuming it is RGB565		
-	for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
-		dsttmp = (uint32_t *)fbmmap + y * linewidth;
-		srctmp = (uint16_t *)buffer->pixels + y * thispitch;
-		for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
-			uint16_t pixel = *((uint16_t *)srctmp + x);
-			uint32_t r = (pixel & 0xF800) << 8;
-			uint32_t g = (pixel & 0x7E0) << 5;
-			uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
-			*((uint32_t *)dsttmp + x ) = (uint32_t)( r | g | ba);
-		}
-	}	
-	return 0;	
-}
 
 int FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {	
 	//this is actually a 90deg rotation
@@ -2690,9 +2651,6 @@ int FlipRotate270_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect
 		for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 			int tmp1 = x * linewidth;
 			uint16_t pixel = *((uint16_t *)srctmp + x);
-		//	uint32_t r = (pixel & 0xF800) << 8;
-		//	uint32_t g = (pixel & 0x7E0) << 5;
-		//	uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
 			*((uint16_t *)dsttmp - tmp1) = (uint16_t)(pixel);
 		}
 	}
@@ -2749,9 +2707,7 @@ int FlipRotate180_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect
 		srctmp = (uint16_t *)buffer->pixels + y * thispitch;
 		for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 			uint16_t pixel = *((uint16_t *)srctmp + x);
-			//uint32_t r = (pixel & 0xF800) << 8;
-			//uint32_t g = (pixel & 0x7E0) << 5;
-			//uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
+
 			*((uint16_t *)dsttmp - x) = (uint16_t)( pixel);
 		}
 	}
@@ -2799,9 +2755,6 @@ int FlipRotate090_16(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect
 		srctmp = (uint16_t *)buffer->pixels + y * thispitch;
 		for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
 			uint16_t pixel = *((uint16_t *)srctmp + x);
-		//	uint32_t r = (pixel & 0xF800) << 8;
-		//	uint32_t g = (pixel & 0x7E0) << 5;
-		//	uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
 			*((uint16_t *)dsttmp + x  * linewidth) = (uint16_t)( pixel);
 		}
 	}	
@@ -2997,33 +2950,6 @@ static inline void rotate180Block_NEON(
     int srcw, int srch, int src_pitch,
     int tx, int ty, int bw, int bh)
 {
-    uint16_t tmp[8];
-    for (int y = 0; y < bh; y++) {
-        int ys = ty + y;
-        uint16_t *src_row = src + ys * src_pitch + tx;
-        // La riga di destinazione è specchiata verticalmente
-        int yd = (srch - 1) - ys;
-        uint16_t *dst_row = dst + yd * src_pitch; 
-
-        for (int x = 0; x < bw; x += 8) {
-            int n = (x + 8 <= bw) ? 8 : (bw - x);
-            uint16x8_t v = vld1q_u16(src_row + x);
-            vst1q_u16(tmp, v);
-
-            for (int i = 0; i < n; i++) {
-                // La colonna di destinazione è specchiata orizzontalmente
-                int xd = (srcw - 1) - (tx + x + i);
-                dst_row[xd] = tmp[i];
-            }
-        }
-    }
-}
-
-static inline void rotate180Block_NEON_Fast(
-    uint16_t *src, uint16_t *dst,
-    int srcw, int srch, int src_pitch,
-    int tx, int ty, int bw, int bh)
-{
     for (int y = 0; y < bh; y++) {
         int ys = ty + y;
         uint16_t *src_row = src + ys * src_pitch + tx;
@@ -3093,181 +3019,6 @@ static inline void rotate090Block_NEON(
         }
     }
 }
-/* 
-static inline void rotateBlockClockwise_NEON(
-    uint16_t *src, uint16_t *dst,
-    int srcw, int srch,
-    int src_pitch,
-    int dstw,
-    int tx, int ty,
-    int bw, int bh)
-{
-    uint16_t tmp[8];
-
-    for (int y = 0; y < bh; y++) {
-        int ys = ty + y;
-        uint16_t *src_row = src + ys * src_pitch + tx;
-        int xd = (srch - 1) - ys;
-
-        for (int x = 0; x < bw; x += 8) {
-            int n = (x + 8 <= bw) ? 8 : (bw - x);
-
-            uint16x8_t v = vld1q_u16(src_row + x);
-            vst1q_u16(tmp, v);
-
-            for (int i = 0; i < n; i++) {
-                int yd = tx + x + i;
-                dst[yd * dstw + xd] = tmp[i];
-            }
-        }
-    }
-}
-
-void rotateIMG_NEON_TILED(
-    void *src, void *dst,
-    int srcw, int srch, int srcp)
-{
-    uint16_t *src16 = (uint16_t *)src;
-    uint16_t *dst16 = (uint16_t *)dst;
-
-    int src_pitch = srcp / 2;
-    int dstw = srch;
-
-    const int TILE = 16;
-
-    for (int ty = 0; ty < srch; ty += TILE) {
-        for (int tx = 0; tx < srcw; tx += TILE) {
-
-            int bw = (tx + TILE <= srcw) ? TILE : (srcw - tx);
-            int bh = (ty + TILE <= srch) ? TILE : (srch - ty);
-
-            rotateBlockClockwise_NEON(
-                src16, dst16,
-                srcw, srch,
-                src_pitch,
-                dstw,
-                tx, ty,
-                bw, bh);
-        }
-    }
-}
-
-
-static inline void neon_transpose8x8_u16(uint16x8_t r[8])
-{
-    uint16x8x2_t t0 = vtrnq_u16(r[0], r[1]);
-    uint16x8x2_t t1 = vtrnq_u16(r[2], r[3]);
-    uint16x8x2_t t2 = vtrnq_u16(r[4], r[5]);
-    uint16x8x2_t t3 = vtrnq_u16(r[6], r[7]);
-
-    uint32x4x2_t u0 = vtrnq_u32(vreinterpretq_u32_u16(t0.val[0]),
-                               vreinterpretq_u32_u16(t1.val[0]));
-    uint32x4x2_t u1 = vtrnq_u32(vreinterpretq_u32_u16(t0.val[1]),
-                               vreinterpretq_u32_u16(t1.val[1]));
-    uint32x4x2_t u2 = vtrnq_u32(vreinterpretq_u32_u16(t2.val[0]),
-                               vreinterpretq_u32_u16(t3.val[0]));
-    uint32x4x2_t u3 = vtrnq_u32(vreinterpretq_u32_u16(t2.val[1]),
-                               vreinterpretq_u32_u16(t3.val[1]));
-
-    r[0] = vreinterpretq_u16_u32(u0.val[0]);
-    r[1] = vreinterpretq_u16_u32(u2.val[0]);
-    r[2] = vreinterpretq_u16_u32(u1.val[0]);
-    r[3] = vreinterpretq_u16_u32(u3.val[0]);
-    r[4] = vreinterpretq_u16_u32(u0.val[1]);
-    r[5] = vreinterpretq_u16_u32(u2.val[1]);
-    r[6] = vreinterpretq_u16_u32(u1.val[1]);
-    r[7] = vreinterpretq_u16_u32(u3.val[1]);
-}
-
-static inline void rotate8x8_clockwise_NEON(
-    uint16_t *src,
-    uint16_t *dst,
-    int src_pitch,
-    int dstw,
-    int xs, int ys,
-    int srch)
-{
-    uint16x8_t r[8];
-    uint16_t tmp[8];
-
-    // 1) load 8 righe sorgente
-    for (int i = 0; i < 8; i++) {
-        r[i] = vld1q_u16(src + (ys + i) * src_pitch + xs);
-    }
-
-    // 2) transpose 8x8
-    neon_transpose8x8_u16(r);
-
-    // 3) store pixel-per-pixel (mapping corretto)
-    for (int i = 0; i < 8; i++) {
-        int dst_col = (srch - 1) - (ys + i);
-
-        vst1q_u16(tmp, r[i]);
-
-        for (int j = 0; j < 8; j++) {
-            int dst_row = xs + j;
-            dst[dst_row * dstw + dst_col] = tmp[j];
-        }
-    }
-}
-
-
-
-void rotateIMG_NEON_TILED2(
-    void *src,
-    void *dst,
-    int srcw,
-    int srch,
-    int srcp)   // pitch in byte
-{
-    uint16_t *src16 = (uint16_t *)src;
-    uint16_t *dst16 = (uint16_t *)dst;
-
-    int src_pitch = srcp / 2;   // pitch in pixel
-    int dstw = srch;            // dopo rotazione -90°
-
-    const int TILE = 16;
-
-    for (int ty = 0; ty < srch; ty += TILE) {
-        for (int tx = 0; tx < srcw; tx += TILE) {
-
-            int bh = (ty + TILE <= srch) ? TILE : (srch - ty);
-            int bw = (tx + TILE <= srcw) ? TILE : (srcw - tx);
-
-            // sottoblocchi 8x8
-            for (int by = 0; by < bh; by += 8) {
-                for (int bx = 0; bx < bw; bx += 8) {
-
-                    // bordi: fallback scalare
-                    if (by + 8 > bh || bx + 8 > bw) {
-                        for (int y = 0; y < bh - by; y++) {
-                            for (int x = 0; x < bw - bx; x++) {
-                                int xs = tx + bx + x;
-                                int ys = ty + by + y;
-
-                                int xd = (srch - 1) - ys;
-                                int yd = xs;
-
-                                dst16[yd * dstw + xd] =
-                                    src16[ys * src_pitch + xs];
-                            }
-                        }
-                    } else {
-                        rotate8x8_clockwise_NEON(
-                            src16,
-                            dst16,
-                            src_pitch,
-                            dstw,
-                            tx + bx,
-                            ty + by,
-                            srch);
-                    }
-                }
-            }
-        }
-    }
-}
-  */
 
 static inline void rotate000Block_NEON(
     uint16_t *src, uint16_t *dst,
@@ -3295,14 +3046,6 @@ static inline void rotate000Block_NEON(
             }
         }
     } 
-/*
-	// Test diagnostico
-	for (int y = 0; y < bh; y++) {
-    	memcpy(dst + (ty + y) * src_pitch + tx, 
-           src + (ty + y) * src_pitch + tx, 
-           bw * sizeof(uint16_t));
-	}
-*/
 }
 
 void rotateIMG(void *src, void *dst, int rotation, int srcw, int srch, int srcp )
@@ -3321,7 +3064,7 @@ void rotateIMG(void *src, void *dst, int rotation, int srcw, int srch, int srcp 
             if (rotation == 3) {
                 rotate090Block_NEON(src16, dst16, srcw, srch, src_pitch, srch, tx, ty, bw, bh);
             } else if (rotation == 2) {
-                rotate180Block_NEON_Fast(src16, dst16, srcw, srch, src_pitch, tx, ty, bw, bh);
+                rotate180Block_NEON(src16, dst16, srcw, srch, src_pitch, tx, ty, bw, bh);
             } else if (rotation == 1) {
                 rotate270Block_NEON(src16, dst16, srcw, srch, src_pitch, srch, tx, ty, bw, bh);
             } else if (rotation == 0) {
@@ -3329,4 +3072,169 @@ void rotateIMG(void *src, void *dst, int rotation, int srcw, int srch, int srcp 
 			}
         }
     }
+}
+
+
+static inline void copyRow_NEON(uint16_t *src, uint16_t *dst, int width) {
+    int x = 0;
+    
+    // Unrolling: processiamo 32 pixel (64 bytes) per iterazione
+    // Questo satura meglio la banda passante della memoria
+    for (; x <= width - 32; x += 32) {
+        uint16x8_t v1 = vld1q_u16(src + x);
+        uint16x8_t v2 = vld1q_u16(src + x + 8);
+        uint16x8_t v3 = vld1q_u16(src + x + 16);
+        uint16x8_t v4 = vld1q_u16(src + x + 24);
+        
+        vst1q_u16(dst + x, v1);
+        vst1q_u16(dst + x + 8, v2);
+        vst1q_u16(dst + x + 16, v3);
+        vst1q_u16(dst + x + 24, v4);
+    }
+
+    // Gestione rimanenti a blocchi di 8
+    for (; x <= width - 8; x += 8) {
+        vst1q_u16(dst + x, vld1q_u16(src + x));
+    }
+
+    // Residuo finale scalare
+    for (; x < width; x++) {
+        dst[x] = src[x];
+    }
+}
+
+int FlipRotate000_16(SDL_Surface *buffer, void *fbmmap, int linewidth, SDL_Rect targetarea) {
+    int src_pitch = buffer->pitch / 2;
+    uint16_t *src_pixels = (uint16_t *)buffer->pixels;
+    uint16_t *dst_pixels = (uint16_t *)fbmmap;
+
+    for (int y = 0; y < targetarea.h; y++) {
+        // Calcoliamo i puntatori all'inizio della riga una sola volta
+        uint16_t *src_row = src_pixels + (targetarea.y + y) * src_pitch + targetarea.x;
+        uint16_t *dst_row = dst_pixels + (targetarea.y + y) * linewidth + targetarea.x;
+        
+        copyRow_NEON(src_row, dst_row, targetarea.w);
+    }
+}
+
+/*
+
+FlipRotate180_16 in neon actually useless, ok it is faster than scalar but who cares, it is used only during menu blitting.
+
+static inline void copyRow180_Optimized_NEON(uint16_t *src_row_start, uint16_t *dst_row_start, int width) {
+    // Puntiamo alla FINE della riga sorgente per leggere all'indietro
+    // Sottraiamo 8 perché carichiamo blocchi da 8 pixel
+    int x_src = width - 8;
+    int x_dst = 0;
+
+    for (; x_src >= 0; x_src -= 8, x_dst += 8) {
+        // Carichiamo 8 pixel dalla sorgente
+        uint16x8_t v = vld1q_u16(src_row_start + x_src);
+        
+        // Invertiamo completamente l'ordine dei pixel nel registro
+        uint16x8_t v_rev = vrev64q_u16(v); 
+        uint16x8_t v_final = vcombine_u16(vget_high_u16(v_rev), vget_low_u16(v_rev));
+        
+        // SCRITTURA IN AVANTI: Molto più veloce per il bus di memoria
+        vst1q_u16(dst_row_start + x_dst, v_final);
+    }
+
+    // Gestione residuo (se width non è multiplo di 8)
+    // Lo facciamo all'inizio della riga (quello che è rimasto fuori dal loop decrescente)
+    int remaining = width % 8;
+    if (remaining > 0) {
+        // Riposizioniamo x_src per puntare ai pixel iniziali rimasti
+        x_src += 7; 
+        for (int i = 0; i < remaining; i++) {
+            dst_row_start[x_dst + i] = src_row_start[remaining - 1 - i];
+        }
+    }
+}
+
+int FlipRotate180_16(SDL_Surface *buffer, void *fbmmap, int linewidth, SDL_Rect targetarea) {
+    int src_pitch = buffer->pitch / 2;
+    uint16_t *src_base = (uint16_t *)buffer->pixels;
+    uint16_t *dst_base = (uint16_t *)fbmmap;
+
+    int h_minus_1 = buffer->h - 1;
+    int w_minus_1 = buffer->w - 1;
+
+    for (int y = 0; y < targetarea.h; y++) {
+        int src_y = targetarea.y + y;
+        int dst_y = h_minus_1 - src_y; // Inversione asse Y
+
+        // Riga sorgente: leggiamo dalla posizione targetarea.x
+        uint16_t *src_ptr = src_base + (src_y * src_pitch) + targetarea.x;
+        
+        // Riga destinazione: scriviamo partendo dalla posizione specchiata
+        // Se targetarea.x è 0 e w è 640, iniziamo a scrivere da 0 (ma i pixel sono invertiti)
+        int dst_x_start = w_minus_1 - (targetarea.x + targetarea.w - 1);
+        uint16_t *dst_ptr = dst_base + (dst_y * linewidth) + dst_x_start;
+
+        copyRow180_Optimized_NEON(src_ptr, dst_ptr, targetarea.w);
+    }
+    return 0;
+}
+*/
+
+
+static inline void copyRow_565_to_8888_NEON(uint16_t *src, uint32_t *dst, int width) {
+    int x = 0;
+    
+    // Alpha channel costante (0xFF) per tutti gli 8 pixel
+    uint8x8_t v_alpha = vdup_n_u8(0xFF);
+
+    for (; x <= width - 8; x += 8) {
+        // 1. Carichiamo 8 pixel RGB565 (128 bit totali)
+        uint16x8_t v_565 = vld1q_u16(src + x);
+
+        // 2. Estrazione componenti tramite bitwise and e shift
+        // Rosso: (pixel >> 11) & 0x1F  -> poi shift a 8 bit (<< 3)
+        uint8x8_t r = vshrn_n_u16(v_565, 8); // Shift a destra di 8 e stringi a 8 bit
+        r = vshl_n_u8(r, 3);                 // Porta a 8 bit (5 bit + 3)
+
+        // Verde: (pixel >> 5) & 0x3F   -> poi shift a 8 bit (<< 2)
+        uint16x8_t v_g = vshrq_n_u16(v_565, 5);
+        uint8x8_t g = vmovn_u16(v_g);        // Stringi a 8 bit
+        g = vshl_n_u8(g, 2);                 // Porta a 8 bit (6 bit + 2)
+
+        // Blu: pixel & 0x1F            -> poi shift a 8 bit (<< 3)
+        uint8x8_t b = vmovn_u16(v_565);      // Prendi i bit bassi
+        b = vshl_n_u8(b, 3);                 // Porta a 8 bit (5 bit + 3)
+
+        // 3. Interleaving (impacchettamento): ARGB o ABGR? 
+        // Solitamente ARGB8888 in memoria Little Endian è BGRA (B, G, R, A)
+        uint8x8x4_t v_argb;
+        v_argb.val[0] = b;       // Blue
+        v_argb.val[1] = g;       // Green
+        v_argb.val[2] = r;       // Red
+        v_argb.val[3] = v_alpha; // Alpha
+
+        // Scrittura di 8 pixel a 32-bit (32 byte totali)
+        vst4_u8((uint8_t *)(dst + x), v_argb);
+    }
+
+    // Residuo scalare
+    for (; x < width; x++) {
+        uint16_t p = src[x];
+        uint8_t r = ((p >> 11) & 0x1F) << 3;
+        uint8_t g = ((p >> 5) & 0x3F) << 2;
+        uint8_t b = (p & 0x1F) << 3;
+        dst[x] = (0xFF << 24) | (r << 16) | (g << 8) | b;
+    }
+}
+
+int FlipRotate000(SDL_Surface *buffer, void *fbmmap, int linewidth, SDL_Rect targetarea) {
+    int src_pitch = buffer->pitch / 2;
+    uint16_t *src_pixels = (uint16_t *)buffer->pixels;
+    uint32_t *dst_pixels = (uint32_t *)fbmmap; // Destinazione a 32 bit
+
+    for (int y = 0; y < targetarea.h; y++) {
+        uint16_t *src_row = src_pixels + (targetarea.y + y) * src_pitch + targetarea.x;
+        // linewidth qui deve essere inteso come "pixel per riga" del buffer di destinazione
+        uint32_t *dst_row = dst_pixels + (targetarea.y + y) * linewidth + targetarea.x;
+        
+        copyRow_565_to_8888_NEON(src_row, dst_row, targetarea.w);
+    }
+    return 0;
 }

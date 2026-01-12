@@ -834,6 +834,34 @@ void PLAT_pan(void) {
 //	vid.page = 1 - vid.page;
 }
 
+int FlipRotate000_r36s(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea) {
+	//this is actually a no rotation conversion.
+	
+	//copy a surface to the screen and flip it
+	//it must be the same resolution, the bpp16 is then converted to 32bpp
+	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y, widthminus_1, heightminus_1;
+	widthminus_1 = buffer->w - 1;
+	heightminus_1 = buffer->h - 1;
+	uint32_t *dsttmp;
+	uint16_t *srctmp;
+	//ok start conversion assuming it is RGB565		
+	for (y = targetarea.y; y < (targetarea.y + targetarea.h) ; y++) {
+		dsttmp = (uint32_t *)fbmmap + y * linewidth;
+		srctmp = (uint16_t *)buffer->pixels + y * thispitch;
+		for (x = targetarea.x; x < (targetarea.x + targetarea.w); x++) {
+			uint16_t pixel = *((uint16_t *)srctmp + x);
+			uint32_t r = (pixel & 0xF800) << 8;
+			uint32_t g = (pixel & 0x7E0) << 5;
+			uint32_t ba = 0xFF000000 | (pixel & 0x1F) << 3;
+			*((uint32_t *)dsttmp + x ) = (uint32_t)( r | g | ba);
+		}
+	}	
+	return 0;	
+}
 
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
@@ -846,8 +874,8 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(vid.screen->pixels, vid.screen->w, vid.screen->h, vid.screen->pitch, vid.screen3->pixels, vid.screen3->w, vid.screen3->h, vid.screen3->pitch, 0,0, vid.width, vid.height);
 		if (vid.rotate == 0)
 		{
-			// 90 Rotation
-			FlipRotate000(vid.screen3, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
+			// 0 Rotation
+			FlipRotate000_r36s(vid.screen3, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
 		}
 		if (vid.rotate == 1)
 		{
