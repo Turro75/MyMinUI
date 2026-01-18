@@ -14,6 +14,17 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+# Release 18/01/2026
+
+Whats' new:
+
+### rg35xx, Miyoomini (+), r36:
+- fixed a bug of non rotated screen devices where on some nintendo systems (snes, gb, etc...) the image is scrambled or cut. The new faster neon based rotation algo introduced in the 20260108 release didn't worked well when the original image pitch is not exactly width*2.
+### m22pro:
+- finally found a way to edit the stock dtb forcing the screen running at 60Hz instead of 38Hz on the m22pro. I documented all the steps here https://github.com/Turro75/MyMinUI/tree/main/workspace/m21/other/dtb_60fps
+
+
+
 # Release 09/01/2026
 
 some significant improvements across all devices.
