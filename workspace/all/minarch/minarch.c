@@ -3322,7 +3322,8 @@ void video_refresh_callback_rotate(int rotation, void *data, unsigned width, uns
 		renderer.true_p = pitch;	
 		renderer.src_surface->w=width * ((3 - renderer.rotate) % 2) + height * (renderer.rotate % 2);
 		renderer.src_surface->h=width * (renderer.rotate % 2) + height * ((3-renderer.rotate) % 2);
-		renderer.src_surface->pitch=renderer.src_surface->w*2;	
+		renderer.src_surface->pitch=pitch;
+		if (rotation % 2) renderer.src_surface->pitch=renderer.src_surface->w*2;	
 	} 	
 //	LOG_info("Game Rotation of %d %dx%d_%d - rotate %dusec - freesurface %dusec - createsurface %dusec - pixman %dusec\n", rotation*90, width, height, pitch, now1.tv_usec - now.tv_usec, now1.tv_usec - now.tv_usec ,now2.tv_usec - now1.tv_usec, now3.tv_usec - now2.tv_usec);fflush(stdout);
 }
@@ -4047,7 +4048,7 @@ int makeBoxart(SDL_Surface *image, char *filename) {
 	char cmd1[512];
 	getParentFolderName(game.path,tmp);
 	sprintf(dirpath, ROMS_PATH "/%s/Imgs",tmp);
-	LOG_info("#####baxart2 name###### = %s\n", dirpath);
+	LOG_info("#####boxart2 name###### = %s\n", dirpath);
     sprintf(cmd1,"mkdir -p \"%s\"",dirpath); 
 	system(cmd1);
 	cmd1[0]='\0';
