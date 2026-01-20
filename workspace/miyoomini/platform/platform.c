@@ -363,6 +363,9 @@ void PLAT_quitVideo(void) {
 	SDL_FreeSurface(vid.screen2);
 	SDL_FreeSurface(vid.screen3);
 	SDL_FreeSurface(vid.screengame);
+	vid.vinfo.xres = FIXED_WIDTH;
+	vid.vinfo.yres = FIXED_HEIGHT;
+	set_fbinfo();
 	munmap(vid.fbmmap, 0);
     close(vid.fdfb);
 }
