@@ -1553,7 +1553,7 @@ static void Config_quit(void) {
 static void Config_readOptionsString(char* cfg) {
 	if (!cfg) return;
 
-	LOG_info("Config_readOptions\n");
+	LOG_info("Config_readOptionsString %s\n", cfg);fflush(stdout);
 	char key[256];
 	char value[256];
 	for (int i=0; config.frontend.options[i].key; i++) {
@@ -1595,7 +1595,7 @@ static void Config_readOptionsString(char* cfg) {
 static void Config_readControlsString(char* cfg) {
 	if (!cfg) return;
 
-	LOG_info("Config_readControlsString\n");
+	LOG_info("Config_readControlsString %s\n", cfg);fflush(stdout);
 	
 	char key[256];
 	char value[256];
@@ -1877,7 +1877,7 @@ static void OptionList_init(const struct retro_core_option_definition *defs) {
 			item->value = Option_getValueIndex(item, def->default_value);
 			item->default_value = item->value;
 			
-			LOG_info("\tINIT %s (%s) TO %s (%s)\n", item->name, item->key, item->labels[item->value], item->values[item->value]);
+			LOG_info("\tINIT %d/%d %s (%s) TO %s (%s)\n", i+1, config.core.count, item->name, item->key, item->labels[item->value], item->values[item->value]);
 		}
 	}
 	// fflush(stdout);
@@ -2570,8 +2570,11 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 
 	// TODO: RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE 64
 	case RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE: { /* 65 */
-		// const struct retro_system_content_info_override* info = (const struct retro_system_content_info_override* )data;
-		// if (info) LOG_info("has overrides");
+		const struct retro_system_content_info_override* info = (const struct retro_system_content_info_override* )data;
+		if (info) {
+			LOG_info("RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE has overrides");fflush(stdout);
+			
+		}
 		break;
 	}
 	// RETRO_ENVIRONMENT_GET_GAME_INFO_EXT 66
@@ -3818,20 +3821,10 @@ void Core_open(const char* core_path, const char* tag_name) {
 	core.get_region = dlsym(core.handle, "retro_get_region");
 	core.get_memory_data = dlsym(core.handle, "retro_get_memory_data");
 	core.get_memory_size = dlsym(core.handle, "retro_get_memory_size");
-	
+
 	void (*set_environment_callback)(retro_environment_t);
-	void (*set_video_refresh_callback)(retro_video_refresh_t);
-	void (*set_audio_sample_callback)(retro_audio_sample_t);
-	void (*set_audio_sample_batch_callback)(retro_audio_sample_batch_t);
-	void (*set_input_poll_callback)(retro_input_poll_t);
-	void (*set_input_state_callback)(retro_input_state_t);
-	
 	set_environment_callback = dlsym(core.handle, "retro_set_environment");
-	set_video_refresh_callback = dlsym(core.handle, "retro_set_video_refresh");
-	set_audio_sample_callback = dlsym(core.handle, "retro_set_audio_sample");
-	set_audio_sample_batch_callback = dlsym(core.handle, "retro_set_audio_sample_batch");
-	set_input_poll_callback = dlsym(core.handle, "retro_set_input_poll");
-	set_input_state_callback = dlsym(core.handle, "retro_set_input_state");
+	set_environment_callback(environment_callback);
 	
 	struct retro_system_info info = {};
 	core.get_system_info(&info);
@@ -3864,12 +3857,6 @@ void Core_open(const char* core_path, const char* tag_name) {
 	sprintf(cmd, "mkdir -p \"%s\"; mkdir -p \"%s\"", core.config_dir, core.states_dir);
 	system(cmd);
 
-	set_environment_callback(environment_callback);
-	set_video_refresh_callback(video_refresh_callback);
-	set_audio_sample_callback(audio_sample_callback);
-	set_audio_sample_batch_callback(audio_sample_batch_callback);
-	set_input_poll_callback(input_poll_callback);
-	set_input_state_callback(input_state_callback);
 }
 
 int Core_updateAVInfo(void) {
@@ -3893,8 +3880,30 @@ int Core_updateAVInfo(void) {
 
 void Core_init(void) {
 	LOG_info("Core_init\n");
+
 	core.init();
+	
+	//moved here the callback setup to improve compatibility with some future cores (i.e. mesen needs that)
+	void (*set_video_refresh_callback)(retro_video_refresh_t);
+	void (*set_audio_sample_callback)(retro_audio_sample_t);
+	void (*set_audio_sample_batch_callback)(retro_audio_sample_batch_t);
+	void (*set_input_poll_callback)(retro_input_poll_t);
+	void (*set_input_state_callback)(retro_input_state_t);
+	
+	set_video_refresh_callback = dlsym(core.handle, "retro_set_video_refresh");
+	set_audio_sample_callback = dlsym(core.handle, "retro_set_audio_sample");
+	set_audio_sample_batch_callback = dlsym(core.handle, "retro_set_audio_sample_batch");
+	set_input_poll_callback = dlsym(core.handle, "retro_set_input_poll");
+	set_input_state_callback = dlsym(core.handle, "retro_set_input_state");
+	
+	set_video_refresh_callback(video_refresh_callback);
+	set_audio_sample_callback(audio_sample_callback);
+	set_audio_sample_batch_callback(audio_sample_batch_callback);
+	set_input_poll_callback(input_poll_callback);
+	set_input_state_callback(input_state_callback);
+	
 	core.initialized = 1;
+	LOG_info("Core_init done\n");fflush(stdout);
 }
 
 void Core_applyCheats(struct Cheats *cheats) {
