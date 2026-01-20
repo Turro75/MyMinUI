@@ -108,6 +108,7 @@ special:
 	cp -R ./build/BOOT/.tmp_update ./build/BASE/miyoo/app/
 #	cp -R ./build/BOOT/.tmp_update ./build/BASE/trimui/app/
 	cp -R ./build/BASE/miyoo ./build/BASE/miyoo354
+	cp -R ./build/BASE/miyoo ./build/BASE/miyoo285
 
 specialpackage: tidy
 
@@ -144,7 +145,7 @@ specialpackage: tidy
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
 	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
-	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Cheats Saves Tools miyoo miyoo354 trimui rg35xxplus r36s m21 gkdpixel em_ui.sh MinUI.zip README.txt
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Cheats Saves Tools miyoo miyoo354 miyoo285 trimui rg35xxplus r36s m21 gkdpixel em_ui.sh MinUI.zip README.txt
 	
 	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt

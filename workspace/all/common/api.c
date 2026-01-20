@@ -181,6 +181,17 @@ static struct SND_Context {
 
 ///////////////////////////////
 
+LID_Context lid = {
+	.has_lid = 0,
+	.is_open = 1,
+};
+
+#define FALLBACK_IMPLEMENTATION __attribute__((weak)) // used if platform doesn't provide an implementation
+FALLBACK_IMPLEMENTATION void PLAT_initLid(void) {  }
+FALLBACK_IMPLEMENTATION int PLAT_lidChanged(int* state) { return 0; }
+
+///////////////////////////////
+
 static int _;
 static double current_fps = SCREEN_FPS;
 static int fps_counter = 0;
@@ -195,6 +206,7 @@ int currentcputemp = 0;
 int use_nofix = 0;
 
 SDL_Surface* GFX_init(int mode) {
+	PLAT_initLid();
 	gfx.screen = PLAT_initVideo();
 	gfx.vsync = VSYNC_STRICT;
 	gfx.mode = mode;

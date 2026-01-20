@@ -145,9 +145,13 @@ void PLAT_pollInput(void) {
 			}
 		}
 	}
+	if (lid.has_lid && PLAT_lidChanged(NULL)) pad.just_released |= BTN_SLEEP;
 }
 
 int PLAT_shouldWake(void) {
+	int lid_open = 1; // assume open by default
+	if (lid.has_lid && PLAT_lidChanged(&lid_open) && lid_open) return 1;
+	
 	int input;
 	static struct input_event event;
 	for (int i=0; i<INPUT_COUNT; i++) {
@@ -589,6 +593,26 @@ int axp_read(unsigned char address) {
 
 ///////////////////////////////
 
+
+#define LID_PATH "/sys/devices/soc0/soc/soc:hall-mh248/hallvalue"
+void PLAT_initLid(void) {
+	lid.has_lid = exists(LID_PATH);
+}
+int PLAT_lidChanged(int* state) {
+	if (lid.has_lid) {
+		int lid_open = getInt(LID_PATH);
+		if (lid_open!=lid.is_open) {
+			lid.is_open = lid_open;
+			if (state) *state = lid_open;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
+//////////////////////////////////
+
 void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 	*is_charging = is_plus ? (axp_read(0x00) & 0x4) > 0 : getInt("/sys/devices/gpiochip0/gpio/gpio59/value");
 	
@@ -700,6 +724,7 @@ int PLAT_pickSampleRate(int requested, int max) {
 }
 
 char* PLAT_getModel(void) {
+	if (lid.has_lid) return "Miyoo Mini Flip";
 	return is_plus ? "Miyoo Mini Plus" : "Miyoo Mini";
 }
 
