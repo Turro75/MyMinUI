@@ -124,7 +124,7 @@ uint32_t PLAT_screenMemSize(void);
 
 ///////////////////////////////
 
-#define FIXED_SCALE 	2
+#define _FIXED_SCALE 	2
 #define FIXED_WIDTH		640
 #define FIXED_HEIGHT	480
 #define HDMI_WIDTH_		1280

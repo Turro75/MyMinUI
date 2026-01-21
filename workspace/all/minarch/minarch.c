@@ -2642,7 +2642,7 @@ enum {
 };
 #define DIGIT_SPACE DIGIT_COUNT
 static void MSG_init(void) {
-	digits = SDL_CreateRGBSurface(SDL_SWSURFACE,SCALE2(DIGIT_WIDTH*DIGIT_COUNT,DIGIT_HEIGHT),FIXED_DEPTH, 0,0,0,0);
+	digits = SDL_CreateRGBSurface(SDL_SWSURFACE,SCALE1(DIGIT_WIDTH*DIGIT_COUNT) , SCALE1(DIGIT_HEIGHT) ,FIXED_DEPTH, 0,0,0,0);
 	SDL_FillRect(digits, NULL, RGB_BLACK);
 	
 	SDL_Surface* digit;
@@ -2657,7 +2657,7 @@ static void MSG_init(void) {
 	}
 }
 static int MSG_blitChar(int n, int x, int y) {
-	if (n!=DIGIT_SPACE) SDL_BlitSurface(digits, &(SDL_Rect){n*SCALE1(DIGIT_WIDTH),0,SCALE2(DIGIT_WIDTH,DIGIT_HEIGHT)}, screen, &(SDL_Rect){x,y});
+	if (n!=DIGIT_SPACE) SDL_BlitSurface(digits, &(SDL_Rect){n*SCALE1(DIGIT_WIDTH),0,SCALE1(DIGIT_WIDTH),SCALE1(DIGIT_HEIGHT)}, screen, &(SDL_Rect){x,y});
 	return x + SCALE1(DIGIT_WIDTH + DIGIT_TRACKING);
 }
 static int MSG_blitInt(int num, int x, int y) {

@@ -30,7 +30,7 @@ int main(int argc , char* argv[]) {
 	InitSettings();
 	
 	// TODO: make use of SCALE1()
-	SDL_Surface* digits = SDL_CreateRGBSurface(SDL_SWSURFACE, SCALE2(120,16), FIXED_DEPTH,RGBA_MASK_AUTO);
+	SDL_Surface* digits = SDL_CreateRGBSurface(SDL_SWSURFACE, SCALE1(120), SCALE1(16) , FIXED_DEPTH,RGBA_MASK_AUTO);
 	SDL_FillRect(digits, NULL, RGB_BLACK);
 	
 	SDL_Surface* digit;
@@ -84,7 +84,7 @@ int main(int argc , char* argv[]) {
 	
 	// x,y,w are pre-scaled
 	int blit(int i, int x, int y) {
-		SDL_BlitSurface(digits, &(SDL_Rect){i*SCALE1(10),0,SCALE2(10,16)}, screen, &(SDL_Rect){x,y});
+		SDL_BlitSurface(digits, &(SDL_Rect){i*SCALE1(10),0,SCALE1(10), SCALE1(16)}, screen, &(SDL_Rect){x,y});
 		return x + SCALE1(10);
 	}
 	void blitBar(int x, int y, int w) {

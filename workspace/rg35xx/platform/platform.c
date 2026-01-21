@@ -346,7 +346,8 @@ SDL_Surface* PLAT_initVideo(void) {
     set_fbinfo();
 	get_fbinfo();
 	LOG_info("DEVICE_WIDTH=%d, DEVICE_HEIGHT=%d, DEVICE_PITCH=%d Virtual %dx%d\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH, vid.vinfo.xres_virtual, vid.vinfo.yres_virtual);fflush(stdout);
-	
+	FIXED_SCALE = _FIXED_SCALE;
+	InitAssetRects();
 	struct owlfb_sync_info sinfo;
 	sinfo.enabled = 1;
 	sinfo.disp_id = 2;
@@ -533,7 +534,7 @@ static struct OVL_Context {
 
 SDL_Surface* PLAT_initOverlay(void) {
 	// setup surface
-	ovl.overlay = SDL_CreateRGBSurface(SDL_SWSURFACE, SCALE2(OVERLAY_WIDTH,OVERLAY_HEIGHT),OVERLAY_DEPTH,OVERLAY_RGBA_MASK);
+	ovl.overlay = SDL_CreateRGBSurface(SDL_SWSURFACE, SCALE1(OVERLAY_WIDTH), SCALE1(OVERLAY_HEIGHT),OVERLAY_DEPTH,OVERLAY_RGBA_MASK);
 	return ovl.overlay;
 }
 void PLAT_quitOverlay(void) {

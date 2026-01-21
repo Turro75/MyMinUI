@@ -1667,7 +1667,7 @@ int drawBoxart(SDL_Surface* _screen, char* bmpPath){
 	//printf("origimg %dx%d scaled to %dx%d\n", unscaled_boxart->w,unscaled_boxart->h, hw, hh);
 	if (!unscaled_boxart) {
         printf("IMG_Load: %s\n", IMG_GetError());
-        SDL_Rect boxart = {SCALE2(ox,oy),hw,hh};
+        SDL_Rect boxart = {SCALE1(ox), SCALE1(oy),hw,hh};
 		SDL_FillRect(_screen, &boxart, 0);
     } else {
 		//resize image to fit current screen size 

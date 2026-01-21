@@ -406,6 +406,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	//at the beginning set the screen size to 640x480
     set_fbinfo();
 	get_fbinfo();
+	FIXED_SCALE = _FIXED_SCALE;
+	InitAssetRects();
 
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screengame =  SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
@@ -624,7 +626,7 @@ static struct OVL_Context {
 } ovl;
 
 SDL_Surface* PLAT_initOverlay(void) {
-	ovl.overlay = SDL_CreateRGBSurface(SDL_SWSURFACE, SCALE2(OVERLAY_WIDTH,OVERLAY_HEIGHT),OVERLAY_DEPTH,OVERLAY_RGBA_MASK);
+	ovl.overlay = SDL_CreateRGBSurface(SDL_SWSURFACE, SCALE1(OVERLAY_WIDTH), SCALE1(OVERLAY_HEIGHT),OVERLAY_DEPTH,OVERLAY_RGBA_MASK);
 	return ovl.overlay;
 }
 void PLAT_quitOverlay(void) {

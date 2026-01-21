@@ -29,6 +29,8 @@ int DEVICE_PITCH;
 int TARGET_FPS;
 uint32_t cur_cpu_freq;
 
+int FIXED_SCALE;
+
 ////////////////////////////////
 
 int USER_BTN_UP;
@@ -101,37 +103,82 @@ static struct GFX_Context {
 } gfx;
 
 static SDL_Rect asset_rects[] = {
-	[ASSET_WHITE_PILL]		= {SCALE4( 1, 1,30,30)},
-	[ASSET_BLACK_PILL]		= {SCALE4(33, 1,30,30)},
-	[ASSET_DARK_GRAY_PILL]	= {SCALE4(65, 1,30,30)},
-	[ASSET_OPTION]			= {SCALE4(97, 1,20,20)},
-	[ASSET_BUTTON]			= {SCALE4( 1,33,20,20)},
-	[ASSET_PAGE_BG]			= {SCALE4(64,33,15,15)},
-	[ASSET_STATE_BG]		= {SCALE4(23,54, 8, 8)},
-	[ASSET_PAGE]			= {SCALE4(39,54, 6, 6)},
-	[ASSET_BAR]				= {SCALE4(33,58, 4, 4)},
-	[ASSET_BAR_BG]			= {SCALE4(15,55, 4, 4)},
-	[ASSET_BAR_BG_MENU]		= {SCALE4(85,56, 4, 4)},
-	[ASSET_UNDERLINE]		= {SCALE4(85,51, 3, 3)},
-	[ASSET_DOT]				= {SCALE4(33,54, 2, 2)},
+	[ASSET_WHITE_PILL]		= {1, 1, 30, 30},
+	[ASSET_BLACK_PILL]		= {33, 1, 30, 30},
+	[ASSET_DARK_GRAY_PILL]	= {65, 1, 30, 30},
+	[ASSET_OPTION]			= {97, 1, 20, 20},
+	[ASSET_BUTTON]			= {1, 33, 20, 20},
+	[ASSET_PAGE_BG]			= {64, 33, 15, 15},
+	[ASSET_STATE_BG]		= {23, 54, 8, 8},
+	[ASSET_PAGE]			= {39, 54, 6, 6},
+	[ASSET_BAR]				= {33, 58, 4, 4},
+	[ASSET_BAR_BG]			= {15, 55, 4, 4},
+	[ASSET_BAR_BG_MENU]		= {85, 56, 4, 4},
+	[ASSET_UNDERLINE]		= {85, 51, 3, 3},
+	[ASSET_DOT]				= {33, 54, 2, 2},
 	
-	[ASSET_BRIGHTNESS]		= {SCALE4(23,33,19,19)},
-	[ASSET_VOLUME_MUTE]		= {SCALE4(44,33,10,16)},
-	[ASSET_VOLUME]			= {SCALE4(44,33,18,16)},
-	[ASSET_BATTERY]			= {SCALE4(47,51,17,10)},
-	[ASSET_BATTERY_LOW]		= {SCALE4(66,51,17,10)},
-	[ASSET_BATTERY_FILL]	= {SCALE4(81,33,12, 6)},
-	[ASSET_BATTERY_FILL_LOW]= {SCALE4( 1,55,12, 6)},
-	[ASSET_BATTERY_BOLT]	= {SCALE4(81,41,12, 6)},
+	[ASSET_BRIGHTNESS]		= {23, 33, 19, 19},
+	[ASSET_VOLUME_MUTE]		= {44, 33, 10, 16},
+	[ASSET_VOLUME]			= {44, 33, 18, 16},
+	[ASSET_BATTERY]			= {47, 51, 17, 10},
+	[ASSET_BATTERY_LOW]		= {66, 51, 17, 10},
+	[ASSET_BATTERY_FILL]	= {81, 33, 12, 6},
+	[ASSET_BATTERY_FILL_LOW]= {1, 55, 12, 6},
+	[ASSET_BATTERY_BOLT]	= {81, 41, 12, 6},
 	
-	[ASSET_SCROLL_UP]		= {SCALE4(97,23,24, 6)},
-	[ASSET_SCROLL_DOWN]		= {SCALE4(97,31,24, 6)},
+	[ASSET_SCROLL_UP]		= {97, 23, 24, 6},
+	[ASSET_SCROLL_DOWN]		= {97, 31, 24, 6},
 
-	[ASSET_WIFI]			= {SCALE4(95,39,14,10)},
-	[ASSET_HOLE]			= {SCALE4( 1,63,20,20)},
-	[ASSET_RED_DOT]			= {SCALE4( 33,54, 2, 2)},
-	[ASSET_RED_PAGE] 		= {SCALE4( 92,64, 6, 6)},
+	[ASSET_WIFI]			= {95, 39, 14, 10},
+	[ASSET_HOLE]			= {1, 63, 20, 20},
+	[ASSET_RED_DOT]			= {33, 54, 2, 2},
+	[ASSET_RED_PAGE] 		= {92, 64, 6, 6},
 };
+
+//#define SCALE1(a) ((int)((a) * (FIXED_SCALE)))
+
+void InitAssetRects(void) {
+    
+    // Helper macro locale per rendere la scrittura più rapida nella funzione
+    #define SET_ASSET(id, x, y, w, h) \
+        asset_rects[id] = (SDL_Rect){ SCALE1(x), SCALE1(y), \
+                                      SCALE1(w), SCALE1(h) }
+
+    SET_ASSET(ASSET_WHITE_PILL,       1, 1, 30, 30);
+    SET_ASSET(ASSET_BLACK_PILL,      33, 1, 30, 30);
+    SET_ASSET(ASSET_DARK_GRAY_PILL,  65, 1, 30, 30);
+    SET_ASSET(ASSET_OPTION,          97, 1, 20, 20);
+    SET_ASSET(ASSET_BUTTON,           1, 33, 20, 20);
+    SET_ASSET(ASSET_PAGE_BG,         64, 33, 15, 15);
+    SET_ASSET(ASSET_STATE_BG,        23, 54, 8, 8);
+    SET_ASSET(ASSET_PAGE,            39, 54, 6, 6);
+    SET_ASSET(ASSET_BAR,             33, 58, 4, 4);
+    SET_ASSET(ASSET_BAR_BG,          15, 55, 4, 4);
+    SET_ASSET(ASSET_BAR_BG_MENU,     85, 56, 4, 4);
+    SET_ASSET(ASSET_UNDERLINE,       85, 51, 3, 3);
+    SET_ASSET(ASSET_DOT,             33, 54, 2, 2);
+    
+    SET_ASSET(ASSET_BRIGHTNESS,      23, 33, 19, 19);
+    SET_ASSET(ASSET_VOLUME_MUTE,     44, 33, 10, 16);
+    SET_ASSET(ASSET_VOLUME,          44, 33, 18, 16);
+    SET_ASSET(ASSET_BATTERY,         47, 51, 17, 10);
+    SET_ASSET(ASSET_BATTERY_LOW,     66, 51, 17, 10);
+    SET_ASSET(ASSET_BATTERY_FILL,    81, 33, 12, 6);
+    SET_ASSET(ASSET_BATTERY_FILL_LOW, 1, 55, 12, 6);
+    SET_ASSET(ASSET_BATTERY_BOLT,    81, 41, 12, 6);
+    
+    SET_ASSET(ASSET_SCROLL_UP,       97, 23, 24, 6);
+    SET_ASSET(ASSET_SCROLL_DOWN,     97, 31, 24, 6);
+
+    SET_ASSET(ASSET_WIFI,            95, 39, 14, 10);
+    SET_ASSET(ASSET_HOLE,             1, 63, 20, 20);
+    SET_ASSET(ASSET_RED_DOT,         33, 54, 2, 2);
+    SET_ASSET(ASSET_RED_PAGE,        92, 64, 6, 6);
+
+    #undef SET_ASSET
+}
+
+
 static uint32_t asset_rgbs[ASSET_COLORS];
 GFX_Fonts font;
 

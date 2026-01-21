@@ -101,6 +101,8 @@ extern int currentsampleratein;
 extern int currentsamplerateout;
 extern int use_nofix;
 
+extern int FIXED_SCALE;
+
 enum {
 	ASSET_WHITE_PILL,
 	ASSET_BLACK_PILL,
@@ -203,6 +205,9 @@ enum {
 };
 
 //int fancy_mode;
+
+void InitAssetRects(void);
+
 
 //lid support, stolen as is from minui
 typedef struct LID_Context {

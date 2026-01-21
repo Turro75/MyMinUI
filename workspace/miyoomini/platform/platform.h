@@ -129,7 +129,7 @@ extern int is_plus;
 
 ///////////////////////////////
 
-#define FIXED_SCALE 	2
+#define _FIXED_SCALE 	2
 #define FIXED_WIDTH		640
 #define FIXED_HEIGHT	480
 #define FIXED_BPP		2
