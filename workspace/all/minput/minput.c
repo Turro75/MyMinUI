@@ -70,7 +70,7 @@ int main(int argc , char* argv[]) {
 	while(!quit) {
 		GFX_startFrame();
 		PAD_poll();
-		if (PAD_anyPressed() || PAD_anyJustReleased()) dirty = 1;
+		if (PAD_anyPressed() || (PAD_anyJustReleased()||PAD_anyJustReleasedShort())) dirty = 1;
 		if (PAD_isPressed(BTN_SELECT) && PAD_isPressed(BTN_START)) {
 			quit = 1;
 		}

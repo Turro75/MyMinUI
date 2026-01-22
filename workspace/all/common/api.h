@@ -350,8 +350,10 @@ typedef struct PAD_Context {
 	int is_pressed;
 	int just_pressed;
 	int just_released;
+	int just_released_short;
 	int just_repeated;
 	uint32_t repeat_at[BTN_ID_COUNT];
+	uint32_t begin_time[BTN_ID_COUNT];
 	PAD_Axis laxis;
 	PAD_Axis raxis;
 	int map_leftstick_to_dpad;
@@ -377,10 +379,12 @@ void PAD_reset(void);
 int PAD_anyJustPressed(void);
 int PAD_anyPressed(void);
 int PAD_anyJustReleased(void);
+int PAD_anyJustReleasedShort(void);
 
 int PAD_justPressed(int btn);
 int PAD_isPressed(int btn);
 int PAD_justReleased(int btn);
+int PAD_justReleasedShort(int btn);
 int PAD_justRepeated(int btn);
 
 int PAD_tappedMenu(uint32_t now); // special case, returns 1 on release of BTN_MENU within 250ms if BTN_PLUS/BTN_MINUS haven't been pressed

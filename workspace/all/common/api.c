@@ -1944,10 +1944,12 @@ int PAD_wake_SDL(void) {
 int PAD_anyJustPressed(void)	{ return pad.just_pressed!=BTN_NONE; }
 int PAD_anyPressed(void)		{ return pad.is_pressed!=BTN_NONE; }
 int PAD_anyJustReleased(void)	{ return pad.just_released!=BTN_NONE; }
+int PAD_anyJustReleasedShort(void)	{ return pad.just_released_short!=BTN_NONE; }
 
 int PAD_justPressed(int btn)	{ return pad.just_pressed & btn; }
 int PAD_isPressed(int btn)		{ return pad.is_pressed & btn; }
 int PAD_justReleased(int btn)	{ return pad.just_released & btn; }
+int PAD_justReleasedShort(int btn)	{ return pad.just_released_short & btn; }
 int PAD_justRepeated(int btn)	{ return pad.just_repeated & btn; }
 
 int PAD_tappedMenu(uint32_t now) {

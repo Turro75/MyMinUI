@@ -2081,7 +2081,7 @@ static void input_poll_callback(void) {
 
 		}
 	}
-	else if (PAD_justReleased(BTN_POWER)) {
+	else if (PAD_justReleased(BTN_POWER) || PAD_justReleasedShort(BTN_POWER)) {
 		if (thread_video) {
 			wait_For_Thread();
 		}
@@ -2109,7 +2109,7 @@ static void input_poll_callback(void) {
 					if (mapping->mod) ignore_menu = 1;
 					break;
 				}
-				else if (PAD_justReleased(btn)) {
+				else if (PAD_justReleased(btn) || PAD_justReleasedShort(btn)) {
 					if (mapping->mod) ignore_menu = 1;
 					break;
 				}
@@ -2117,7 +2117,7 @@ static void input_poll_callback(void) {
 			else if (i==SHORTCUT_HOLD_FF) {
 				// don't allow turn off fast_forward with a release of the hold button 
 				// if it was initially turned on with the toggle button
-				if (PAD_justPressed(btn) || (!toggled_ff_on && PAD_justReleased(btn))) {
+				if (PAD_justPressed(btn) || (!toggled_ff_on && (PAD_justReleased(btn) || PAD_justReleasedShort(btn)))) {
 					fast_forward = setFastForward(PAD_isPressed(btn));
 					if (mapping->mod) ignore_menu = 1; // very unlikely but just in case
 				}
@@ -2149,7 +2149,7 @@ static void input_poll_callback(void) {
 		}
 	}
 	
-	if (!ignore_menu && PAD_justReleased(BTN_MENU)) {
+	if (!ignore_menu && (PAD_justReleased(BTN_MENU) || PAD_justReleasedShort(BTN_MENU))) {
 		show_menu = 1;
 		//firstmenu = 1;
 	}
@@ -4875,7 +4875,7 @@ static int Menu_options(MenuList* list) {
 		GFX_startFrame();
 		PAD_poll();
 		
-		if (PAD_justRepeated(BTN_UP)) {
+		if (PAD_justRepeated(BTN_UP) || PAD_justPressed(BTN_UP)) {
 			selected -= 1;
 			if (selected<0) {
 				selected = count - 1;
@@ -4888,7 +4888,7 @@ static int Menu_options(MenuList* list) {
 			}
 			dirty = 1;
 		}
-		else if (PAD_justRepeated(BTN_DOWN)) {
+		else if (PAD_justRepeated(BTN_DOWN) || PAD_justPressed(BTN_DOWN)) {
 			selected += 1;
 			if (selected>=count) {
 				selected = 0;
@@ -4987,7 +4987,7 @@ static int Menu_options(MenuList* list) {
 		
 		if (!defer_menu) PWR_update(&dirty, &show_settings, Menu_beforeSleep, Menu_afterSleep);
 		
-		if (defer_menu && PAD_justReleased(BTN_MENU)) defer_menu = false;
+		if (defer_menu && (PAD_justReleased(BTN_MENU) || PAD_justReleasedShort(BTN_MENU))) defer_menu = false;
 		
 		if (dirty) {
 			GFX_clear(screen);

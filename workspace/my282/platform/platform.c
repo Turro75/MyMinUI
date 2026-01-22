@@ -69,16 +69,17 @@ struct input_event {
 #define EV_ABS			0x03
 
 void PLAT_pollInput(void) {
-	// reset transient state
+		// reset transient state
 	pad.just_pressed = BTN_NONE;
 	pad.just_released = BTN_NONE;
+	pad.just_released_short = BTN_NONE;
 	pad.just_repeated = BTN_NONE;
 
 	uint32_t tick = SDL_GetTicks();
 	for (int i=0; i<BTN_ID_COUNT; i++) {
-		int btn = 1 << i;
-		if ((pad.is_pressed & btn) && (tick>=pad.repeat_at[i])) {
-			pad.just_repeated |= btn; // set
+		int _btn = 1 << i;
+		if ((pad.is_pressed & _btn) && (tick>=pad.repeat_at[i])) {
+			pad.just_repeated |= _btn; // set
 			pad.repeat_at[i] += PAD_REPEAT_INTERVAL;
 		}
 	}
@@ -127,14 +128,21 @@ void PLAT_pollInput(void) {
 			if (btn==BTN_NONE) continue;
 		
 			if (!pressed) {
+				if (pad.is_pressed & btn) {
+					if ((tick - pad.begin_time[id]) > (PAD_REPEAT_DELAY + PAD_REPEAT_INTERVAL)) {
+						pad.just_released	|= btn; // set
+					} else {
+						pad.just_released_short	|= btn; // set
+					}
+				}
 				pad.is_pressed		&= ~btn; // unset
 				pad.just_repeated	&= ~btn; // unset
-				pad.just_released	|= btn; // set
+				pad.begin_time[id] = 0;
 			}
 			else if ((pad.is_pressed & btn)==BTN_NONE) {
 				pad.just_pressed	|= btn; // set
-				pad.just_repeated	|= btn; // set
 				pad.is_pressed		|= btn; // set
+				pad.begin_time[id]  = tick;
 				pad.repeat_at[id]	= tick + PAD_REPEAT_DELAY;
 			}
 		}

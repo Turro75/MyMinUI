@@ -1825,7 +1825,7 @@ int main (int argc, char *argv[]) {
 				if (!HAS_POWER_BUTTON && !simple_mode) PWR_enableSleep();
 			}
 			else if (total>0) {
-				if (PAD_justRepeated(BTN_UP)) {
+				if (PAD_justPressed(BTN_UP) || PAD_justRepeated(BTN_UP)) {
 					itemnotchanged = 0;
 					if (selected==0 && !PAD_justPressed(BTN_UP)) {
 						// stop at top
@@ -1844,7 +1844,7 @@ int main (int argc, char *argv[]) {
 						}
 					}
 				}
-				else if (PAD_justRepeated(BTN_DOWN)) {
+				else if (PAD_justPressed(BTN_DOWN) || PAD_justRepeated(BTN_DOWN)) {
 					itemnotchanged = 0;
 					if (selected==total-1 && !PAD_justPressed(BTN_DOWN)) {
 						// stop at bottom
@@ -1910,7 +1910,7 @@ int main (int argc, char *argv[]) {
 					}
 					myentry = NULL;
 				}
-				if (PAD_justRepeated(page_seek_minus)) {
+				if (PAD_justRepeated(page_seek_minus) || PAD_justPressed(page_seek_minus)) {
 					itemnotchanged = 0;
 					selected -= ( MAIN_ROW_COUNT + fancy_mode );
 					if (selected<0) {
@@ -1924,7 +1924,7 @@ int main (int argc, char *argv[]) {
 						top->end = top->start + ( MAIN_ROW_COUNT + fancy_mode );
 					}
 				}
-				else if (PAD_justRepeated(page_seek_plus)) {
+				else if (PAD_justRepeated(page_seek_plus) || PAD_justPressed(page_seek_plus)) {
 					itemnotchanged = 0;
 					selected += ( MAIN_ROW_COUNT + fancy_mode );
 					if (selected>=total) {
@@ -1941,7 +1941,7 @@ int main (int argc, char *argv[]) {
 				}
 			}
 		
-			if (PAD_justRepeated(BTN_L1) && !PAD_isPressed(BTN_R1) && !PWR_ignoreSettingInput(BTN_L1, show_setting)) { // previous alpha
+			if ((PAD_justRepeated(BTN_L1) || PAD_justPressed(BTN_L1)) && !PAD_isPressed(BTN_R1) && !PWR_ignoreSettingInput(BTN_L1, show_setting)) { // previous alpha
 				itemnotchanged = 0;
 				Entry* entry = top->entries->items[selected];
 				int i = entry->alpha-1;
@@ -1955,7 +1955,7 @@ int main (int argc, char *argv[]) {
 					}
 				}
 			}
-			else if (PAD_justRepeated(BTN_R1) && !PAD_isPressed(BTN_L1) && !PWR_ignoreSettingInput(BTN_R1, show_setting)) { // next alpha
+			else if ((PAD_justRepeated(BTN_R1) || PAD_justPressed(BTN_R1)) && !PAD_isPressed(BTN_L1) && !PWR_ignoreSettingInput(BTN_R1, show_setting)) { // next alpha
 				itemnotchanged = 0;
 				Entry* entry = top->entries->items[selected];
 				int i = entry->alpha+1;
@@ -1982,13 +1982,13 @@ int main (int argc, char *argv[]) {
 				dirty = 1;
 				//printf("\nisPressed SELECT\n");
 			}
-			if (PAD_justReleased(BTN_SELECT)){
+			if (PAD_justReleased(BTN_SELECT) || PAD_justReleasedShort(BTN_SELECT)){
 				selected_modifier = 0;
 				dirty = 1;
 				//printf("\nisReleased SELECT\n");
 			}
 			
-			if (total>0 && can_resume && PAD_justReleased(BTN_RESUME)) {
+			if (total>0 && can_resume && (PAD_justReleasedShort(BTN_RESUME) || PAD_justReleased(BTN_RESUME))) {
 				should_resume = 1;
 				Entry_open(top->entries->items[top->selected]);
 				dirty = 1;
@@ -2034,7 +2034,7 @@ int main (int argc, char *argv[]) {
 					}
 				}
 			}
-			else if (total>0 && PAD_justPressed(BTN_START)) {
+			else if (total>0 && PAD_justReleasedShort(BTN_START)) {
 				
 				//toggle Favorites
 				Entry* myentry = top->entries->items[top->selected];
