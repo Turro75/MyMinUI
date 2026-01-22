@@ -2054,7 +2054,7 @@ int main (int argc, char *argv[]) {
 				}
 				if ((myentry->type == ENTRY_ROM ) || ism3u) {
 					toggleFavorite(myentry->path);
-					quit = 1;
+					dirty = 1;
 				}
 								
 			} else if (PAD_justPressed(BTN_B) && stack->count>1) {
