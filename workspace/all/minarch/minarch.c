@@ -4904,7 +4904,7 @@ static int Menu_options(MenuList* list) {
 		else {
 			MenuItem* item = &items[selected];
 			if (item->values && item->values!=button_labels) { // not an input binding
-				if (PAD_justRepeated(BTN_LEFT)) {
+				if (PAD_justRepeated(BTN_LEFT)|| PAD_justPressed(BTN_LEFT)) {
 					if (item->value>0) item->value -= 1;
 					else {
 						int j;
@@ -4917,7 +4917,7 @@ static int Menu_options(MenuList* list) {
 				
 					dirty = 1;
 				}
-				else if (PAD_justRepeated(BTN_RIGHT)) {
+				else if (PAD_justRepeated(BTN_RIGHT)|| PAD_justPressed(BTN_RIGHT)) {
 					if (item->values[item->value+1]) item->value += 1;
 					else item->value = 0;
 				

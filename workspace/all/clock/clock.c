@@ -161,7 +161,7 @@ int main(int argc , char* argv[]) {
 		GFX_startFrame();		
 		PAD_poll();
 		
-		if (PAD_justRepeated(BTN_UP)) {
+		if (PAD_justRepeated(BTN_UP) || PAD_justPressed(BTN_UP)) {
 			dirty = 1;
 			switch(select_cursor) {
 				case CURSOR_YEAR:
@@ -189,7 +189,7 @@ int main(int argc , char* argv[]) {
 				break;
 			}
 		}
-		else if (PAD_justRepeated(BTN_DOWN)) {
+		else if (PAD_justRepeated(BTN_DOWN) || PAD_justPressed(BTN_DOWN)) {
 			dirty = 1;
 			switch(select_cursor) {
 				case CURSOR_YEAR:
@@ -217,12 +217,12 @@ int main(int argc , char* argv[]) {
 				break;
 			}
 		}
-		else if (PAD_justRepeated(BTN_LEFT)) {
+		else if (PAD_justRepeated(BTN_LEFT) || PAD_justPressed(BTN_LEFT)) {
 			dirty = 1;
 			select_cursor--;
 			if (select_cursor < 0) select_cursor += option_count;
 		}
-		else if (PAD_justRepeated(BTN_RIGHT)) {
+		else if (PAD_justRepeated(BTN_RIGHT) || PAD_justPressed(BTN_RIGHT)) {
 			dirty = 1;
 			select_cursor++;
 			if (select_cursor >= option_count) select_cursor -= option_count;

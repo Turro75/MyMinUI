@@ -179,9 +179,13 @@ void PLAT_pollInput(void) {
 							btn = BTN_MENU;  id = BTN_ID_MENU; 
 							selectstartlaststatus[i]=1; 
 							pad.is_pressed		&= ~BTN_SELECT; // unset
-							pad.just_repeated	&= ~BTN_SELECT; // unset	
+							pad.just_repeated	&= ~BTN_SELECT; // unset
+							pad.just_released_short &= ~BTN_SELECT; // unset
+							pad.just_released   &= ~BTN_SELECT; // unset
 							pad.is_pressed		&= ~BTN_START; // unset
 							pad.just_repeated	&= ~BTN_START; // unset	
+							pad.just_released_short &= ~BTN_START; // unset
+							pad.just_released &= ~BTN_SELECT; // unset
 							if (pressed){
 								PWR_Pressed = 1;
 								PWR_Tick = SDL_GetTicks();
@@ -198,7 +202,20 @@ void PLAT_pollInput(void) {
 						if ( (PWR_Pressed) && (!PWR_Actions) && (SDL_GetTicks() - PWR_Tick > PWR_TIMEOUT)) {
 									//pwr button pressed for more than PWR_TIMEOUT ms (3s default)
 									btn = BTN_POWEROFF; 		id = BTN_ID_POWEROFF;
+									pad.is_pressed		&= ~BTN_MENU; // unset
+									pad.just_repeated	&= ~BTN_MENU; // unset
+									pad.just_released_short &= ~BTN_MENU; // unset
+									pad.just_released   &= ~BTN_MENU; // unset
+									pad.is_pressed		&= ~BTN_SELECT; // unset
+									pad.just_repeated	&= ~BTN_SELECT; // unset
+									pad.just_released_short &= ~BTN_SELECT; // unset
+									pad.just_released   &= ~BTN_SELECT; // unset
+									pad.is_pressed		&= ~BTN_START; // unset
+									pad.just_repeated	&= ~BTN_START; // unset	
+									pad.just_released_short &= ~BTN_START; // unset
+									pad.just_released &= ~BTN_SELECT; // unset
 									PWR_Pressed = 0;	
+									pad.is_pressed		|= btn; // set 
 				//					LOG_info("BTN_MENU release event detected, status: %d , elapsed timer = %d , actions = %d\n", pressed, SDL_GetTicks() - PWR_Tick, PWR_Actions);fflush(stdout);
 									//printf("pwr released and pwr button event generated\n");			
 								} 
@@ -233,6 +250,7 @@ void PLAT_pollInput(void) {
 								if ( (PWR_Pressed) && (!PWR_Actions) && (SDL_GetTicks() - PWR_Tick > PWR_TIMEOUT)) {
 									//pwr button pressed for more than PWR_TIMEOUT ms (3s default)
 									btn = BTN_POWEROFF; 		id = BTN_ID_POWEROFF;
+									pad.is_pressed		|= btn; // set
 									PWR_Pressed = 0;	
 									//printf("pwr released and pwr button event generated\n");			
 								} 
@@ -271,7 +289,7 @@ void PLAT_pollInput(void) {
 
 			if (!pressed) {
 				if (pad.is_pressed & btn) {
-					if ((tick - pad.begin_time[id]) > (PAD_REPEAT_DELAY + PAD_REPEAT_INTERVAL)) {
+					if ((tick - pad.begin_time[id]) > PAD_REPEAT_DELAY) {
 						pad.just_released	|= btn; // set
 					} else {
 						pad.just_released_short	|= btn; // set

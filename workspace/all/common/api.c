@@ -1963,7 +1963,7 @@ int PAD_tappedMenu(uint32_t now) {
 	else if (PAD_isPressed(BTN_MENU) && BTN_MOD_BRIGHTNESS==BTN_MENU && (PAD_justPressed(BTN_MOD_PLUS) || PAD_justPressed(BTN_MOD_MINUS))) {
 		ignore_menu = 1;
 	}
-	return (!ignore_menu && PAD_justReleased(BTN_MENU) && now-menu_start<MENU_DELAY);
+	return (!ignore_menu && (PAD_justReleased(BTN_MENU) || PAD_justReleasedShort(BTN_MENU)) && now-menu_start<MENU_DELAY);
 }
 
  void PAD_readCustomButtonMapping(void){
@@ -2260,7 +2260,7 @@ void PWR_update(int* _dirty, int* _show_setting, PWR_callback_t before_sleep, PW
 		factor=20;
 	}
 	//if (PAD_justReleased(BTN_POWEROFF) || (power_pressed_at && now-power_pressed_at>=50)) {  //50= immediate shutdown, 1000 = shutdown after 1 sec or sleep on quick button press
-	if (PAD_justReleased(BTN_POWEROFF) || (power_pressed_at && now-power_pressed_at>=(50*factor))) {
+	if (PAD_justReleased(BTN_POWEROFF) || PAD_justReleasedShort(BTN_POWEROFF) || (power_pressed_at && now-power_pressed_at>=(50*factor))) {
 		if (before_sleep) {
 			before_sleep();
 		}
@@ -2276,7 +2276,7 @@ void PWR_update(int* _dirty, int* _show_setting, PWR_callback_t before_sleep, PW
 	
 	if (
 		now-last_input_at>=SLEEP_DELAY || // autosleep
-		(pwr.can_sleep && PAD_justReleased(BTN_SLEEP)) // manual sleep
+		(pwr.can_sleep && (PAD_justReleased(BTN_SLEEP) || PAD_justReleasedShort(BTN_SLEEP))) // manual sleep
 	) {
 		if (before_sleep) before_sleep();
 		PWR_fauxSleep();
@@ -2308,7 +2308,7 @@ void PWR_update(int* _dirty, int* _show_setting, PWR_callback_t before_sleep, PW
 			(PAD_isPressed(BTN_MOD_VOLUME) || PAD_isPressed(BTN_MOD_BRIGHTNESS)) && 
 			(!delay_settings || now-mod_unpressed_at>=MOD_DELAY)
 		) || 
-		((!BTN_MOD_VOLUME || !BTN_MOD_BRIGHTNESS) && (PAD_justRepeated(BTN_MOD_PLUS) || PAD_justRepeated(BTN_MOD_MINUS)))
+		((!BTN_MOD_VOLUME || !BTN_MOD_BRIGHTNESS) && (PAD_justRepeated(BTN_MOD_PLUS) || PAD_justRepeated(BTN_MOD_MINUS) || PAD_justPressed(BTN_MOD_PLUS) || PAD_justPressed(BTN_MOD_MINUS)) )	
 	) {
 		setting_shown_at = now;
 		if (PAD_isPressed(BTN_MOD_BRIGHTNESS)) {
