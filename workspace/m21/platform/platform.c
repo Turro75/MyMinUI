@@ -835,7 +835,7 @@ SDL_Surface* PLAT_initVideo(void) {
 
 	if (exists(ISM22_PATH)) {
 		ism22 = 1;
-		isnewdtb = atoi(getenv("NEWDTB"));
+		if (getenv("NEWDTB") != NULL) isnewdtb = 1;
 		//create the file menumissing.txt
 		int tmpfd = open(SYSTEM_PATH "/menumissing.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
 		if (tmpfd >= 0) {

@@ -1,9 +1,6 @@
 #!/bin/sh
 # NOTE: becomes emulationstation
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
-
-#echo START >> /mnt/SDCARD/log.txt
-#ps >> /mnt/SDCARD/log.txt
 MOUNTEDTMP=$( mount | grep "rootfs.ext2" )
 #echo $MOUNTEDTMP >> /mnt/SDCARD/log.txt
 if [ "${MOUNTEDTMP}" = "" ]; then
@@ -22,11 +19,11 @@ SYSTEM_PATH="${SDCARD_PATH}/.system"
 
 export LD_LIBRARY_PATH=${SDCARD_PATH}/${PLATFORM}/libmusl:$LD_LIBRARY_PATH
 export SDL_NOMOUSE=1
-
+#export NEWDTB=0
 
 CPU_PATH=/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 #echo performance > "$CPU_PATH"
-
+PID=-1
 # install/update
 # is there an update available?
 if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
@@ -39,7 +36,9 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	else
 	    ACTION="installing"
 	fi
-	${SDCARD_PATH}/${PLATFORM}/binmusl/show.elf ${SDCARD_PATH}/${PLATFORM}/$ACTION.png
+	${SDCARD_PATH}/${PLATFORM}/binmusl/show.elf ${SDCARD_PATH}/${PLATFORM}/$ACTION.png 60 &
+	PID=$!
+#	echo $PID >>  ${SDCARD_PATH}/ciao.txt
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
         ${SDCARD_PATH}/${PLATFORM}/binmusl/unzip -o $NEWFILE -d $SDCARD_PATH -x "m21/*" #&>> $LOGFILE
 	sync
@@ -50,7 +49,6 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 #	rm -rf $SDCARD_PATH/miyoo354
 	rm -rf $NEWFILE
 	sync
-
 #	echo "Finita fase 1" >> $SDCARD_PATH/log.txt
 	
 fi
@@ -59,20 +57,25 @@ fi
 #same as original MinUI install/update process
 if [ -f "$UPDATE_PATH" ]; then
 
-
-	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
-	    ACTION="updating"
-	else
-	    ACTION="installing"
+	if [ $PID -eq -1 ]; then
+		if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
+		    ACTION="updating"
+		else
+		    ACTION="installing"
+		fi
+		${SDCARD_PATH}/${PLATFORM}/binmusl/show.elf ${SDCARD_PATH}/${PLATFORM}/$ACTION.png 60 &
+		PID=$!
 	fi
-	${SDCARD_PATH}/${PLATFORM}/binmusl/show.elf ${SDCARD_PATH}/${PLATFORM}/$ACTION.png
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
         ${SDCARD_PATH}/${PLATFORM}/binmusl/unzip -o $UPDATE_PATH -d $SDCARD_PATH #&>> $LOGFILE
 	sync
 	# the updated system finishes the install/update
 	rm -rf ${UPDATE_PATH}
 	$SYSTEM_PATH/$PLATFORM/bin/install.sh
+fi
 
+if [ $PID -ne -1 ];then
+    kill -3 $PID
 fi
 
 ROOTFS_MOUNTPOINT=/overlay

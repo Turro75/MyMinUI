@@ -24,8 +24,6 @@ mkdir -p "$SHARED_USERDATA_PATH/.minui"
 TMPSTR=$(cat /sys/class/disp/disp/attr/sys | grep fps:38) 
 if [ "${TMPSTR}NULL" = "NULL" ]; then
 	export NEWDTB=1
-else
-	export NEWDTB=0
 fi
 
 echo 1 > /sys/class/disp/disp/attr/colorbar
