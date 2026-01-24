@@ -271,18 +271,20 @@ int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max;
 
 SDL_Surface* PLAT_initVideo(void) {
 
+	//set default cpu frequencies only if defined, useful for cases where the initvideo is reqquested out of the system.
+	if (getenv("CPU_SPEED_MENU") != NULL && getenv("CPU_SPEED_POWERSAVE") != NULL && getenv("CPU_SPEED_GAME") != NULL && getenv("CPU_SPEED_PERF") != NULL && getenv("CPU_SPEED_MAX") != NULL) {
 	//looks for environment cpu frequencies
-	cpufreq_menu = atoi(getenv("CPU_SPEED_MENU"));
-	LOG_info("CPU_SPEED_MENU = %d\n", cpufreq_menu);
-	cpufreq_powersave= atoi(getenv("CPU_SPEED_POWERSAVE"));
-	LOG_info("CPU_SPEED_POWERSAVE = %d\n", cpufreq_powersave);
-	cpufreq_game = atoi(getenv("CPU_SPEED_GAME"));	
-	LOG_info("CPU_SPEED_GAME = %d\n", cpufreq_game);
-	cpufreq_perf = atoi(getenv("CPU_SPEED_PERF"));
-	LOG_info("CPU_SPEED_PERF = %d\n", cpufreq_perf);
-	cpufreq_max = atoi(getenv("CPU_SPEED_MAX"));
-	LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
-
+		cpufreq_menu = atoi(getenv("CPU_SPEED_MENU"));
+		LOG_info("CPU_SPEED_MENU = %d\n", cpufreq_menu);
+		cpufreq_powersave= atoi(getenv("CPU_SPEED_POWERSAVE"));
+		LOG_info("CPU_SPEED_POWERSAVE = %d\n", cpufreq_powersave);
+		cpufreq_game = atoi(getenv("CPU_SPEED_GAME"));	
+		LOG_info("CPU_SPEED_GAME = %d\n", cpufreq_game);
+		cpufreq_perf = atoi(getenv("CPU_SPEED_PERF"));
+		LOG_info("CPU_SPEED_PERF = %d\n", cpufreq_perf);
+		cpufreq_max = atoi(getenv("CPU_SPEED_MAX"));
+		LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
+	} 
 
 	is_plus = exists("/customer/app/axp_test");
 	char *tmpvar = getenv("IS_MMV4");
