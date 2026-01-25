@@ -259,24 +259,23 @@ in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called
 Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder <EASYROMS>/roms/tools/
 Copy also the whole release zip file (leave it zipped) in the <EASYROMS>/roms/MyMinUI.
 
-the partition EASYROMS must contains now: (+ all the arkos stuff)
+the partition EASYROMS must contains now: (+ the whole arkos stuff)
 <pre>
-└── roms
-    ├── MyMinUI
-    │   ├── MyMinUI-YYYYMMDDb-0-r36s.zip
-    │   └── r36s
-    │       ├── unzip
-    │       ├── show.elf
-    │       ├── updating.png
-    │       ├── installing.png
-    │       ├── emulationstation.sh.ra
-    │       ├── emulationstation.sh
-    │       ├── emulationstation.sh.es
-    │       ├── r36s.sh
-    │       ├── r36s_stage2.sh
-    │       └── EnableMyMinUI.sh
-    └── tools
-        └── EnableMyMinUI.sh
+   ├── MyMinUI
+   │   ├── MyMinUI-YYYYMMDDb-0-r36s.zip
+   │   └── r36s
+   │       ├── unzip
+   │       ├── show.elf
+   │       ├── updating.png
+   │       ├── installing.png
+   │       ├── emulationstation.sh.ra
+   │       ├── emulationstation.sh
+   │       ├── emulationstation.sh.es
+   │       ├── r36s.sh
+   │       ├── r36s_stage2.sh
+   │       └── EnableMyMinUI.sh
+   └── tools
+       └── EnableMyMinUI.sh
 </pre>
 
 Insert the sdcard in the TF1 slot and boot the device
@@ -302,23 +301,22 @@ Once ArkOS is successfully installed create the folder <EASYROMS>/roms/MyMinUI i
 in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the <EASYROMS>/roms/MyMinUI/ created the step above.
 Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder <EASYROMS>/roms/tools/
 
-the partition EASYROMS on FIRST sdcard must contains now: (+ all the akos stuff)
+the partition EASYROMS on FIRST sdcard must contains now: (+ the whole arkos stuff)
 <pre>
-└── roms
-    ├── MyMinUI
-    │   └── r36s
-    │       ├── unzip
-    │       ├── show.elf
-    │       ├── updating.png
-    │       ├── installing.png
-    │       ├── emulationstation.sh.ra
-    │       ├── emulationstation.sh
-    │       ├── emulationstation.sh.es
-    │       ├── r36s.sh
-    │       ├── r36s_stage2.sh
-    │       └── EnableMyMinUI.sh
-    └── tools
-        └── EnableMyMinUI.sh
+ ├── MyMinUI
+ │   └── r36s
+ │       ├── unzip
+ │       ├── show.elf
+ │       ├── updating.png
+ │       ├── installing.png
+ │       ├── emulationstation.sh.ra
+ │       ├── emulationstation.sh
+ │       ├── emulationstation.sh.es
+ │       ├── r36s.sh
+ │       ├── r36s_stage2.sh
+ │       └── EnableMyMinUI.sh
+ └── tools
+     └── EnableMyMinUI.sh
 </pre>
 
 Format the SECOND sdcard as FAT32, it is also supported exFAT if You like.
