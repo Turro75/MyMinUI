@@ -326,7 +326,7 @@ Copy the whole release zip file (leave it zipped) to the partition of the SECOND
 in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the partition of the SECOND sdcard (Yes You must copy that folder to both sdcards)
 
 The SECOND sdcard file structure must be:
-<pre>
+
 ├── MyMinUI-YYYYMMDDb-0-r36s.zip
 └── r36s
     ├── unzip
@@ -339,7 +339,7 @@ The SECOND sdcard file structure must be:
     ├── r36s.sh
     ├── r36s_stage2.sh
     └── EnableMyMinUI.sh
-</pre>
+
 
 While in EmulationStation go to options->Tools then run the tool EnableMyMinUI.sh 
 at reboot the installation process will start showing the screen "installing MyMinUI..."
@@ -486,27 +486,74 @@ Bios file names are case-sensitive:
 ----------------------------------------
 Disc-based games
 
-To streamline launching multi-file disc-based games with MyMinUI place your bin/cue (and/or iso/wav files) in a folder with the same name as the cue file. MyMinUI will automatically launch the cue file instead of navigating into the folder when selected, eg. 
+MyMinUI supports three methods to play multidisc games:
+1. m3u folder using bin+cue -> is the most common format for roms, it needs a subfolder precise structure
+2. single pbp file created with psxpackager -> it generates a single file which is easier to handle.
+3. m3u folder using chd     -> as bin+cue needs subfolder but it reduces the files size
 
-  Harmful Park (English v1.0)/
-    Harmful Park (English v1.0).bin
-    Harmful Park (English v1.0).cue
+starting from these bin+cue files:
 
-For multi-disc games, put all the files for all the discs in a single folder. Then create an m3u file in that folder (just a text file containing the relative path to each disc's cue file on a separate line) with the same name as the folder. Instead of showing the entire messy contents of the folder, MyMinUI will launch the appropriate cue file, eg. For a "Policenauts" folder structured like this:
+My Game Test (Disc 1).bin
+My Game Test (Disc 1).cue
+My Game Test (Disc 2).bin
+My Game Test (Disc 2).cue
 
-  Policenauts (English v1.0)/
-    Policenauts (English v1.0).m3u
-    Policenauts (Japan) (Disc 1).bin
-    Policenauts (Japan) (Disc 1).cue
-    Policenauts (Japan) (Disc 2).bin
-    Policenauts (Japan) (Disc 2).cue
 
-The m3u file would contain just:
+My Game Test.m3u is a text file placed in the same folder as bin+cue files and contains:
 
-  Policenauts (Japan) (Disc 1).cue
-  Policenauts (Japan) (Disc 2).cue
+My Game Test (Disc 1).cue
+My Game Test (Disc 2).cue
 
-MyMinUI also supports chd files and pbp files (recommended). Regardless of the multi-disc file format used, every disc of the same game share the same memory card and save state slots.
+
+this is how the folder structure must be: 
+
+My Emulator (XX)
+├──Imgs
+│   └── My Game Test.png
+└──My Game Test
+    ├── My Game Test (Disc 1).bin
+    ├── My Game Test (Disc 1).cue
+    ├── My Game Test (Disc 2).bin
+    ├── My Game Test (Disc 2).cue
+    └── My Game Test.m3u
+
+
+PBP file created with:
+
+psxpackager -i "My Game Test.m3u" -o "My Game Test.pbp"
+
+this is how the folder structure must be: 
+
+My Emulator (XX)
+├──Imgs
+│   └── My Game Test.png
+└──My Game Test.pbp
+
+
+
+CHD files created with:
+
+chdman createcd -i "My Game Test (Disc 1).cue" -o "My Game Test (Disc 1).chd"
+chdman createcd -i "My Game Test (Disc 2).cue" -o "My Game Test (Disc 2).chd"
+
+
+My Game Test.m3u when using CHD contains:
+
+My Game Test (Disc 1).chd
+My Game Test (Disc 2).chd
+
+this is how the folder structure must be: 
+
+My Emulator (XX)
+├──Imgs
+│   └── My Game Test.png
+└──My Game Test
+    ├── My Game Test (Disc 1).chd
+    ├── My Game Test (Disc 2).chd
+    └── My Game Test.m3u
+
+
+in all three cases the boxart image is stored in the Imgs folder and named as the folder or file in case of pbp 
 
 ----------------------------------------
 Collections
