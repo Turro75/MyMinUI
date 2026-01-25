@@ -292,7 +292,7 @@ SDL_Surface* PLAT_initVideo(void) {
 		char *tmpvar = getenv("IS_MMV4");
 		is_miniv4 = (strncmp(tmpvar, "true", 4) == 0);
 	}
-
+	FIXED_SCALE = _FIXED_SCALE;
 	vid.fdfb = open("/dev/fb0", O_RDWR);
 	int p = FIXED_PITCH;
 	int w = FIXED_WIDTH;
@@ -312,8 +312,9 @@ SDL_Surface* PLAT_initVideo(void) {
 		h = 560;
 		vid.width = w;
 		vid.height = h;
-		DEVICE_WIDTH = FIXED_WIDTH;
-		DEVICE_HEIGHT = FIXED_HEIGHT;
+		DEVICE_WIDTH = w;
+		DEVICE_HEIGHT = h;
+		//FIXED_SCALE = 3; //disable scaling
 		p = w * FIXED_BPP;
 	}	
 
@@ -339,7 +340,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	//at the beginning set the screen size to 640x480
     set_fbinfo();
 	get_fbinfo();
-	FIXED_SCALE = _FIXED_SCALE;
+	
 	InitAssetRects();
 	LOG_info("DEVICE_WIDTH=%d, DEVICE_HEIGHT=%d\n", DEVICE_WIDTH, DEVICE_HEIGHT);fflush(stdout);
 
