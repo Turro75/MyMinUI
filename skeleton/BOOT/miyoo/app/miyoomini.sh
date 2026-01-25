@@ -31,7 +31,7 @@ fi
 
 # .tmp_update/updater does the actual installation (and later, updating)
 cp -Rf .tmp_update $SDCARD_PATH/
-rm -rf "$MIYOO_PATH"
+#rm -rf "$MIYOO_PATH"
 sync
 $SDCARD_PATH/.tmp_update/updater
 

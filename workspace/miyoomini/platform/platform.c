@@ -287,9 +287,12 @@ SDL_Surface* PLAT_initVideo(void) {
 	} 
 
 	is_plus = exists("/customer/app/axp_test");
-	char *tmpvar = getenv("IS_MMV4");
-	is_miniv4 = (strncmp(tmpvar, "true", 4) == 0);
-  
+	is_miniv4 = 0;
+	if (getenv("IS_MMV4") != NULL) {
+		char *tmpvar = getenv("IS_MMV4");
+		is_miniv4 = (strncmp(tmpvar, "true", 4) == 0);
+	}
+
 	vid.fdfb = open("/dev/fb0", O_RDWR);
 	int p = FIXED_PITCH;
 	int w = FIXED_WIDTH;

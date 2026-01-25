@@ -11,7 +11,7 @@ CPU_PATH=/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 echo performance > "$CPU_PATH"
 
 SWAPFILE=${SYSTEM_PATH}/${PLATFORM}/myswapfile
-
+PID=-1
 # is there an update available?
 if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
     NEWFILE=$(ls ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip)
@@ -27,12 +27,14 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	cat /proc/ls
 	sleep 1
 	export LCD_INIT=1
-
+	
 	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
-		./show.elf ./updating.png
+		ACTION="updating"
 	else
-		./show.elf ./installing.png
+		ACTION="installing"
 	fi
+	./show.elf ./${ACTION}.png &
+	PID=$!
 
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
         busybox unzip -o $NEWFILE -d $SDCARD_PATH #&>> $LOGFILE
@@ -46,7 +48,7 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
     rm -rf $SDCARD_PATH/rg35xx
 	rm -rf $SDCARD_PATH/trimui	
 	rm -rf $NEWFILE
-	sync && reboot	
+	sync
 fi
 
 #same as original MinUI install/update process
@@ -64,12 +66,16 @@ if [ -f "$UPDATE_PATH" ]; then
 	sleep 1
 	export LCD_INIT=1
 
-	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
-		./show.elf ./updating.png
-	else
-		./show.elf ./installing.png
+	if [ $PID -eq -1 ];then
+		if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
+			ACTION="updating"
+		else
+			ACTION="installing"
+		fi
+		./show.elf ./${ACTION}.png &
+		PID=$!
 	fi
-	
+
 	mv $SDCARD_PATH/.tmp_update $SDCARD_PATH/.tmp_update-old
 	unzip -o "$UPDATE_PATH" -d "$SDCARD_PATH"
 	rm -f "$UPDATE_PATH"
@@ -86,6 +92,10 @@ if [ -f "$UPDATE_PATH" ]; then
     	mkswap $SWAPFILE
 	fi
 	sync
+fi
+
+if [ $PID -ne -1 ]; then
+    kill -3 $PID
 fi
 
 if [ -f $SWAPFILE ]; then
