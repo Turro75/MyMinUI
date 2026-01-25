@@ -23,7 +23,6 @@ void killHandler(int retvalue)
     if (bmp) SDL_FreeSurface(bmp);
 	if (screen) {
 		PLAT_quitVideo();
-		//SDL_FreeSurface(screen);
 	}	
 	if (preview) SDL_FreeSurface(preview);
 	exit(retvalue);
