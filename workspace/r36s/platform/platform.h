@@ -21,6 +21,7 @@ void PLAT_setVsync(int vsync);
 void PLAT_setCPUSpeed(int speed);
 int PLAT_getNumProcessors(void);
 uint32_t PLAT_screenMemSize(void);
+void IOCTLttyON(void);
 
 #ifdef __cplusplus
 }
@@ -125,7 +126,7 @@ uint32_t PLAT_screenMemSize(void);
 
 ///////////////////////////////
 
-#define FIXED_SCALE 	2
+#define _FIXED_SCALE 	2
 #define FIXED_WIDTH		640
 #define FIXED_HEIGHT	480
 #define _HDMI_WIDTH		1280

@@ -5,6 +5,8 @@ $(PLATFORM):
 	# installer
 	mkdir -p ./build/BASE/$@
 	cp ./workspace/$@/boot/boot.sh ./build/BASE/$@/r36s.sh
+	cp ./workspace/$@/boot/r36s_stage2.sh ./build/BASE/$@/r36s_stage2.sh
+	cp ./workspace/$@/libmsettings/libmsettings.so ./build/BASE/$@/libmsettings.so
 	cp ./workspace/$@/boot/EnableMyMinUI.sh ./build/BASE/$@/
 	cp ./workspace/$@/boot/emulationstation.sh ./build/BASE/$@/
 	cp ./workspace/$@/boot/emulationstation.sh.es ./build/BASE/$@/

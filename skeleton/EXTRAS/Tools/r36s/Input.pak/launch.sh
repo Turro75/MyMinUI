@@ -1,4 +1,4 @@
 #!/bin/sh
 
 cd $(dirname "$0")
-./minput.elf
+MINPUT_SCREEN_FIX=1 ./minput.elf

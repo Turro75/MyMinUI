@@ -40,6 +40,7 @@ struct FontSpec {
     int size;
 };
 static constexpr FontSpec kFonts[] = {FONTS};
+static constexpr FontSpec kFonts1[] = {"FreeSans.ttf",13};
 static constexpr std::size_t kFontsLen = sizeof(kFonts) / sizeof(kFonts[0]);
 static constexpr FontSpec kLowDpiFonts[] = {LOW_DPI_FONTS};
 static constexpr std::size_t kLowDpiFontsLen = sizeof(kLowDpiFonts) / sizeof(kLowDpiFonts[0]);
@@ -50,7 +51,11 @@ std::string ResPath(const char *path) { return ResDir + path; }
 std::string ResPath(const std::string &path) { return ResDir + path; }
 
 std::vector<TTF_Font *> LoadFonts(bool low_dpi) {
-    const FontSpec *specs = low_dpi ? kLowDpiFonts : kFonts;
+    int test1=0;
+    if (getenv("COMMANDER_SCREEN_FIX_320x480")!=NULL) {
+        test1=1;
+	}
+    const FontSpec *specs = low_dpi ? kLowDpiFonts : test1 ? kFonts1 : kFonts;
     const std::size_t len = low_dpi ? kLowDpiFontsLen : kFontsLen;
 
     std::vector<TTF_Font *> fonts;

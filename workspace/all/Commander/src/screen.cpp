@@ -59,6 +59,10 @@ int Screen::init()
     cfg.disp_height = DEVICE_HEIGHT;
     screen.w = cfg.disp_width ;
     screen.h = cfg.disp_height;
+    if (getenv("COMMANDER_SCREEN_FIX_320x480")!=NULL) {
+        cfg.disp_ppu_x = 1.5;
+        cfg.disp_ppu_y = 1.5;
+	} 
     screen.ppu_x = cfg.disp_ppu_x;
     screen.ppu_y = cfg.disp_ppu_y;
     screen.actual_w = cfg.disp_width;

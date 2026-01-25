@@ -150,12 +150,15 @@ static uint32_t PWR_Tick = 0;
 ///////////////////////////////
 static int is353v = 0;
 static int is353p = 0;
+static int isrg351p = 0;
 static int isg350 = 0;
 static int isrgb30 = 0;
 static int isr40xx = 0;
 static int isr36splus = 0;
+static int isv10 = 0;
 
 static int _R1_RAW, _R2_RAW, _L3_RAW, _R3_RAW, _START_RAW, _SELECT_RAW, _MENU_RAW;
+static int _A_RAW, _B_RAW, _X_RAW, _Y_RAW, _L1_RAW, _L2_RAW, _PLUS_RAW, _MINUS_RAW;
 
 #define INPUT_COUNT 3
 static int inputs[INPUT_COUNT];
@@ -196,14 +199,25 @@ void PLAT_initInput(void) {
 	if (exists(NOMENU_PATH)) {
 		menumissing = 1;
 	}
-
+	_A_RAW = RAW_A;
+	_B_RAW = RAW_B;
+	_X_RAW = RAW_X;
+	_Y_RAW = RAW_Y;
+	_L1_RAW = RAW_L1;
+	_L2_RAW = RAW_L2;
+	_R1_RAW = RAW_R1;
+    _R2_RAW = RAW_R2;
+	_L3_RAW = RAW_L3;
+	_R3_RAW = RAW_R3;
+	_START_RAW = RAW_START;
+	_SELECT_RAW = RAW_SELECT;
+	_PLUS_RAW = RAW_PLUS;
+	_MINUS_RAW = RAW_MINUS;
 	if (is353v) {
 		check_rumble("/dev/input/event4");
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event4", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
-		_R1_RAW = RAW_R1;
-	    _R2_RAW = RAW_R2;
 		_L3_RAW = RAW_L3_353;
 		_R3_RAW = RAW_R3_353;
 		_START_RAW = RAW_START_353;
@@ -219,25 +233,62 @@ void PLAT_initInput(void) {
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		inputs[2] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
-		_R1_RAW = RAW_R1;
-	    _R2_RAW = RAW_R2;
 		_START_RAW = RAW_START_353;
 		_SELECT_RAW = RAW_SELECT_353;
 		_L3_RAW = RAW_L3_353;
 		_R3_RAW = RAW_R3_353;
 		menumissing = 1; //no menu button on rgb30
+	} else if (isv10==1) {
+		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
+		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		inputs[2] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+
+		/* powkiddy v10
+Start = BTN_TRIGGER_HAPPY6, Event code 709 (BTN_TRIGGER_HAPPY6)
+Select = BTN_TRIGGER_HAPPY1, Event code 704 (BTN_TRIGGER_HAPPY1)
+Minus = BTN_TRIGGER_HAPPY2, Event code 705 (BTN_TRIGGER_HAPPY2)
+Plus = BTN_TRIGGER_HAPPY5  Event code 708 (BTN_TRIGGER_HAPPY5)
+Most right shoulder button (R1) = BTN_TR, 
+Right shoulder button (R2) = BTN_Trigger_HAPPY4,  Event code 707 (BTN_TRIGGER_HAPPY4)
+Most left shoulder button (L1) = BTN_TL, 
+Left shoulder button (L2) = BTN_TRIGGER_HAPPY3  Event code 706 (BTN_TRIGGER_HAPPY3)
+*/  
+		_R1_RAW = 311;
+	    _R2_RAW = 707;
+		_L1_RAW = 310;
+		_L2_RAW = 706;
+		_START_RAW = 709;
+		_SELECT_RAW = 704;
+		_L3_RAW = -1;
+		_R3_RAW = -1;
+		_PLUS_RAW = 708;
+		_MINUS_RAW = 705;
+		menumissing = 1; //no menu button on powkiddy v10
+	} else if (isrg351p==1) {
+		//check_rumble("/dev/input/event3"); no rumble support?
+		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
+		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		inputs[2] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+		_R1_RAW = 309;
+	    _R2_RAW = 315;
+		_L1_RAW = 308;
+		_L2_RAW = 314;
+		_START_RAW = 310;
+		_SELECT_RAW = 311;
+		_L3_RAW = 312;
+		_R3_RAW = 313;
+		_A_RAW = 304;
+		_B_RAW = 305;
+		_X_RAW = 306;
+		_Y_RAW = 307;
+		menumissing = 1; //no menu button on rg351p
 	} else {
 		//r36s
 		check_rumble("/dev/input/event2");
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
-		_R1_RAW = RAW_R1;
-	    _R2_RAW = RAW_R2;
-		_L3_RAW = RAW_L3;
-		_R3_RAW = RAW_R3;
-		_START_RAW = RAW_START;
-		_SELECT_RAW = RAW_SELECT;
+
 		_MENU_RAW = RAW_MENU;
 	}
 
@@ -260,11 +311,14 @@ void PLAT_quitInput(void) {
 	close(rumblefd);
 }
 
+static int prev_button_pressed_vert, prev_button_pressed_horiz;
+
 void PLAT_pollInput(void) {
 
 	// reset transient state
 	pad.just_pressed = BTN_NONE;
 	pad.just_released = BTN_NONE;
+	pad.just_released_short = BTN_NONE;
 	pad.just_repeated = BTN_NONE;
 
 	uint32_t tick = SDL_GetTicks();
@@ -304,9 +358,11 @@ void PLAT_pollInput(void) {
 							btn = BTN_MENU;  id = BTN_ID_MENU; 
 							selectstartlaststatus=1; 
 							pad.is_pressed		&= ~BTN_SELECT; // unset
-							pad.just_repeated	&= ~BTN_SELECT; // unset	
+							pad.just_repeated	&= ~BTN_SELECT; // unset
+							pad.just_released_short &= ~BTN_SELECT; // unset
 							pad.is_pressed		&= ~BTN_START; // unset
-							pad.just_repeated	&= ~BTN_START; // unset						
+							pad.just_repeated	&= ~BTN_START; // unset	
+							pad.just_released_short &= ~BTN_START; // unset				
 							}
 					if ((selectstartstatus == 1) && (selectstartlaststatus == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus=0;}
 				}
@@ -315,19 +371,19 @@ void PLAT_pollInput(void) {
 			    	else if (code==_SELECT_RAW)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
 				}
 
-				if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
-				else if (code==RAW_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
+				if (code==_A_RAW)		{ btn = BTN_A; 			id = BTN_ID_A; }
+				else if (code==_B_RAW)		{ btn = BTN_B; 			id = BTN_ID_B; }
 
 				//LOG_info("key event: %i (%i)\n", code,pressed);fflush(stdout);
 				else if (code==RAW_UP) 		{ btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
 	 			else if (code==RAW_DOWN)	{ btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
 				else if (code==RAW_LEFT)	{ btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
 				else if (code==RAW_RIGHT)	{ btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; }
-				else if (code==RAW_X)		{ btn = BTN_X; 			id = BTN_ID_X; }
-				else if (code==RAW_Y)		{ btn = BTN_Y; 			id = BTN_ID_Y; }
+				else if (code==_X_RAW)		{ btn = BTN_X; 			id = BTN_ID_X; }
+				else if (code==_Y_RAW)		{ btn = BTN_Y; 			id = BTN_ID_Y; }
 				 
-				else if (code==RAW_L1)		{ btn = BTN_L1; 		id = BTN_ID_L1; }
-				else if (code==RAW_L2)		{ btn = BTN_L2; 		id = BTN_ID_L2; }				
+				else if (code==_L1_RAW)		{ btn = BTN_L1; 		id = BTN_ID_L1; }
+				else if (code==_L2_RAW)		{ btn = BTN_L2; 		id = BTN_ID_L2; }				
 				else if (code==_R1_RAW)		{ btn = BTN_R1; 		id = BTN_ID_R1; }
 				else if (code==_R2_RAW)		{ btn = BTN_R2; 		id = BTN_ID_R2; }
 				else if (code==_L3_RAW)		{ btn = BTN_L3; 		id = BTN_ID_L3; }
@@ -350,8 +406,8 @@ void PLAT_pollInput(void) {
 								} 
 							}					 */
 					}
-				else if (code==RAW_PLUS)	{ btn = BTN_PLUS; 		id = BTN_ID_PLUS; }
-				else if (code==RAW_MINUS)	{ btn = BTN_MINUS; 		id = BTN_ID_MINUS; }
+				else if (code==_PLUS_RAW)	{ btn = BTN_PLUS; 		id = BTN_ID_PLUS; }
+				else if (code==_MINUS_RAW)	{ btn = BTN_MINUS; 		id = BTN_ID_MINUS; }
 				else if (code==RAW_POWER)	{ btn = BTN_POWER; 		id = BTN_ID_POWER; }
 			}
 			if (type==EV_ABS) {  // (range -1800 0 +1800)
@@ -372,19 +428,37 @@ void PLAT_pollInput(void) {
 				if (code==4) {  //right stick vertical analog (-1800 up / +1800 down)
 					pad.raxis.y =  map(value ,-1800,1800,-0x7fff,0x7fff);
 				}
+				if (code==16) {  //rg351p dpad left = -1, right = 1
+					if (value == 1) { pressed = 1 ; btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; prev_button_pressed_horiz = BTN_DPAD_RIGHT;}
+					if (value == -1) { pressed = 1 ; btn = BTN_DPAD_LEFT; id = BTN_ID_DPAD_LEFT; prev_button_pressed_horiz = BTN_DPAD_LEFT;}
+					if (value == 0) { pressed = 0; btn = prev_button_pressed_horiz; }
+					
+				}
+				if (code==17) {  //rg351p dpad up = -1, down = 1
+					if (value == 1) { pressed = 1; btn = BTN_DPAD_DOWN; id = BTN_ID_DPAD_DOWN; prev_button_pressed_vert = BTN_DPAD_DOWN; }
+					if (value == -1) { pressed = 1; btn = BTN_DPAD_UP; id = BTN_ID_DPAD_UP; prev_button_pressed_vert = BTN_DPAD_UP; }
+					if (value == 0) { pressed = 0; btn = prev_button_pressed_vert; }
+				}
 			}
 			//if ((btn!=BTN_NONE)&&(btn!=BTN_MENU)) PWR_Actions = 1;
 			if (btn==BTN_NONE) continue;
 
 			if (!pressed) {
+				if (pad.is_pressed & btn) {
+					if ((tick - pad.begin_time[id]) > (PAD_REPEAT_DELAY + PAD_REPEAT_INTERVAL)) {
+						pad.just_released	|= btn; // set
+					} else {
+						pad.just_released_short	|= btn; // set
+					}
+				}
 				pad.is_pressed		&= ~btn; // unset
 				pad.just_repeated	&= ~btn; // unset
-				pad.just_released	|= btn; // set
+				pad.begin_time[id] = 0;
 			}
 			else if ((pad.is_pressed & btn)==BTN_NONE) {
 				pad.just_pressed	|= btn; // set
-				pad.just_repeated	|= btn; // set
 				pad.is_pressed		|= btn; // set
+				pad.begin_time[id]  = tick;
 				pad.repeat_at[id]	= tick + PAD_REPEAT_DELAY;
 			}
 		}
@@ -468,26 +542,31 @@ int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max;
 
 SDL_Surface* PLAT_initVideo(void) {
 
+	//set default cpu frequencies only if defined, useful for cases where the initvideo is reqquested out of the system.
+	if (getenv("CPU_SPEED_MENU") != NULL && getenv("CPU_SPEED_POWERSAVE") != NULL && getenv("CPU_SPEED_GAME") != NULL && getenv("CPU_SPEED_PERF") != NULL && getenv("CPU_SPEED_MAX") != NULL) {
 	//looks for environment cpu frequencies
-	cpufreq_menu = atoi(getenv("CPU_SPEED_MENU"));
-	LOG_info("CPU_SPEED_MENU = %d\n", cpufreq_menu);
-	cpufreq_powersave= atoi(getenv("CPU_SPEED_POWERSAVE"));
-	LOG_info("CPU_SPEED_POWERSAVE = %d\n", cpufreq_powersave);
-	cpufreq_game = atoi(getenv("CPU_SPEED_GAME"));	
-	LOG_info("CPU_SPEED_GAME = %d\n", cpufreq_game);
-	cpufreq_perf = atoi(getenv("CPU_SPEED_PERF"));
-	LOG_info("CPU_SPEED_PERF = %d\n", cpufreq_perf);
-	cpufreq_max = atoi(getenv("CPU_SPEED_MAX"));
-	LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
-
-
+		cpufreq_menu = atoi(getenv("CPU_SPEED_MENU"));
+		LOG_info("CPU_SPEED_MENU = %d\n", cpufreq_menu);
+		cpufreq_powersave= atoi(getenv("CPU_SPEED_POWERSAVE"));
+		LOG_info("CPU_SPEED_POWERSAVE = %d\n", cpufreq_powersave);
+		cpufreq_game = atoi(getenv("CPU_SPEED_GAME"));	
+		LOG_info("CPU_SPEED_GAME = %d\n", cpufreq_game);
+		cpufreq_perf = atoi(getenv("CPU_SPEED_PERF"));
+		LOG_info("CPU_SPEED_PERF = %d\n", cpufreq_perf);
+		cpufreq_max = atoi(getenv("CPU_SPEED_MAX"));
+		LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
+	} 
+	
+	if (exists(SYSTEM_PATH "/menumissing.txt")) {
+		unlink(SYSTEM_PATH "/menumissing.txt");
+	}
 
 	IOCTLttyON();
 	vid.fdfb = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
 	
 	drmModeRes *res;
 	drmModeConnector *conn;
-	
+	FIXED_SCALE = _FIXED_SCALE;
 	int w,p,h,hz;
 	//get_fbinfo();
 	w = FIXED_WIDTH;
@@ -514,8 +593,11 @@ SDL_Surface* PLAT_initVideo(void) {
 			isrgb30 = 1;
 		}
 	} else {
-		//is the r36s
-		
+		//is the rk3326 based devices mostly r36s/r40xx/r36s_plus/rg351p/v10
+		if (access("/dev/input/by-path/platform-odroidgo2-joypad-event-joystick",F_OK)==0) {
+			//is the powkiddy v10
+			isv10 = 1;
+		}
 	}
 
 	if (is353v || isrgb30) {
@@ -550,7 +632,7 @@ SDL_Surface* PLAT_initVideo(void) {
 		vid.rotate = getInt(ROTATE_SYSTEM_PATH) &3;
 	}
 
-	vid.rotategame = (4-vid.rotate)&3;
+	
 	GAME_WIDTH = DEVICE_WIDTH;
 	GAME_HEIGHT = DEVICE_HEIGHT;
 
@@ -600,9 +682,9 @@ SDL_Surface* PLAT_initVideo(void) {
 			}
 			if ((conn->modes[c].vdisplay == 768) && (conn->modes[c].hdisplay == 1024) && (conn->modes[c].vrefresh == 61)) {
 				LOG_info("This is an r40xx pro max (4:3 4\"screen)\n");fflush(stdout);
-				DEVICE_WIDTH=720; //better menu scaling on large 4:3 screen
-				DEVICE_HEIGHT=540; //better menu scaling on large 4:3 screen
-				DEVICE_PITCH=1440;
+				DEVICE_WIDTH=1024; //better menu scaling on large 4:3 screen
+				DEVICE_HEIGHT=768; //better menu scaling on large 4:3 screen
+				DEVICE_PITCH=2048;
 				GAME_WIDTH=1024;
 				GAME_HEIGHT=768;
 				vid.width = 1024;
@@ -612,7 +694,52 @@ SDL_Surface* PLAT_initVideo(void) {
 				p = 2048;
 				hz = 61;
 				isr40xx=1;
+				FIXED_SCALE = 3;
+				if (getenv("COMMANDER_SCREEN_FIX")!=NULL) {
+					DEVICE_WIDTH= 512;
+					DEVICE_HEIGHT = 384;
+					//activate a flag to improve font size and usability of commander.elf
+					setenv("COMMANDER_SCREEN_FIX_320x480","1",1);
+				}
+				if (getenv("MINPUT_SCREEN_FIX")!=NULL) {
+					FIXED_SCALE = 2; 
+				}
 			}
+			if ((conn->modes[c].vdisplay == 480) && (conn->modes[c].hdisplay == 320) && (conn->modes[c].vrefresh == 60)) {
+				LOG_info("This is a v10/rg351p (3:2 3.5\"screen rotated)\n");fflush(stdout);
+				DEVICE_WIDTH=960; //better menu scaling on large 4:3 screen
+				DEVICE_HEIGHT=640; //better menu scaling on large 4:3 screen
+				DEVICE_PITCH=960;
+				GAME_WIDTH=320;
+				GAME_HEIGHT=480;
+				vid.width = 480;
+				vid.height = 320;
+				w = 320;
+				h = 480;
+				p = 640;
+				vid.rotate = 3;
+				menumissing = 1;
+				int tmpfd = open(SYSTEM_PATH "/menumissing.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
+				if (tmpfd >= 0) {
+					close(tmpfd);
+				}
+				isrg351p = 1 - isv10; //avoid to set isrg351p on v10
+				//adjust size for commander.elf on 480x320 screens
+				if (getenv("COMMANDER_SCREEN_FIX")!=NULL) {
+					DEVICE_WIDTH= 480;
+					DEVICE_HEIGHT = 320;
+					//activate a flag to improve font size and usability of commander.elf
+					setenv("COMMANDER_SCREEN_FIX_320x480","1",1);
+				}
+				FIXED_SCALE = 3;
+				if (getenv("MINPUT_SCREEN_FIX")!=NULL) {
+					FIXED_SCALE = 2; 
+				}
+				
+			}
+			
+			vid.rotategame = (4-vid.rotate)&3;
+			
 			LOG_info("Found ConnectorID %i : mode %ux%u@%dHz\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
 			if (conn->modes[c].vdisplay == h && conn->modes[c].hdisplay == w && conn->modes[c].vrefresh == hz) {
 				LOG_info("Selected ConnectorID %i : mode %ux%u@%dHz found\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
@@ -680,12 +807,19 @@ SDL_Surface* PLAT_initVideo(void) {
 		LOG_info("BUF%d: %d %d %d %d %d\n", thispage, creq.width, creq.height, creq.bpp, creq.pitch, creq.handle);fflush(stdout);fflush(stdout);
 	}
 
+	InitAssetRects();
+
 	vid.page = 0;
 	vid.renderingGame = 0;
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);	
 	vid.screen3 = SDL_CreateRGBSurface(0, vid.width, vid.height, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screengame =  SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
+	LOG_info("vid.screen: %ix%i\n", vid.screen->w, vid.screen->h);fflush(stdout);
+	LOG_info("vid.screengame: %ix%i\n", vid.screengame->w, vid.screengame->h);fflush(stdout);
+	LOG_info("vid.screen2: %ix%i\n", vid.screen2->w, vid.screen2->h);fflush(stdout);
+	LOG_info("vid.screen3: %ix%i\n", vid.screen3->w, vid.screen3->h);fflush(stdout);
+
 	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
 }
@@ -708,6 +842,7 @@ void PLAT_quitVideo(void) {
 	memset(&dreq, 0, sizeof(dreq));
 	dreq.handle = vid.handle[1];
 	drmIoctl(vid.fdfb, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
+	unlink(SYSTEM_PATH "/menumissing.txt");
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {
@@ -922,7 +1057,7 @@ static struct OVL_Context {
 } ovl;
 
 SDL_Surface* PLAT_initOverlay(void) {
-	ovl.overlay = SDL_CreateRGBSurface(SDL_SWSURFACE, SCALE2(OVERLAY_WIDTH,OVERLAY_HEIGHT),OVERLAY_DEPTH,OVERLAY_RGBA_MASK);
+	ovl.overlay = SDL_CreateRGBSurface(SDL_SWSURFACE, SCALE1(OVERLAY_WIDTH), SCALE1(OVERLAY_HEIGHT),OVERLAY_DEPTH,OVERLAY_RGBA_MASK);
 	return ovl.overlay;
 }
 void PLAT_quitOverlay(void) {
