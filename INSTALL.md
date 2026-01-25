@@ -245,7 +245,7 @@ The TF1 sdcard is used to boot MinUI while the second is used to store minui, al
 
 # R36S Single SDCard method:
 
-The r36s platform supports: Anbernic rg353p(s), v(s) and m while arc is not tested, GameConsole r36s, r36sPlus (4" 1:1) and r40xx pro max (4" 4:3).
+The r36s platform supports: Anbernic rg353p(s), v(s) and m while arc is not tested, GameConsole r36s, r36sPlus (4" 1:1) and r40xx pro max (4" 4:3), Powkiddy rgb30 and v10.
 
 MyMinUI for r36s is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
 MyMinUI for rg353x is built over the latest official ArkOS image for available here at the end of the page: 
@@ -273,6 +273,7 @@ the partition EASYROMS must contains now: (+ all the arkos stuff)
     │       ├── emulationstation.sh
     │       ├── emulationstation.sh.es
     │       ├── r36s.sh
+    │       ├── r36s_stage2.sh
     │       └── EnableMyMinUI.sh
     └── tools
         └── EnableMyMinUI.sh
@@ -288,7 +289,7 @@ Once installation process is completed press the PWR button to shutdown the devi
 
 # R36S Two SDCard method:
 
-The r36s platform supports: Anbernic rg353p(s), v(s) and m while arc is not tested, GameConsole r36s, r36sPlus (4" 1:1) and r40xx pro max (4" 4:3).
+The r36s platform supports: Anbernic rg353p(s), v(s) and m while arc is not tested, GameConsole r36s, r36sPlus (4" 1:1) and r40xx pro max (4" 4:3), Powkiddy rgb30 and v10.
 
 MyMinUI for r36s is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
 MyMinUI for rg353x is built over the latest official ArkOS image available at the end of the page: 
@@ -314,6 +315,7 @@ the partition EASYROMS on FIRST sdcard must contains now: (+ all the akos stuff)
     │       ├── emulationstation.sh
     │       ├── emulationstation.sh.es
     │       ├── r36s.sh
+    │       ├── r36s_stage2.sh
     │       └── EnableMyMinUI.sh
     └── tools
         └── EnableMyMinUI.sh
@@ -335,15 +337,13 @@ The SECOND sdcard file structure must be:
     ├── emulationstation.sh
     ├── emulationstation.sh.es
     ├── r36s.sh
+    ├── r36s_stage2.sh
     └── EnableMyMinUI.sh
 </pre>
 
 While in EmulationStation go to options->Tools then run the tool EnableMyMinUI.sh 
 at reboot the installation process will start showing the screen "installing MyMinUI..."
 Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
-
-The r36s platform supports: Anbernic rg353p(s), v(s) and m while arc is not tested, GameConsole r36s, r36sPlus (4" 1:1) and r40xx pro max (4" 4:3).
-
 
 # Share sdcard across other devices:
 
