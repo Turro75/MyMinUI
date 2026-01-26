@@ -12,7 +12,66 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 - Additional emulators (MAME2003-PLUS)
 - Base and Extras are merged into one Full release
 
+## Main features added by MyMinUI to Min/FinUI till Today:
+  - completely rewritten CPU rendering engine based on neon, multicores and double buffering to maximize performances avoiding screen tearing effect
+  - provide MAX overclock setting
+  - png boxart supported for systems and roms
+  - added Fancy Mode to show boxart and selecting save states using previews.
+  - integrated tool to convert existing boxart files to another size applying a custom blend level
+  - integrated tool to make a live boxart within the in game menu 
+  - improved multidisc roms support (added pbp multidisc files)
+  - cheats support (taken from NextUI)
+  - extended debug HUD reporting fps rendered and generated, cpuload (per core), cpufreq, source img size and current resolution and orientation
+  - auto rotate games according to rom
+  - ability to map left analog stick as dpad and ABXY buttons as right analog stick
+  - play as player X feature that allows impersonating p2,p3 and p4.
+  - auto detect 15,16 and 32bits source frame img.
+  - implement audio fix (taken from NextUI) for better audio handling on some emulators.
+  - reworked install/update process to let the user simply copying the release file to the sdcard
+  - moved from libSDL to libSDL2
+  - add 256MB of swapfile on miyoomini and rg35xx allowing neogeo games able to run.
+  - added several emulators:
+    - Prboom
+    - native Pico8 support (needs purchased pico8 rpi binary)
+    - Final Burn Neo
+    - NeoGeo (Final Burn Neo)
+    - NeoGeoCD
+    - Nintendo DS (taken from Steward-fu nds, only miyoo mini and a30)
+    - TyrQuake
+    - Wonderswan Color
+    - Atari 2600/5200/7800
+    - Dosbox libretro
+    - Amiga (not very good)
+
+
 # New features of MyMinUI:
+
+# Release 26/01/2026
+
+!IMPORTANT!: made some improvement in the install/update, overwrite the folders: m21, r36s in the sdcard to use the new process.
+
+Whats' new:
+
+### All:
+  - some hidden improvements to menu appareance to help handling screens with unusual resolution
+  - adding/removing a rom to favorites no longer results in menu restart
+  - improved startup core code to be more compliant to libretro guidelines. Useful for future core additions 
+  - reviewed some doc in repo 
+
+### Miyoomini:
+  - added support to Miyoomini Flip
+  - restored native screen res (752x560) on mmv4 and mini flip
+  - fix screen resolution at programs exits that made pico8 native unable to initialize the screen
+  - improved install/update process
+
+### r36s: 
+  - added support to Powkiddy v10 (menu button emulated by select+start)
+  - improved install/update process, now the screen stays active during the the process
+  - improved startup process making easier updates on 2nd sdcard.
+  - updated install instructions
+
+### m21:
+  - improved install/update process, now the screen shows the install image oriented according to the screen 
 
 # Release 18/01/2026
 

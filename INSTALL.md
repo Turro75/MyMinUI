@@ -24,7 +24,7 @@ The sdcard file structure must be:
                 └── installing.png
 </pre>
 
-Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
+Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." then after a while (be patient in this stage as the swap creation process takes time)
 Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
 
@@ -52,7 +52,35 @@ The sdcard file structure must be:
                 └── installing.png
 </pre>
 
-Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
+Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." then after a while (be patient in this stage as the swap creation process takes time)
+Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
+
+
+# Miyoo Mini Flip:
+
+Format as FAT32 a micro sdcard with enough space to contains all Your games, the volume name assigned to the partition doesn't matter.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-miyoomini.zip) there is a folder called "miyoo285" copy that folder as is in the FAT32 partition created above.
+Copy also the whole release zip file (leave it zipped) in the FAT32 partition created above.
+
+The sdcard file structure must be:
+<pre>
+├── MyMinUI-YYYYMMDDb-0-miyoomini.zip
+└── miyoo285
+    └── app
+        ├── miyoomini.sh
+        ├── my282.sh
+        ├── MainUI
+        ├── keymon
+        └── .tmp_update
+            ├── miyoomini.sh
+            ├── updater
+            └── miyoomini
+                ├── show.elf
+                ├── updating.png
+                └── installing.png
+</pre>
+
+Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." then after a while (be patient in this stage as the swap creation process takes time)
 Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
 
@@ -111,6 +139,7 @@ The sdcard file structure must be:
     │   ├── libSDL-1.2.so.0
     │   ├── libpng16.so.16
     │   ├── libfuse.so.2
+    │   ├── libmsettings.so 
     │   ├── libz.so.1
     │   ├── libSDL2_image-2.0.so.0
     │   ├── libSDL2_ttf-2.0.so.0
@@ -124,7 +153,7 @@ The sdcard file structure must be:
         └── show.elf
 </pre>
 
-Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
+Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." then after a while (be patient in this stage as the swap creation process takes time)
 Once installation process is completed switch off the PWR switch to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
 
@@ -271,6 +300,7 @@ the partition EASYROMS must contains now: (+ the whole arkos stuff)
    │       ├── emulationstation.sh.ra
    │       ├── emulationstation.sh
    │       ├── emulationstation.sh.es
+   │       ├── libmsettings.so
    │       ├── r36s.sh
    │       ├── r36s_stage2.sh
    │       └── EnableMyMinUI.sh
@@ -280,7 +310,7 @@ the partition EASYROMS must contains now: (+ the whole arkos stuff)
 
 Insert the sdcard in the TF1 slot and boot the device
 While in EmulationStation go to options->Tools then run the tool EnableMyMinUI.sh and wait for the device to reboot
-at reboot the installation process will start showing the screen "installing MyMinUI..."
+at reboot the installation process will start showing the screen "installing MyMinUI...".
 Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
 
@@ -312,6 +342,7 @@ the partition EASYROMS on FIRST sdcard must contains now: (+ the whole arkos stu
  │       ├── emulationstation.sh.ra
  │       ├── emulationstation.sh
  │       ├── emulationstation.sh.es
+ │       ├── libmsettings.so 
  │       ├── r36s.sh
  │       ├── r36s_stage2.sh
  │       └── EnableMyMinUI.sh
@@ -334,6 +365,7 @@ The SECOND sdcard file structure must be:
     ├── emulationstation.sh.ra
     ├── emulationstation.sh
     ├── emulationstation.sh.es
+    ├── libmsettings.so
     ├── r36s.sh
     ├── r36s_stage2.sh
     └── EnableMyMinUI.sh
