@@ -37,27 +37,29 @@ int main (int argc, char *argv[]) {
 	InitSettings();
 	int is353v = 0;
 	int isrgb30 = 0;
+	int isv10 = 0;
 	int _MENU_RAW = CODE_MENU;
 	int _START_RAW = RAW_START;
 	int _SELECT_RAW = RAW_SELECT;
+	int _PLUS_RAW = CODE_PLUS;
+	int _MINUS_RAW = CODE_MINUS;
 
 	if (access("/dev/input/by-path/platform-fdd40000.i2c-platform-rk805-pwrkey-event",F_OK)==0) {
-			//is the rk3566 based rg353v/353p/rgb30
-			_START_RAW = RAW_START_353;
-			_SELECT_RAW = RAW_SELECT_353;			
-			if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
-				//is the rg353v
-				_MENU_RAW = CODE_MENU_353;
-				is353v = 1;
-			} else {
-				//is the rgb30
-				isrgb30 = 1;
-				//NO MENU BUTTON...
-			}
+		//is the rk3566 based rg353v/353p/rgb30		
+		if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
+			//is the rg353v/p
+			is353v = 1;
 		} else {
-			//is the r36s
-			
+			//is the rgb30
+			isrgb30 = 1;
 		}
+	} else {
+		//is the rk3326 based devices mostly r36s/r40xx/r36s_plus/rg351p/v10
+		if (access("/dev/input/by-path/platform-odroidgo2-joypad-event-joystick",F_OK)==0) {
+			//is the powkiddy v10
+			isv10 = 1;
+		}
+	}
 
 	if (is353v==1) {
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
@@ -67,6 +69,12 @@ int main (int argc, char *argv[]) {
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		inputs[2] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+	} else if (isv10==1) {
+		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
+		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		inputs[2] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+		_PLUS_RAW= 708;
+		_MINUS_RAW= 705;
 	} else {
 		//r36s
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
@@ -119,11 +127,11 @@ int main (int argc, char *argv[]) {
 				if (ev.code == _START_RAW) {
 					start_pressed = val;
 				}
-				if (ev.code == CODE_PLUS) {
+				if (ev.code == _PLUS_RAW) {
 					up_pressed = up_just_pressed = val;
 					if (val) up_repeat_at = now + 300;
 				}
-				if (ev.code == CODE_MINUS) {
+				if (ev.code == _MINUS_RAW) {
 					down_pressed = down_just_pressed = val;
 					if (val) down_repeat_at = now + 300;
 				}
