@@ -38,6 +38,7 @@ int main (int argc, char *argv[]) {
 	int is353v = 0;
 	int isrgb30 = 0;
 	int isv10 = 0;
+	int isrg351p = 0;
 	int _MENU_RAW = CODE_MENU;
 	int _START_RAW = RAW_START;
 	int _SELECT_RAW = RAW_SELECT;
@@ -58,6 +59,9 @@ int main (int argc, char *argv[]) {
 		if (access("/dev/input/by-path/platform-odroidgo2-joypad-event-joystick",F_OK)==0) {
 			//is the powkiddy v10
 			isv10 = 1;
+		} else if (access("/dev/input/by-path/platform-ff300000.usb-usb-0:1.2:1.0-event-joystick",F_OK)==0) {
+			//is the rg351p
+			isrg351p = 1;
 		}
 	}
 
@@ -65,16 +69,33 @@ int main (int argc, char *argv[]) {
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event4", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+		_MENU_RAW = CODE_MENU_353;
+		_START_RAW = RAW_START_353;
+		_SELECT_RAW = RAW_SELECT_353;
 	} else if (isrgb30==1) {
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		inputs[2] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+		_START_RAW = RAW_START_353;
+		_SELECT_RAW = RAW_SELECT_353;
+		_MENU_RAW = 800; //no menu button on rgb30
 	} else if (isv10==1) {
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		inputs[2] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+		_START_RAW= 709;
+		_SELECT_RAW= 704;
 		_PLUS_RAW= 708;
 		_MINUS_RAW= 705;
+		_MENU_RAW = 800; //no menu button on v10
+	} else if (isrg351p==1) {
+		//check_rumble("/dev/input/event3"); no rumble support?
+		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
+		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
+		inputs[2] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+		_START_RAW = 310;
+		_SELECT_RAW = 311;
+		_MENU_RAW= 800; //no menu button on rg351p
 	} else {
 		//r36s
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power

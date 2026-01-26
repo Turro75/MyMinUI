@@ -577,6 +577,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	is353v = 0;
 	is353p = 0;
 	isrgb30 = 0;
+	isrg351p = 0;
 	isr40xx = 0;
 	isr36splus = 0;
 
@@ -586,8 +587,8 @@ SDL_Surface* PLAT_initVideo(void) {
 			//is the rg353v/p
 			is353v = 1;
 			if (exists(IS_RG353P)){
-			is353p = 1;
-		}
+				is353p = 1;
+			}
 		} else {
 			//is the rgb30
 			isrgb30 = 1;
@@ -597,6 +598,9 @@ SDL_Surface* PLAT_initVideo(void) {
 		if (access("/dev/input/by-path/platform-odroidgo2-joypad-event-joystick",F_OK)==0) {
 			//is the powkiddy v10
 			isv10 = 1;
+		} else if (access("/dev/input/by-path/platform-ff300000.usb-usb-0:1.2:1.0-event-joystick",F_OK)==0) {
+			//is the rg351p
+			//isrg351p = 1; actually set later
 		}
 	}
 
