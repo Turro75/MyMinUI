@@ -140,6 +140,8 @@ int main(int argc, char* argv[]) {
 			writefile("/sys/devices/system/cpu/cpufreq/policy0/scaling_governor", "userspace");
 			writefile("/sys/devices/system/cpu/cpufreq/policy0/scaling_setspeed", clockstr);
 			set_cpuclock(cpu_clock);
+			sprintf(clockstr, "%d", cpu_clock);
+			writefile("/tmp/new_cpu_freq.txt", clockstr);
 			break;
 		}
 	}

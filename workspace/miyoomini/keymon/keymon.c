@@ -229,6 +229,40 @@ static void* runADC(void *arg) {
 	}
 	return 0;
 }
+#define LID_PATH "/sys/devices/soc0/soc/soc:hall-mh248/hallvalue"
+
+int msettingsGetInt(char* path) {
+	int i = 0;
+	FILE *file = fopen(path, "r");
+	if (file!=NULL) {
+		fscanf(file, "%i", &i);
+		fclose(file);
+	}
+	return i;
+}
+static int lid_open_last=0;
+int checkLidChanged(void) {
+	int lid_open=0;
+	if (access(LID_PATH, F_OK)==0) {
+		lid_open = msettingsGetInt(LID_PATH);
+		if (lid_open!=lid_open_last) {
+			lid_open_last = lid_open;
+			return 1; //lid status changed, lid_open_last contains current status
+		}
+	}
+	return 0;
+}
+
+
+//string array that contains alll possible standalone app names that must be paused when lid is closed
+#define NUM_PROCESSSNAME 5
+char * sa_process_name[NUM_PROCESSSNAME] = {
+	"pico8_dyn",
+	"drastic",
+	"MyCommander.elf",
+	"minput.elf",
+	"clock.elf",
+};
 
 int main (int argc, char *argv[]) {
 	initADC();
@@ -238,7 +272,7 @@ int main (int argc, char *argv[]) {
 	// Set Initial Volume / Brightness
 	InitSettings();
 	
-	input_fd = open("/dev/input/event0", O_RDONLY);
+	input_fd = open("/dev/input/event0", O_RDONLY|O_NONBLOCK);
 
 	// Main Loop
 	register uint32_t val;
@@ -247,94 +281,167 @@ int main (int argc, char *argv[]) {
 	register uint32_t menu_pressed = 0;
 	register uint32_t power_pressed = 0;
 	uint32_t repeat_LR = 0;
-	while( read(input_fd, &ev, sizeof(ev)) == sizeof(ev) ) {
-		val = ev.value;
-		if (( ev.type != EV_KEY ) || ( val > REPEAT )) continue;
-		code = ev.code;
-		switch (code) {
-		case BUTTON_MENU:
-			if ( val != REPEAT ) menu_pressed = val;
-			break;
-		case BUTTON_POWER:
-			if ( val != REPEAT ) power_pressed = val;
-			break;
-		case BUTTON_SELECT:
-			if ( val != REPEAT ) button_flag = button_flag & (~SELECT) | (val<<SELECT_BIT);
-			// if (val) {
-			// 	static int tick = 0;
-			// 	char cmd[256];
-			//
-			// 	sprintf(cmd, "ps ax -o pid,nice,comm,args &> /mnt/SDCARD/%04i-nice.txt", tick);
-			// 	system(cmd);
-			//
-			// 	sprintf(cmd, "top -b -n 1 > /mnt/SDCARD/%04i-top.txt", tick++);
-			// 	system(cmd);
-			// }
-			break;
-		case BUTTON_START:
-			if ( val != REPEAT ) button_flag = button_flag & (~START) | (val<<START_BIT);
-			break;
-		case BUTTON_L1:
-		case BUTTON_L2:
-		case BUTTON_MINUS:
-			if (code==BUTTON_MINUS || !is_plus) {
-				if ( val == REPEAT ) {
-					// Adjust repeat speed to 1/2
-					val = repeat_LR;
-					repeat_LR ^= PRESSED;
-				} else {
-					repeat_LR = 0;
-				}
-			
-				if ( val == PRESSED ) {
-					if ((is_plus && !menu_pressed) || button_flag==SELECT) {
-						// VOLUMEDOWN or SELECT + L : volume down
-						val = GetVolume();
-						if (val>0) SetVolume(--val);
-					}
-					else if ((is_plus && menu_pressed) || button_flag==START) {
-						// VOLUMEDOWN or START + L : brightness down
-						val = GetBrightness();
-						if (val>0) SetBrightness(--val);
-					}
+//	uint32_t counter = 0;
+//	uint32_t paused = 0;
+	int last_brightness = GetBrightness();
+	int last_volume = GetVolume();
+	int last_cpufreq = msettingsGetInt("/tmp/now_cpu_freq.txt");	
+	fflush(stdout);
+	while(1){
+
+	/*	if (paused == 1 && counter % 60 == 0) {
+			// when paused, still check charging status every second
+			system("top -b -n 1 >> /mnt/SDCARD/paused-top.txt");
+			counter = 0;
+		}
+		counter++;
+	*/
+		if (checkLidChanged()==1) {	//lid changed status
+			int found = 0;
+			char sa_running_name[256];
+			for (int i=0; i<NUM_PROCESSSNAME; i++){
+				char tmpstr[256];
+				sprintf(tmpstr, "/bin/pidof %s > /dev/null", sa_process_name[i]);
+				if(0 == system(tmpstr)){
+					//read name of standalone app					
+					sprintf(sa_running_name, "%s", sa_process_name[i]);
+					found = 1;
+					break;
 				}
 			}
-			break;
-		case BUTTON_R1:
-		case BUTTON_R2:
-		case BUTTON_PLUS:
-			if (code==BUTTON_PLUS || !is_plus) {
-				if ( val == REPEAT ) {
-					// Adjust repeat speed to 1/2
-					val = repeat_LR;
-					repeat_LR ^= PRESSED;
+			if (found==1){
+		//		printf("Standalone app name: %s\n", sa_running_name); fflush(stdout);
+				//check if lid is open/close
+				char sa_cmd[256];
+				int blankfd = -1;
+				if (lid_open_last==0){ //primo keymon di test a lemonzest
+		//			printf("lid_is_CLOSED\n"); fflush(stdout);
+					// Lid now closed, turn off backlight and pause the standalone process
+					last_brightness = GetBrightness();
+					last_volume = GetVolume();
+					SetBrightness(0);
+					SetVolume(0);
+					blankfd = open("/proc/mi_modules/fb/mi_fb0", O_WRONLY);
+					write(blankfd, "GUI_SHOW 0 off", 14); //blank screen
+					close(blankfd);
+					blankfd = -1;
+					sprintf(sa_cmd, "/usr/bin/killall -SIGSTOP %s", sa_running_name);
+					system(sa_cmd);
+					//underclock to minimum cpu clock to save battery when lid closed 
+					last_cpufreq = msettingsGetInt("/tmp/new_cpu_freq.txt");	
+					sprintf(sa_cmd, "/mnt/SDCARD/.system/miyoomini/bin/overclock.elf 240000");
+					system(sa_cmd);
+					//paused=1;
 				} else {
-					repeat_LR = 0;
-				}
-			
-				if ( val == PRESSED ) {
-					if ((is_plus && !menu_pressed) || button_flag==SELECT) {
-						// VOLUMEUP or SELECT + R : volume up
-						val = GetVolume();
-						if (val<VOLMAX) SetVolume(++val);
-					}
-					else if ((is_plus && menu_pressed) || button_flag==START) {
-						// VOLUMEUP or START + R : brightness up
-						val = GetBrightness();
-						if (val<BRIMAX) SetBrightness(++val);
-					}
+		//			printf("lid_is_OPEN\n"); fflush(stdout);
+		            //restore cpu clock
+					sprintf(sa_cmd, "/mnt/SDCARD/.system/miyoomini/bin/overclock.elf %d", last_cpufreq);
+					system(sa_cmd);
+					// Lid now opened, restore brightness and resume the standalone process
+					SetBrightness(last_brightness);
+					SetVolume(last_volume);					
+					blankfd = open("/proc/mi_modules/fb/mi_fb0", O_WRONLY);
+					write(blankfd, "GUI_SHOW 0 on", 13); //unblank screen
+					close(blankfd);
+					blankfd = -1;
+					//sleep(1); //give some time to the system to stabilize before resuming the app
+					sprintf(sa_cmd, "/usr/bin/killall -SIGCONT %s", sa_running_name);
+					system(sa_cmd);
+					//paused=0;
 				}
 			}
-			break;
-		default:
-			break;
 		}
-		
-		if (menu_pressed && power_pressed) {
-			menu_pressed = power_pressed = 0;
-			system("shutdown");
-			while (1) pause();
+
+		while ( read(input_fd, &ev, sizeof(ev)) == sizeof(ev) ) {
+
+			val = ev.value;
+			if (( ev.type != EV_KEY ) || ( val > REPEAT )) continue;
+			code = ev.code;
+			switch (code) {
+				case BUTTON_MENU:
+					if ( val != REPEAT ) menu_pressed = val;
+					break;
+				case BUTTON_POWER:
+					if ( val != REPEAT ) power_pressed = val;
+					break;
+				case BUTTON_SELECT:
+					if ( val != REPEAT ) button_flag = button_flag & (~SELECT) | (val<<SELECT_BIT);
+					// if (val) {
+					// 	static int tick = 0;
+					// 	char cmd[256];
+					//
+					// 	sprintf(cmd, "ps ax -o pid,nice,comm,args &> /mnt/SDCARD/%04i-nice.txt", tick);
+					// 	system(cmd);
+					//
+					// 	sprintf(cmd, "top -b -n 1 > /mnt/SDCARD/%04i-top.txt", tick++);
+					// 	system(cmd);
+					// }
+					break;
+				case BUTTON_START:
+					if ( val != REPEAT ) button_flag = button_flag & (~START) | (val<<START_BIT);
+					break;
+				case BUTTON_L1:
+				case BUTTON_L2:
+				case BUTTON_MINUS:
+					if (code==BUTTON_MINUS || !is_plus) {
+						if ( val == REPEAT ) {
+							// Adjust repeat speed to 1/2
+							val = repeat_LR;
+							repeat_LR ^= PRESSED;
+						} else {
+							repeat_LR = 0;
+						}
+					
+						if ( val == PRESSED ) {
+							if ((is_plus && !menu_pressed) || button_flag==SELECT) {
+								// VOLUMEDOWN or SELECT + L : volume down
+								val = GetVolume();
+								if (val>0) SetVolume(--val);
+							}
+							else if ((is_plus && menu_pressed) || button_flag==START) {
+								// VOLUMEDOWN or START + L : brightness down
+								val = GetBrightness();
+								if (val>0) SetBrightness(--val);
+							}
+						}
+					}
+					break;
+				case BUTTON_R1:
+				case BUTTON_R2:
+				case BUTTON_PLUS:
+					if (code==BUTTON_PLUS || !is_plus) {
+						if ( val == REPEAT ) {
+							// Adjust repeat speed to 1/2
+							val = repeat_LR;
+							repeat_LR ^= PRESSED;
+						} else {
+							repeat_LR = 0;
+						}
+					
+						if ( val == PRESSED ) {
+							if ((is_plus && !menu_pressed) || button_flag==SELECT) {
+								// VOLUMEUP or SELECT + R : volume up
+								val = GetVolume();
+								if (val<VOLMAX) SetVolume(++val);
+							}
+							else if ((is_plus && menu_pressed) || button_flag==START) {
+								// VOLUMEUP or START + R : brightness up
+								val = GetBrightness();
+								if (val<BRIMAX) SetBrightness(++val);
+							}
+						}
+					}
+					break;
+				default:
+					break;
+			}
+
+			if (menu_pressed && power_pressed) {
+				menu_pressed = power_pressed = 0;
+				system("shutdown");
+				while (1) pause();
+			}
 		}
+		usleep(16667); // 60fps
 	}
-	ERROR("Failed to read input event");
 }
