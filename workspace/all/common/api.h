@@ -489,6 +489,7 @@ int PLAT_isOnline(void);
 int PLAT_getNumProcessors(void);
 void PLAT_getAudioOutput(void);
 uint32_t PLAT_screenMemSize(void);
+int PLAT_getProcessorTemp(void);
 
 int PLAT_getScreenRotation(int game);
 SDL_Surface* PLAT_getScreenGame(void);

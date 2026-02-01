@@ -755,6 +755,24 @@ int PLAT_getNumProcessors(void) {
 	return 2;
 }
 
+#define TEMP_PATH "/sys/devices/system/cpu/cpufreq/temp_out"
+// the file contains: "Temp=XX"
+int PLAT_getProcessorTemp(void) {
+	FILE *file = fopen(TEMP_PATH, "r");
+    if (file == NULL) {
+        //perror("Errore nell'apertura del file");
+        return -1; // Indica errore
+    }
+	int temp = -1;
+	if (fscanf(file, "Temp=%d", &temp) == 1) {
+		// Lettura riuscita, temp contiene il valore della temperatura
+	} else {
+		// Gestione dell'errore di lettura
+		temp = -1; // Indica errore
+	}
+	fclose(file);
+	return temp;
+}
 
 uint32_t PLAT_screenMemSize(void) {
 

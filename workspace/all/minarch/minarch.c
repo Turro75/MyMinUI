@@ -3153,7 +3153,24 @@ static const char* bitmap_font[] = {
 		" 11       "
 		"11        "
 		"1111111111"
-		"1111111111",			
+		"1111111111",
+	['c'] = 
+		"  1111    "
+		" 11  11   "
+		"11    11  "
+		" 11  11   "
+		"  1111    "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"          ",				
 };
 
 /*static void blitBitmapTextOrig(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
@@ -3306,7 +3323,8 @@ void getCPUusage(char * data) {
        up[counter]=up1[counter];
        idle[counter]=idle1[counter];
      }
-	sprintf(data,"%s/%dMHz", data, cur_cpu_freq);
+	int cputemp = PLAT_getProcessorTemp();	
+	sprintf(data,"%s/%dc/%dMHz", data, cputemp, cur_cpu_freq);
 	fclose(fp);
 }
 

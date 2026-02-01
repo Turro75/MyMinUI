@@ -1424,6 +1424,11 @@ int PLAT_getNumProcessors(void) {
 	return sysconf(_SC_NPROCESSORS_ONLN);
 }
 
+int PLAT_getProcessorTemp(void) {
+	int temp = getInt("/sys/class/thermal/thermal_zone0/temp");
+	return temp / 1000;
+}
+
 uint32_t PLAT_screenMemSize(void) {
 	return vid.screen_size;
 }
