@@ -67,6 +67,8 @@ fi
 
 if [ $PID -ne -1 ]; then
 	kill -3 $PID
+	# just updated, reboot here to prevent black screen on some device 
+	/usr/sbin/reboot -f
 fi
 
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin

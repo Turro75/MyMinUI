@@ -745,7 +745,7 @@ SDL_Surface* PLAT_initVideo(void) {
 			vid.rotategame = (4-vid.rotate)&3;
 			
 			LOG_info("Found ConnectorID %i : mode %ux%u@%dHz\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
-			if (conn->modes[c].vdisplay == h && conn->modes[c].hdisplay == w && conn->modes[c].vrefresh == hz) {
+			if ((res->count_connectors == 1)||(conn->modes[c].vdisplay == h && conn->modes[c].hdisplay == w && conn->modes[c].vrefresh == hz)) {
 				LOG_info("Selected ConnectorID %i : mode %ux%u@%dHz found\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
 				drmModeEncoder *enc;
 				vid.conn[0] = conn->connector_id;
