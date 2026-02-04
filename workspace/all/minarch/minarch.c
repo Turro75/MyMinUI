@@ -3377,7 +3377,7 @@ SDL_Rect video_refresh_callback_resize_native(void) {
 	LOG_info("Dst_w %d dst_h %d dst_x %d dst_y %d\n", dst_w, dst_h, dst_x, dst_y);fflush(stdout);
 	return retvalue;
 }
-
+/*
 SDL_Rect video_refresh_callback_resize_aspect(void) {
 	LOG_info("RESIZE ASPECT\n");fflush(stdout);
 	//maximum scaling keeping original aspect ratio 
@@ -3408,7 +3408,7 @@ SDL_Rect video_refresh_callback_resize_aspect(void) {
 	return retvalue;
 	//calculate offsets
 }
-
+*/
 SDL_Rect video_refresh_callback_resize_extended(void) {
 	LOG_info("RESIZE EXTENDED\n");fflush(stdout);
 	//maximum scaling keeping original aspect ratio then expand the shortest dimensione to fill better the screen
@@ -3485,7 +3485,7 @@ void video_refresh_callback_resize(void) {
 	SDL_Rect targetarea = {0,0,GAME_WIDTH,GAME_HEIGHT};
 	switch(screen_scaling) {
 		case SCALE_ASPECT: { 
-							targetarea = video_refresh_callback_resize_aspect();
+							targetarea = video_refresh_callback_resize_custom(renderer.src_surface->w, renderer.src_surface->h);
 							resizemode = 'A';
 							break;
 							};
