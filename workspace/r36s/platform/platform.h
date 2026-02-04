@@ -23,6 +23,8 @@ int PLAT_getNumProcessors(void);
 uint32_t PLAT_screenMemSize(void);
 void IOCTLttyON(void);
 
+extern int isrg351p;
+
 #ifdef __cplusplus
 }
 #endif
@@ -119,10 +121,12 @@ void IOCTLttyON(void);
 #define BTN_RESUME 			BTN_X
 #define BTN_SLEEP 			BTN_POWER
 #define BTN_WAKE 			BTN_POWER
-#define BTN_MOD_VOLUME 		BTN_NONE
-#define BTN_MOD_BRIGHTNESS 	BTN_MENU
-#define BTN_MOD_PLUS 		BTN_PLUS
-#define BTN_MOD_MINUS 		BTN_MINUS
+
+#define BTN_MOD_VOLUME 		(isrg351p ? BTN_SELECT : BTN_NONE)
+#define BTN_MOD_BRIGHTNESS 	(isrg351p ? BTN_START : BTN_MENU)
+#define BTN_MOD_PLUS 		(isrg351p ? BTN_R1 : BTN_PLUS)
+#define BTN_MOD_MINUS 		(isrg351p ? BTN_L1 : BTN_MINUS)
+
 
 ///////////////////////////////
 

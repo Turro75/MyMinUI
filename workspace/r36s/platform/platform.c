@@ -150,7 +150,7 @@ static uint32_t PWR_Tick = 0;
 ///////////////////////////////
 static int is353v = 0;
 static int is353p = 0;
-static int isrg351p = 0;
+int isrg351p = 0;
 static int isg350 = 0;
 static int isrgb30 = 0;
 static int isr40xx = 0;
@@ -196,6 +196,7 @@ int check_rumble(char *rumbledevice){
 
 
 void PLAT_initInput(void) {
+	LOG_info("PLAT_initInput start\n");fflush(stdout);
 	if (exists(NOMENU_PATH)) {
 		menumissing = 1;
 	}
@@ -223,10 +224,12 @@ void PLAT_initInput(void) {
 		_START_RAW = RAW_START_353;
 		_SELECT_RAW = RAW_SELECT_353;
 		_MENU_RAW = RAW_MENU_353;
+		LOG_info("Detected RG353V\n");fflush(stdout);
 		// check if is set as rg353p then swap R1/R2 to meet rg353p
 		if (is353p){
 			_R1_RAW = RAW_R2;
 	    	_R2_RAW = RAW_R1;
+			LOG_info("Detected RG353P\n");fflush(stdout);
 		}
 	} else if (isrgb30==1) {
 		//check_rumble("/dev/input/event3"); no rumble support?
@@ -238,21 +241,11 @@ void PLAT_initInput(void) {
 		_L3_RAW = RAW_L3_353;
 		_R3_RAW = RAW_R3_353;
 		menumissing = 1; //no menu button on rgb30
+		LOG_info("Detected RGB30\n");fflush(stdout);
 	} else if (isv10==1) {
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		inputs[2] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
-
-		/* powkiddy v10
-Start = BTN_TRIGGER_HAPPY6, Event code 709 (BTN_TRIGGER_HAPPY6)
-Select = BTN_TRIGGER_HAPPY1, Event code 704 (BTN_TRIGGER_HAPPY1)
-Minus = BTN_TRIGGER_HAPPY2, Event code 705 (BTN_TRIGGER_HAPPY2)
-Plus = BTN_TRIGGER_HAPPY5  Event code 708 (BTN_TRIGGER_HAPPY5)
-Most right shoulder button (R1) = BTN_TR, 
-Right shoulder button (R2) = BTN_Trigger_HAPPY4,  Event code 707 (BTN_TRIGGER_HAPPY4)
-Most left shoulder button (L1) = BTN_TL, 
-Left shoulder button (L2) = BTN_TRIGGER_HAPPY3  Event code 706 (BTN_TRIGGER_HAPPY3)
-*/  
 		_R1_RAW = 311;
 	    _R2_RAW = 707;
 		_L1_RAW = 310;
@@ -264,6 +257,7 @@ Left shoulder button (L2) = BTN_TRIGGER_HAPPY3  Event code 706 (BTN_TRIGGER_HAPP
 		_PLUS_RAW = 708;
 		_MINUS_RAW = 705;
 		menumissing = 1; //no menu button on powkiddy v10
+		LOG_info("Detected V10\n");fflush(stdout);
 	} else if (isrg351p==1) {
 		//check_rumble("/dev/input/event3"); no rumble support?
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
@@ -282,20 +276,24 @@ Left shoulder button (L2) = BTN_TRIGGER_HAPPY3  Event code 706 (BTN_TRIGGER_HAPP
 		_X_RAW = 306;
 		_Y_RAW = 307;
 		menumissing = 1; //no menu button on rg351p
+		LOG_info("Detected RG351P\n");fflush(stdout);
+		// ensure audio is active so the wheel is fully working
+		system("amixer set 'Playback Path' SPK_HP");
+//		system("amixer set 'Playback' 237");
 	} else {
 		//r36s
 		check_rumble("/dev/input/event2");
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		inputs[2] = open("/dev/input/event3", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
-
+		LOG_info("Detected R36S\n");fflush(stdout);
 		_MENU_RAW = RAW_MENU;
 	}
 
 	// test to simulate a volume down pressure to let rg353v working...
 	struct input_event event;
 	event.type = EV_KEY;
-	event.code = RAW_MINUS;
+	event.code = _MINUS_RAW;
 	event.value = 1;
 	write(inputs[2], &event, sizeof(event));
 	usleep(20000);
@@ -411,34 +409,53 @@ void PLAT_pollInput(void) {
 				else if (code==RAW_POWER)	{ btn = BTN_POWER; 		id = BTN_ID_POWER; }
 			}
 			if (type==EV_ABS) {  // (range -1800 0 +1800)
-
-				if (code==0) {  //left stick horizontal analog (-1800 left / +1800 right)
+				if (isrg351p) {
+					//rg351p uses different axis values (0 to 4096)
+					if (code==2) {  //left stick horizontal analog (-1800 left / +1800 right)
+					pad.laxis.x =  map(value ,0,4096,0x7fff,-0x7fff);
+					if (pad.map_leftstick_to_dpad)
+						PAD_setAnalog(BTN_ID_DPAD_LEFT, BTN_ID_DPAD_RIGHT, pad.laxis.x, tick+PAD_REPEAT_DELAY);
+					}
+					if (code==3) {  //left stick vertical analog (-1800 up / +1800 down)
+						pad.laxis.y =  map(value ,0,4096,0x7fff,-0x7fff);
+						if (pad.map_leftstick_to_dpad)
+							PAD_setAnalog(BTN_ID_DPAD_UP,   BTN_ID_DPAD_DOWN,  pad.laxis.y, tick+PAD_REPEAT_DELAY);
+					}
+					if (code==4) {  //right stick horizontal analog (-1800 left / +1800 right)
+						pad.raxis.x =  map(value ,0,4096,-0x7fff,0x7fff);
+					}
+					if (code==5) {  //right stick vertical analog (-1800 up / +1800 down)
+						pad.raxis.y =  map(value ,0,4096,-0x7fff,0x7fff);
+					}	
+					if (code==16) {  //rg351p dpad left = -1, right = 1
+						if (value == 1) { pressed = 1 ; btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; prev_button_pressed_horiz = BTN_DPAD_RIGHT;}
+						if (value == -1) { pressed = 1 ; btn = BTN_DPAD_LEFT; id = BTN_ID_DPAD_LEFT; prev_button_pressed_horiz = BTN_DPAD_LEFT;}
+						if (value == 0) { pressed = 0; btn = prev_button_pressed_horiz; }						
+					}
+					if (code==17) {  //rg351p dpad up = -1, down = 1
+						if (value == 1) { pressed = 1; btn = BTN_DPAD_DOWN; id = BTN_ID_DPAD_DOWN; prev_button_pressed_vert = BTN_DPAD_DOWN; }
+						if (value == -1) { pressed = 1; btn = BTN_DPAD_UP; id = BTN_ID_DPAD_UP; prev_button_pressed_vert = BTN_DPAD_UP; }
+						if (value == 0) { pressed = 0; btn = prev_button_pressed_vert; }
+					}
+				} else {
+					//other devices
+					if (code==0) {  //left stick horizontal analog (-1800 left / +1800 right)
 					pad.laxis.x =  map(value ,-1800,1800,-0x7fff,0x7fff);
 					if (pad.map_leftstick_to_dpad)
 						PAD_setAnalog(BTN_ID_DPAD_LEFT, BTN_ID_DPAD_RIGHT, pad.laxis.x, tick+PAD_REPEAT_DELAY);
-				}
-				if (code==1) {  //left stick vertical analog (-1800 up / +1800 down)
-					pad.laxis.y =  map(value ,-1800,1800,-0x7fff,0x7fff);
-					if (pad.map_leftstick_to_dpad)
-						PAD_setAnalog(BTN_ID_DPAD_UP,   BTN_ID_DPAD_DOWN,  pad.laxis.y, tick+PAD_REPEAT_DELAY);
-				}
-				if (code==3) {  //right stick horizontal analog (-1800 left / +1800 right)
-					pad.raxis.x =  map(value ,-1800,1800,-0x7fff,0x7fff);
-				}
-				if (code==4) {  //right stick vertical analog (-1800 up / +1800 down)
-					pad.raxis.y =  map(value ,-1800,1800,-0x7fff,0x7fff);
-				}
-				if (code==16) {  //rg351p dpad left = -1, right = 1
-					if (value == 1) { pressed = 1 ; btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; prev_button_pressed_horiz = BTN_DPAD_RIGHT;}
-					if (value == -1) { pressed = 1 ; btn = BTN_DPAD_LEFT; id = BTN_ID_DPAD_LEFT; prev_button_pressed_horiz = BTN_DPAD_LEFT;}
-					if (value == 0) { pressed = 0; btn = prev_button_pressed_horiz; }
-					
-				}
-				if (code==17) {  //rg351p dpad up = -1, down = 1
-					if (value == 1) { pressed = 1; btn = BTN_DPAD_DOWN; id = BTN_ID_DPAD_DOWN; prev_button_pressed_vert = BTN_DPAD_DOWN; }
-					if (value == -1) { pressed = 1; btn = BTN_DPAD_UP; id = BTN_ID_DPAD_UP; prev_button_pressed_vert = BTN_DPAD_UP; }
-					if (value == 0) { pressed = 0; btn = prev_button_pressed_vert; }
-				}
+					}
+					if (code==1) {  //left stick vertical analog (-1800 up / +1800 down)
+						pad.laxis.y =  map(value ,-1800,1800,-0x7fff,0x7fff);
+						if (pad.map_leftstick_to_dpad)
+							PAD_setAnalog(BTN_ID_DPAD_UP,   BTN_ID_DPAD_DOWN,  pad.laxis.y, tick+PAD_REPEAT_DELAY);
+					}	
+					if (code==3 && !isrg351p) {  //right stick horizontal analog (-1800 left / +1800 right)
+						pad.raxis.x =  map(value ,-1800,1800,-0x7fff,0x7fff);
+					}
+					if (code==4 && !isrg351p) {  //right stick vertical analog (-1800 up / +1800 down)
+						pad.raxis.y =  map(value ,-1800,1800,-0x7fff,0x7fff);
+					}
+				}	
 			}
 			//if ((btn!=BTN_NONE)&&(btn!=BTN_MENU)) PWR_Actions = 1;
 			if (btn==BTN_NONE) continue;
@@ -557,9 +574,9 @@ SDL_Surface* PLAT_initVideo(void) {
 		LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
 	} 
 	
-	if (exists(SYSTEM_PATH "/menumissing.txt")) {
-		unlink(SYSTEM_PATH "/menumissing.txt");
-	}
+	//if (exists(SYSTEM_PATH "/menumissing.txt")) {
+	//	unlink(SYSTEM_PATH "/menumissing.txt");
+	//}
 
 	IOCTLttyON();
 	vid.fdfb = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
@@ -585,22 +602,27 @@ SDL_Surface* PLAT_initVideo(void) {
 		//is the rk3566 based rg353v/353p/rgb30		
 		if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
 			//is the rg353v/p
+			LOG_info("Detected RG353V\n");fflush(stdout);
 			is353v = 1;
 			if (exists(IS_RG353P)){
 				is353p = 1;
+				LOG_info("Detected RG353P\n");fflush(stdout);
 			}
 		} else {
 			//is the rgb30
 			isrgb30 = 1;
+			LOG_info("Detected RGB30\n");fflush(stdout);
 		}
 	} else {
 		//is the rk3326 based devices mostly r36s/r40xx/r36s_plus/rg351p/v10
 		if (access("/dev/input/by-path/platform-odroidgo2-joypad-event-joystick",F_OK)==0) {
 			//is the powkiddy v10
 			isv10 = 1;
+			LOG_info("Detected V10\n");fflush(stdout);
 		} else if (access("/dev/input/by-path/platform-ff300000.usb-usb-0:1.2:1.0-event-joystick",F_OK)==0) {
 			//is the rg351p
 			//isrg351p = 1; actually set later
+			LOG_info("Detected RG351P\n");fflush(stdout);
 		}
 	}
 
@@ -650,7 +672,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	/* retrieve resources */
 	res = drmModeGetResources(vid.fdfb);
 	if (!res) {
-		fprintf(stdout, "cannot retrieve DRM resources (%d): %m\n",	errno);fflush(stdout);
+		LOG_info( "cannot retrieve DRM resources (%d): %m\n",	errno);fflush(stdout);
 	}
 	/* iterate all connectors */
 	LOG_info("Connectors = %d\n", res->count_connectors);fflush(stdout);
@@ -658,14 +680,14 @@ SDL_Surface* PLAT_initVideo(void) {
 		/* get information for each connector */
 		conn = drmModeGetConnector(vid.fdfb, res->connectors[i]);
 		if (!conn) {
-			fprintf(stdout, "cannot retrieve DRM connector %u:%u (%d): %m\n",
+			LOG_info( "cannot retrieve DRM connector %u:%u (%d): %m\n",
 				i, res->connectors[i], errno);fflush(stdout);
 			continue;
 		}
 		//trovato un connettore
 		LOG_info("ConnectorID %u\n", conn->connector_id);fflush(stdout);
 		if (conn->connection != DRM_MODE_CONNECTED) {
-			fprintf(stderr, "ignoring unused connector %u\n",conn->connector_id);fflush(stdout);
+			LOG_info("ignoring unused connector %u\n",conn->connector_id);fflush(stdout);
 		}
 		for (int c = 0; c < conn->count_modes; c++) {
 			LOG_info("ConnectorID %i : mode %ux%u@%dHz\n", conn->connector_id,conn->modes[c].hdisplay ,conn->modes[c].vdisplay,conn->modes[c].vrefresh);fflush(stdout);
@@ -683,6 +705,14 @@ SDL_Surface* PLAT_initVideo(void) {
 				h = 720;
 				p = 1440;
 				isr36splus=1-isrgb30; //avoid to set isr36splus on rgb30
+				if (isr36splus==1) {
+					LOG_info("Detected R36SPLUS\n");fflush(stdout);
+					if (access("/dev/input/by-path/platform-rg351-keys-event",F_OK)==0) {
+						//seems a xf40h which is horizontal r36splus without menu button
+						menumissing = 1;
+						LOG_info("Detected XF40H (R36SPLUS horizontal variant without menu button)\n");fflush(stdout);
+					}
+				}
 			}
 			if ((conn->modes[c].vdisplay == 768) && (conn->modes[c].hdisplay == 1024) && (conn->modes[c].vrefresh == 61)) {
 				LOG_info("This is an r40xx pro max (4:3 4\"screen)\n");fflush(stdout);
@@ -699,6 +729,7 @@ SDL_Surface* PLAT_initVideo(void) {
 				hz = 61;
 				isr40xx=1;
 				FIXED_SCALE = 3;
+				LOG_info("Detected R40XX PRO MAX\n");fflush(stdout);
 				if (getenv("COMMANDER_SCREEN_FIX")!=NULL) {
 					DEVICE_WIDTH= 512;
 					DEVICE_HEIGHT = 384;
@@ -781,7 +812,7 @@ SDL_Surface* PLAT_initVideo(void) {
 		creq.bpp = 32;
 		ret = drmIoctl(vid.fdfb, DRM_IOCTL_MODE_CREATE_DUMB, &creq);
 		if (ret < 0) {
-			fprintf(stdout, "cannot create dumb buffer $d (%d): %m\n", thispage, errno);fflush(stdout);
+			LOG_info( "cannot create dumb buffer $d (%d): %m\n", thispage, errno);fflush(stdout);
 		}	
 		//struct modeset_buf buf;
 		vid.screen_size[thispage] = creq.width * creq.height * (creq.bpp / 8);
@@ -790,23 +821,23 @@ SDL_Surface* PLAT_initVideo(void) {
 		LOG_info("Screen[%d] %dx%d bpp=%d pitch=%d, size=%u\n", thispage, creq.width, creq.height, creq.bpp, creq.pitch, vid.screen_size[thispage]);fflush(stdout);
 		ret = drmModeAddFB(vid.fdfb, creq.width, creq.height, 24, creq.bpp, creq.pitch, creq.handle, &vid.fb[thispage]);
 		if (ret) {
-			fprintf(stdout, "cannot create framebuffer %d (%d): %m\n", thispage, errno);fflush(stdout);
+			LOG_info( "cannot create framebuffer %d (%d): %m\n", thispage, errno);fflush(stdout);
 		}
 			/* prepare buffer for memory mapping */
 		memset(&mreq, 0, sizeof(mreq));
 		mreq.handle = creq.handle;
 		ret = drmIoctl(vid.fdfb, DRM_IOCTL_MODE_MAP_DUMB, &mreq);
 		if (ret < 0) {
-			fprintf(stdout, "cannot map dumb buffer %d (%d): %m\n", thispage, errno);fflush(stdout);
+			LOG_info( "cannot map dumb buffer %d (%d): %m\n", thispage, errno);fflush(stdout);
 		}
 		vid.fbmmap[thispage] = mmap(0, vid.screen_size[thispage], PROT_READ | PROT_WRITE, MAP_SHARED,	vid.fdfb, mreq.offset);
 		if (vid.fbmmap[thispage] == MAP_FAILED) {
-			fprintf(stdout, "cannot mmap dumb buffer %d (%d): %m\n", thispage,	errno);fflush(stdout);
+			LOG_info( "cannot mmap dumb buffer %d (%d): %m\n", thispage,	errno);fflush(stdout);
 		}
 		memset(vid.fbmmap[thispage], 0, vid.screen_size[thispage]);
 		ret = drmModeSetCrtc(vid.fdfb, vid.crtc[thispage], vid.fb[thispage], 0, 0, &vid.conn[thispage], 1, &vid.mode[thispage]);
 		if (ret)
-			fprintf(stderr, "BUF%d cannot set CRTC for connector %u (%d): %m\n",thispage, vid.conn[thispage], errno);fflush(stdout);
+			LOG_info("BUF%d cannot set CRTC for connector %u (%d): %m\n",thispage, vid.conn[thispage], errno);fflush(stdout);
 		vid.linewidth[thispage] = creq.pitch / (creq.bpp/8);
 		LOG_info("BUF%d: %d %d %d %d %d\n", thispage, creq.width, creq.height, creq.bpp, creq.pitch, creq.handle);fflush(stdout);fflush(stdout);
 	}
@@ -846,7 +877,8 @@ void PLAT_quitVideo(void) {
 	memset(&dreq, 0, sizeof(dreq));
 	dreq.handle = vid.handle[1];
 	drmIoctl(vid.fdfb, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
-	unlink(SYSTEM_PATH "/menumissing.txt");
+	usleep(50000);
+	//unlink(SYSTEM_PATH "/menumissing.txt");
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {
@@ -978,7 +1010,7 @@ int FlipRotate000_r36s(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Re
 	
 	//copy a surface to the screen and flip it
 	//it must be the same resolution, the bpp16 is then converted to 32bpp
-	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+	//LOG_info("Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
 
 	//the alpha channel must be set to 0xff
 	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;

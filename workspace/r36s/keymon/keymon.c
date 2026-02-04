@@ -22,11 +22,21 @@
 #define CODE_PLUS		115 //event3
 #define CODE_MINUS		114 //event3
 #define CODE_PWR		116 //event0
+#define CODE_R1			311
+#define CODE_R2			313
+#define CODE_L1			310
+#define CODE_L2			312
 
 //	for ev.value
 #define RELEASED	0
 #define PRESSED		1
 #define REPEAT		2
+
+//	for button_flag
+#define SELECT_BIT	0
+#define START_BIT	1
+#define SELECT		(1<<SELECT_BIT)
+#define START		(1<<START_BIT)
 
 #define INPUT_COUNT 3
 static int inputs[INPUT_COUNT];
@@ -44,6 +54,11 @@ int main (int argc, char *argv[]) {
 	int _SELECT_RAW = RAW_SELECT;
 	int _PLUS_RAW = CODE_PLUS;
 	int _MINUS_RAW = CODE_MINUS;
+	int _R1_RAW = CODE_R1;
+    int _R2_RAW = CODE_R2;
+	int _L1_RAW = CODE_L1;
+	int _L2_RAW = CODE_L2;
+	int menumissing = 0;
 
 	if (access("/dev/input/by-path/platform-fdd40000.i2c-platform-rk805-pwrkey-event",F_OK)==0) {
 		//is the rk3566 based rg353v/353p/rgb30		
@@ -79,6 +94,7 @@ int main (int argc, char *argv[]) {
 		_START_RAW = RAW_START_353;
 		_SELECT_RAW = RAW_SELECT_353;
 		_MENU_RAW = 800; //no menu button on rgb30
+		menumissing = 1;
 	} else if (isv10==1) {
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
@@ -88,14 +104,20 @@ int main (int argc, char *argv[]) {
 		_PLUS_RAW= 708;
 		_MINUS_RAW= 705;
 		_MENU_RAW = 800; //no menu button on v10
+		menumissing = 1;
 	} else if (isrg351p==1) {
 		//check_rumble("/dev/input/event3"); no rumble support?
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 		inputs[1] = open("/dev/input/event2", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // controller
 		inputs[2] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // volume +/-
+		_R1_RAW = 309;
+	    _R2_RAW = 315;
+		_L1_RAW = 308;
+		_L2_RAW = 314;
 		_START_RAW = 310;
 		_SELECT_RAW = 311;
 		_MENU_RAW= 800; //no menu button on rg351p
+		
 	} else {
 		//r36s
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
@@ -148,11 +170,25 @@ int main (int argc, char *argv[]) {
 				if (ev.code == _START_RAW) {
 					start_pressed = val;
 				}
+//				if (ev.code == _L3_RAW) {
+//					start_pressed = val;
+//				}
+//				if (ev.code == _R3_RAW) {
+//					select_pressed = val;
+//				}
 				if (ev.code == _PLUS_RAW) {
 					up_pressed = up_just_pressed = val;
 					if (val) up_repeat_at = now + 300;
 				}
 				if (ev.code == _MINUS_RAW) {
+					down_pressed = down_just_pressed = val;
+					if (val) down_repeat_at = now + 300;
+				}
+				if (((ev.code == _R1_RAW) || (ev.code == _R2_RAW)) && (isrg351p==1)) {
+					up_pressed = up_just_pressed= val;
+					if (val) up_repeat_at = now + 300;
+				}
+				if (((ev.code == _L1_RAW) || (ev.code == _L2_RAW)) && (isrg351p==1)) {
 					down_pressed = down_just_pressed = val;
 					if (val) down_repeat_at = now + 300;
 				}
@@ -168,33 +204,57 @@ int main (int argc, char *argv[]) {
 		}
 		
 		if (up_just_pressed || (up_pressed && now>=up_repeat_at)) {
-			if ((menu_pressed) || ((select_pressed) && (start_pressed))) {
-				//printf("brightness up\n"); fflush(stdout);
-				val = GetBrightness();
-				if (val<BRIGHTNESS_MAX) SetBrightness(++val);
+			if (isrg351p==0) {
+				if ((menu_pressed) || ((select_pressed) && (start_pressed))) {
+					//printf("brightness up\n"); fflush(stdout);
+					val = GetBrightness();
+					if (val<BRIGHTNESS_MAX) SetBrightness(++val);
+				}
+				else {
+					//printf("volume up\n"); fflush(stdout);
+					val = GetVolume();
+					if (val<VOLUME_MAX) SetVolume(++val);
+				}
+			} else {
+				//rg351p has no menu button, and no +/-  buttons so just use R1/R2 for volume/brightness up and L1/L2 for volume/brightness down
+				if (select_pressed) {
+					//printf("volume up\n"); fflush(stdout);
+					val = GetVolume();
+					if (val<VOLUME_MAX) SetVolume(++val);
+				} else if (start_pressed) {
+					//printf("brightness up\n"); fflush(stdout);
+					val = GetBrightness();
+					if (val<BRIGHTNESS_MAX) SetBrightness(++val);
+				}
 			}
-			else {
-				//printf("volume up\n"); fflush(stdout);
-				val = GetVolume();
-				if (val<VOLUME_MAX) SetVolume(++val);
-			}
-			
 			if (up_just_pressed) up_just_pressed = 0;
 			else up_repeat_at += 100;
 		}
 		
 		if (down_just_pressed || (down_pressed && now>=down_repeat_at)) {
-			if ((menu_pressed) || ((select_pressed) && (start_pressed))) {
-				//printf("brightness down\n"); fflush(stdout);
-				val = GetBrightness();
-				if (val>BRIGHTNESS_MIN) SetBrightness(--val);
+			if (isrg351p==0) {
+				if ((menu_pressed) || ((select_pressed) && (start_pressed))) {
+					//printf("brightness down\n"); fflush(stdout);
+					val = GetBrightness();
+					if (val>BRIGHTNESS_MIN) SetBrightness(--val);
+				}
+				else {
+					//printf("volume down\n"); fflush(stdout);
+					val = GetVolume();
+					if (val>VOLUME_MIN) SetVolume(--val);
+				}
+			} else {
+				//rg351p has no menu button, and no +/-  buttons so just use R1/R2 for volume/brightness up and L1/L2 for volume/brightness down
+				if (select_pressed) {
+					//printf("volume up\n"); fflush(stdout);
+					val = GetVolume();
+					if (val>VOLUME_MIN) SetVolume(--val);
+				} else if (start_pressed) {
+					//printf("brightness up\n"); fflush(stdout);
+					val = GetBrightness();
+					if (val>BRIGHTNESS_MIN) SetBrightness(--val);
+				}
 			}
-			else {
-				 //printf("volume down\n"); fflush(stdout);
-				val = GetVolume();
-				if (val>VOLUME_MIN) SetVolume(--val);
-			}
-			
 			if (down_just_pressed) down_just_pressed = 0;
 			else down_repeat_at += 100;
 		}
