@@ -3457,16 +3457,15 @@ SDL_Rect video_refresh_callback_resize_custom(int aspect_w, int aspect_h) {
 	double sysaspect = 1.0 * aspect_w / aspect_h;
 	dst_x = 0;
 	dst_y = 0;
-	dst_w = GAME_WIDTH;
+	dst_w = GAME_WIDTH; //try first at maximum width
 	double _dst_h = 1.0 * dst_w / sysaspect;
-	if ((int)_dst_h > GAME_HEIGHT) {
-		dst_h = GAME_HEIGHT;
+	if ((int)_dst_h > GAME_HEIGHT) { // source frame higher than wider
+		dst_h = GAME_HEIGHT;	  // height limited
 		double _dst_w = 1.0 * dst_h * sysaspect;
 		dst_w = (int)_dst_w;
 		dst_x = (GAME_WIDTH - dst_w) / 2;
 	}
 	else {
-		double _dst_h = 1.0 * dst_w / sysaspect;
 		dst_h = (int)_dst_h;		
 		dst_y = (GAME_HEIGHT - dst_h) / 2;	
 	}
