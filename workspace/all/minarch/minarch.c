@@ -996,6 +996,8 @@ static char* scaling_labels[] = {
 	"Aspect",
 	"Extended",
 	"Fullscreen",
+	"Force 4:3",
+	"Force 3:2",
 	NULL
 };
 static char* max_scaling_labels[] = {
@@ -3447,6 +3449,36 @@ SDL_Rect video_refresh_callback_resize_extended(void) {
 	//calculate offsets
 }
 
+SDL_Rect video_refresh_callback_resize_custom(int aspect_w, int aspect_h) {
+	LOG_info("RESIZE CUSTOM %d:%d\n", aspect_w, aspect_h);fflush(stdout);
+	//maximum scaling keeping custom aspect ratio
+	SDL_Rect retvalue;
+	int dst_x,dst_y,dst_w,dst_h;
+	double sysaspect = 1.0 * aspect_w / aspect_h;
+	dst_x = 0;
+	dst_y = 0;
+	dst_w = GAME_WIDTH;
+	double _dst_h = 1.0 * dst_w / sysaspect;
+	if ((int)_dst_h > GAME_HEIGHT) {
+		dst_h = GAME_HEIGHT;
+		double _dst_w = 1.0 * dst_h * sysaspect;
+		dst_w = (int)_dst_w;
+		dst_x = (GAME_WIDTH - dst_w) / 2;
+	}
+	else {
+		double _dst_h = 1.0 * dst_w / sysaspect;
+		dst_h = (int)_dst_h;		
+		dst_y = (GAME_HEIGHT - dst_h) / 2;	
+	}
+	retvalue.x = dst_x;
+	retvalue.y = dst_y;
+	retvalue.w = dst_w;
+	retvalue.h = dst_h;
+	LOG_info("Sysaspect %f dst_w %d dst_h %d dst_x %d dst_y %d\n", sysaspect, dst_w, dst_h, dst_x, dst_y);fflush(stdout);
+	return retvalue;
+}
+
+
 void video_refresh_callback_resize(void) {
 	LOG_info("RESIZE IN\n");fflush(stdout);
 	uint32_t now = SDL_GetTicks();
@@ -3473,6 +3505,16 @@ void video_refresh_callback_resize(void) {
 								resizemode = 'F';
 								//targetarea = video_refresh_callback_resize_fullscreen(data);
 								break;
+							};
+		case SCALE_4_3: 	{ 
+							targetarea = video_refresh_callback_resize_custom(4,3);
+							resizemode = '4';
+							break;
+							};
+		case SCALE_3_2: 	{ 
+							targetarea = video_refresh_callback_resize_custom(3,2);
+							resizemode = '3';
+							break;
 							};
 		default: { 
 					LOG_info("RESIZE FULLSCREEN UNDEF\n");fflush(stdout);
