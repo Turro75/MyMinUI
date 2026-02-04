@@ -1264,6 +1264,12 @@ char* PLAT_getModel(void) {
 	if (isr36splus) {
 		return "R36S Plus ArkOS";
 	}
+	if (isrg351p) {
+		return "RG351P ArkOS";
+	}
+	if (isv10) {
+		return "V10 ArkOS";
+	}
 	return "R36S ArkOS";
 }
 
