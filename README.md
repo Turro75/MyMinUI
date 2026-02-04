@@ -6,6 +6,32 @@ I'm a player that uses a lot savestates, I really can't understand why almost al
 
 You can find the latest release here: https://github.com/Turro75/MyMinUI/releases
 
+## List of working devices:
+
+- rg35xx:
+  - Anbernic RG35XX Original (2023)
+- miyoomini:
+  - Miyoo mini (v4 increased screen resolution auto detected)
+  - Miyoo mini Flip
+  - Miyoo mini Plus
+- my282:
+  - Miyoo A30
+- m21:
+  - SJGAM m21
+  - SJGAM m22pro  
+- r36s:
+  - Game Console r36s
+  - Game Console r36h
+  - Game Console r36s Plus (vertical 4" 1:1 display)
+  - Game Console r40xx (pro max) (4" 4:3 display)
+  - Game Console xf40h (horizontal 4" 1:1 display)
+  - Anbernic rg351p (old Arkos and Wummle edition supported)
+  - Anbernic rg353v/vs/p/ps/m
+  - Powkiddy v10
+  - Powkiddy rgb30
+  - and potentially any arkos powered device
+
+
 ## Features from FinUI:
 - Add Favorites Collections (Press SELECT to toggle a rom)
 - Clear "Recently Played"
@@ -21,7 +47,7 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
   - integrated tool to make a live boxart within the in game menu 
   - improved multidisc roms support (added pbp multidisc files)
   - cheats support (taken from NextUI)
-  - extended debug HUD reporting fps rendered and generated, cpuload (per core), cpufreq, source img size and current resolution and orientation
+  - extended debug HUD reporting fps rendered and generated, cpuload (per core), cpufreq, cpu temperature, source img size and current resolution and orientation
   - auto rotate games according to rom
   - ability to map left analog stick as dpad and ABXY buttons as right analog stick
   - play as player X feature that allows impersonating p2,p3 and p4.
@@ -45,6 +71,28 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 
 # New features of MyMinUI:
+
+# Release 04/02/2026
+
+### All:
+  - added current cpu temperature to the debug info screen
+  - added a simple pico8 0testtearing.p8.png "game" that scrolls screen to test the tearing settings
+  - ensure all debug info are written to log file for each tool
+
+### r36s:
+  - added support to anbernic rg351p, it runs on top of old ArkOS as well as WummLE edition.
+
+    this devices doesn't have menu button which is emulated by pressing select+start
+  
+    and also volume +/- are missing to adjust volume keep pressed select + L1/L2 to decrease volume / + R1/R2 to increase volume (same as miyoo mini)
+  
+    to adjust screen brightness keep pressed start + L1/L2 to decrease backlight / + R1/R2 to increase backlight (same as miyoo mini)
+  
+  - improved install/update process, it now reboots at the end of the process to fix an issue of blank screen on some devices after install.
+  - the menuminissing.txt is not deleted to keep select+start working on devices without menu button which are not auto detected
+
+### miyoo mini flip:
+  - added sleep mode for standalone apps when lid is closed, the app is paused, the screen is switched off, the cpu clock is set to minimum to preserve battery
 
 # Release 26/01/2026
 
