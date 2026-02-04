@@ -1317,7 +1317,7 @@ ResampledFrames resample_audio(const SND_Frame *input_frames,
 		resetSrcState = 0;
 		src_state = src_new(soundQuality, 2, &error);
 		if (src_state == NULL) {
-			fprintf(stderr, "Error initializing SRC state: %s\n",
+			LOG_info( "Error initializing SRC state: %s\n",
 				src_strerror(error));
 			exit(1);
 		}
@@ -1325,7 +1325,7 @@ ResampledFrames resample_audio(const SND_Frame *input_frames,
 
 	if (previous_ratio != final_ratio) {
 		if (src_set_ratio(src_state, final_ratio) != 0) {
-			fprintf(stderr, "Error setting resampling ratio: %s\n",
+			LOG_info( "Error setting resampling ratio: %s\n",
 				src_strerror(src_error(src_state)));
 			exit(1);
 		}
@@ -1337,7 +1337,7 @@ ResampledFrames resample_audio(const SND_Frame *input_frames,
 	float *input_buffer = (float*)malloc(input_frame_count * 2 * sizeof(float));
 	float *output_buffer = (float*)malloc(max_output_frames * 2 * sizeof(float));
 	if (!input_buffer || !output_buffer) {
-		fprintf(stderr, "Error allocating buffers\n");
+		LOG_info( "Error allocating buffers\n");
 		free(input_buffer);
 		free(output_buffer);
 		src_delete(src_state);
@@ -1359,7 +1359,7 @@ ResampledFrames resample_audio(const SND_Frame *input_frames,
 	};
 
 	if (src_process(src_state, &src_data) != 0) {
-		fprintf(stderr, "Error resampling: %s\n",
+		LOG_info( "Error resampling: %s\n",
 			src_strerror(src_error(src_state)));
 		free(input_buffer);
 		free(output_buffer);
@@ -1370,7 +1370,7 @@ ResampledFrames resample_audio(const SND_Frame *input_frames,
 
 	SND_Frame *output_frames = (SND_Frame*)malloc(output_frame_count * sizeof(SND_Frame));
 	if (!output_frames) {
-		fprintf(stderr, "Error allocating output frames\n");
+		LOG_info("Error allocating output frames\n");
 		free(input_buffer);
 		free(output_buffer);
 		exit(1);
