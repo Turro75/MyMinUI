@@ -826,8 +826,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	} 
 
 	ism22 = 0;
-	/* Disable cursor blinking so it's not visible. */
-    //system("setterm -cursor off &> mnt/SDCARD/setterm.txt");
+
+	//m21 is a 1280x720 screen 
 	vid.orig_fbheight = _HDMI_HEIGHT;
 	vid.orig_fbwidth = _HDMI_WIDTH;
 	vid.orig_fbheightvirtual = _HDMI_HEIGHT * 2;
@@ -845,10 +845,10 @@ SDL_Surface* PLAT_initVideo(void) {
 		if (tmpfd >= 0) {
 			close(tmpfd);
 		}
-		vid.orig_fbheight = 1280;
-		vid.orig_fbwidth = 1280;
-		vid.orig_fbheightvirtual = 2560;
-		vid.orig_fbwidthvirtual = 1280;
+		vid.orig_fbheight = _HDMI_WIDTH;
+		vid.orig_fbwidth = _HDMI_WIDTH;
+		vid.orig_fbheightvirtual = _HDMI_WIDTH * 2;
+		vid.orig_fbwidthvirtual = _HDMI_WIDTH;
 	}
 
 	vid.fdfb = -1;
@@ -919,10 +919,6 @@ SDL_Surface* PLAT_initVideo(void) {
 		GAME_HEIGHT = w;
 	}
 	get_fbinfo();
-//	vid.orig_fbwidth = vid.vinfo.xres;
-//	vid.orig_fbheight = vid.vinfo.yres;
-//	vid.orig_fbheightvirtual = vid.vinfo.yres_virtual;
-//	vid.orig_fbwidthvirtual = vid.vinfo.xres_virtual;
 
 	uint32_t args[4] = {0};
 	vid.orig_screenwidth = ioctl(vid.dispfd, DISP_GET_SCN_WIDTH, (void*)args); //1080
