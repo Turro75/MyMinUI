@@ -1238,7 +1238,7 @@ static struct Config {
 			[FE_OPT_SCALING] = {
 				.key	= "minarch_screen_scaling", 
 				.name	= "Screen Scaling",
-				.desc	= "Native uses integer scaling.\nAspect uses core reported aspect ratio.\nExtended is like aspect but the it extends the image to fit 3/4 of screen.\nFullscreen has non-squarepixels.",
+				.desc	= "Native uses integer scaling.\nAspect uses core reported aspect ratio.\nExtended is like aspect but the it extends the image to fit 3/4 of screen.\nFullscreen has non-squarepixels.\nForce 4:3 and 3:2 guess what?",
 				.default_value = 1,
 				.value = 1,
 				.count = SCALE_COUNT,
