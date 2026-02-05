@@ -828,6 +828,10 @@ SDL_Surface* PLAT_initVideo(void) {
 	ism22 = 0;
 	/* Disable cursor blinking so it's not visible. */
     //system("setterm -cursor off &> mnt/SDCARD/setterm.txt");
+	vid.orig_fbheight = _HDMI_HEIGHT;
+	vid.orig_fbwidth = _HDMI_WIDTH;
+	vid.orig_fbheightvirtual = _HDMI_HEIGHT * 2;
+	vid.orig_fbwidthvirtual =  _HDMI_WIDTH;
 
 	if (exists(SYSTEM_PATH "/menumissing.txt")) {
 		unlink(SYSTEM_PATH "/menumissing.txt");
