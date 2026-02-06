@@ -2901,6 +2901,23 @@ static const char* bitmap_font[] = {
 		"  1111	   "
 		"  1111    "
 		"  1111    ",
+	[':'] = 
+		"          "
+		"          "
+		"          "
+		"          "
+		"          "
+		"  1111    "
+		"  1111    "
+		"  1111    "
+		"          "
+		"          "
+		"          "
+		"          "
+		"  1111    "
+		"  1111    "
+		"  1111    "
+		"          ",
 	[','] = 
 		"          "
 		"          "
@@ -3088,6 +3105,23 @@ static const char* bitmap_font[] = {
 		"11      11"
 		"11      11"
 		"11      11",
+	['B'] =
+		"11111111  "
+		"111111111 "
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"111111111 "
+		"111111111 "
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"11      11"
+		"111111111 "
+		"11111111  ",
 	['N'] = 
 		"11      11"
 		"11      11"
@@ -3619,6 +3653,9 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.dst_w,renderer.dst_h);
 		blitBitmapText(debug_text,-2,2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
+		sprintf(debug_text, "BAT:%02i%%", PWR_getBattery());
+		blitBitmapText(debug_text,-2,22,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
+
 		sprintf(debug_text, "%.0f/%.0f", fps_double,fps2_double);
 		blitBitmapText(debug_text,2,-22,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
@@ -3630,7 +3667,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		}	
 		blitBitmapText(cpuload,2,-2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
-		sprintf(debug_text, "%s %i", effect_str,renderer.rotategame*90);
+		sprintf(debug_text, "%s %ic", effect_str,renderer.rotategame*90);
 		blitBitmapText(debug_text,-2,-2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 	}
 
