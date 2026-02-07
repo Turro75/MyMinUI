@@ -67,7 +67,7 @@ if [ -f "$UPDATE_PATH" ]; then
 		PID=$!
 	fi
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
-        ${SDCARD_PATH}/${PLATFORM}/binmusl/unzip -o $UPDATE_PATH -d $SDCARD_PATH #&>> $LOGFILE
+    ${SDCARD_PATH}/${PLATFORM}/binmusl/unzip -o $UPDATE_PATH -d $SDCARD_PATH #&>> $LOGFILE
 	sync
 	# the updated system finishes the install/update
 	rm -rf ${UPDATE_PATH}
