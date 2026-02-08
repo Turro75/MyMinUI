@@ -40,6 +40,7 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 ## Main features added by MyMinUI to Min/FinUI till Today:
   - completely rewritten CPU rendering engine based on neon, multicores and double buffering to maximize performances avoiding screen tearing effect
+  - additional aspect ratio options: extended (middle way between aspect and fullscreen), force 4:3 and 3:2 useful for squared screens.
   - provide MAX overclock setting
   - png boxart supported for systems and roms
   - added Fancy Mode to show boxart and selecting save states using previews.
@@ -47,7 +48,7 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
   - integrated tool to make a live boxart within the in game menu 
   - improved multidisc roms support (added pbp multidisc files)
   - cheats support (taken from NextUI)
-  - extended debug HUD reporting fps rendered and generated, cpuload (per core), cpufreq, cpu temperature, source img size and current resolution and orientation
+  - extended debug HUD reporting fps rendered and generated, cpuload (per core), cpufreq, cpu temperature, battery level, source img size and current resolution and orientation
   - auto rotate games according to rom
   - ability to map left analog stick as dpad and ABXY buttons as right analog stick
   - play as player X feature that allows impersonating p2,p3 and p4.
