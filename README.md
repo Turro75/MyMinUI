@@ -73,6 +73,20 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+# Release 08/02/2026
+
+### ALL:
+- Add battery current charge level to debug HUD 
+- Added 2 new aspect ratio settings: Force 4:3 and Force 3:2. made to force the right aspect ratio on squared screen devices.
+
+### M21:
+- fixed black screen bug after switching to layer rendering, the init display values were wrong on m21 and right for m22, now both models are working.
+- the custombuttonmapping.env file is not overwritten during updates to preserve any custom settings.
+
+### r36s:
+- added more device name in menu info. 
+
+
 # Release 04/02/2026
 
 ### All:
