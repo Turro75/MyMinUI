@@ -1,0 +1,44 @@
+diff --git a/backends/platform/libretro/Makefile b/backends/platform/libretro/Makefile
+index 2b5b8f7be5b..b70fcefae72 100644
+--- a/backends/platform/libretro/Makefile
++++ b/backends/platform/libretro/Makefile
+@@ -322,6 +322,25 @@ else ifeq ($(platform), miyoomini)
+    USE_MT32EMU = 0
+    USE_HIGHRES = 0
+ 
++# MyMINUI
++else ifeq ($(platform), r36s)
++   TARGET := $(TARGET_NAME)_libretro.so
++   CC = $(CROSS_COMPILE)gcc
++   CXX = $(CROSS_COMPILE)g++
++   LD = $(CROSS_COMPILE)g++
++   AR = $(CROSS_COMPILE)ar cru
++   RANLIB = $(CROSS_COMPILE)ranlib
++   DEFINES += -fomit-frame-pointer -ffast-math $(MYARCH) -fPIC
++   DEFINES += -ffunction-sections -fdata-sections -DDEFAULT_PERF_TUNER -DREDUCE_MEMORY_USAGE -DUNCACHED_PLUGINS
++   LDFLAGS += -shared  -Wl,-z,noexecstack -Wl,--gc-sections -Wl,--version-script=$(ROOT_PATH)/link.T -fPIC
++   USE_VORBIS = 0
++   USE_THEORADEC = 0
++   USE_TREMOR = 1
++   USE_LIBCO  = 0
++   USE_MT32EMU = 0
++   USE_HIGHRES = 0
++
++
+ # ARM v7
+ else ifneq (,$(findstring armv7,$(platform)))
+    TARGET := $(TARGET_NAME)_libretro.so
+diff --git a/backends/platform/libretro/scripts/configure_engines.sh b/backends/platform/libretro/scripts/configure_engines.sh
+index 0f8574bca71..279fa0e619d 100755
+--- a/backends/platform/libretro/scripts/configure_engines.sh
++++ b/backends/platform/libretro/scripts/configure_engines.sh
+@@ -47,7 +47,8 @@ no_deps_comps=$@
+ cd "${SCUMMVM_PATH}"
+ 
+ # Retrieve all configure functions
+-sed -i.bak -e "s/exit 0/return 0/g" configure
++mv configure configure.bak > /dev/null 2>&1
++sed -e "s/exit 0/return 0/g" configure.bak > configure
+ . configure -h > /dev/null 2>&1
+ mv configure.bak configure > /dev/null 2>&1
+ 

@@ -11,7 +11,7 @@ index 502a75b..a5bda46 100644
 +	TARGET := $(TARGET_NAME)_libretro.so
 +	CC = $(CROSS_COMPILE)gcc
 +	AR = $(CROSS_COMPILE)ar
-+	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
++	SHARED := -shared  -Wl,-z,noexecstack -Wl,--no-undefined -Wl,--version-script=link.T
 +	FLAGS += -fomit-frame-pointer -ffast-math $(MYARCH)
 +	fpic := -fPIC
 +

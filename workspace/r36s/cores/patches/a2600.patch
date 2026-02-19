@@ -12,7 +12,7 @@ index 18885d8..078fa13 100644
 +   CC = $(CROSS_COMPILE)gcc
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
-+	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
++	SHARED := -shared -Wl,-z,noexecstack -Wl,--no-undefined -Wl,--version-script=link.T
 +	LDFLAGS += $(PTHREAD_FLAGS) -lrt
 +	FLAGS += $(PTHREAD_FLAGS) -DHAVE_MKDIR
 +	FLAGS += -fomit-frame-pointer -ffast-math $(MYARCH)

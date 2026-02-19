@@ -12,7 +12,7 @@ index ef2f9e7d1c6041bea8e2c8a61cdd363ed73a7482..6c525fe787e205fbd1352b74c00ebfca
 +   CC = $(CROSS_COMPILE)gcc
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
-+   SHARED := -shared -Wl,--version-script=libretro/link.T
++   SHARED := -shared  -Wl,-z,noexecstack  -Wl,--version-script=libretro/link.T
 +   fpic += -fPIC -flto
 +   CFLAGS += $(PTHREAD_FLAGS)
 +   CFLAGS += $(MYARCH) -fomit-frame-pointer

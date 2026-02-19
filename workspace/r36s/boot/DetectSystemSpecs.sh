@@ -35,7 +35,13 @@ amixer >> $LOGFILE
 #detect TFSlot
 echo "##############################" >> $LOGFILE
 echo "Checking TF2 slot presence" >> $LOGFILE
+#ArkOS
 TF1DISKNUM=$(mount | grep "/ type ext4" | cut -d'p' -f1 | cut -d'k' -f2)
+if [ -z "$TF1DISKNUM" ]; then
+	#dArkOS
+	TF1DISKNUM=$(mount | grep "/ type btrfs" | cut -d'p' -f1 | cut -d'k' -f2)
+    echo "Detected dArkOS" >> $LOGFILE
+fi
 TF2DISKNUM=$((${TF1DISKNUM}+1))
 echo "TF1 disk num is $TF1DISKNUM" >> $LOGFILE
 echo "TF2 disk num is $TF2DISKNUM" >> $LOGFILE

@@ -27,7 +27,7 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	sudo LD_LIBRARY_PATH="${SDCARD_PATH}/${PLATFORM}:${LD_LIBRARY_PATH}"   ${SDCARD_PATH}/${PLATFORM}/show.elf ${SDCARD_PATH}/${PLATFORM}/$ACTION.png 60 &
 	PID=$!
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
-	sudo ${SDCARD_PATH}/${PLATFORM}/unzip -o $NEWFILE -d $SDCARD_PATH -x "r36s/*" >> $LOGFILE
+	sudo ${SDCARD_PATH}/${PLATFORM}/unzip -o $NEWFILE -d $SDCARD_PATH -x "${PLATFORM}/*" >> $LOGFILE
 	sync
 
 	#remove useless dirs
@@ -95,4 +95,4 @@ fi
     
 #umount ${ROOTFS_MOUNTPOINT}
 sync
-shutdown now # under no circumstances should stock be allowed to touch this card
+sudo systemctl poweroff # under no circumstances should stock be allowed to touch this card

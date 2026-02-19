@@ -24,7 +24,7 @@ index a1c8c7a..641a9a7 100644
 +   
 +   CFLAGS += $(MYARCH) -fomit-frame-pointer
 +   CFLAGS += -ffast-math -fdata-sections -ffunction-sections -fsingle-precision-constant -flto -fPIC
-+   LDFLAGS += -flto -fPIC
++   LDFLAGS += -flto -fPIC  -Wl,-z,noexecstack 
 +   LDFLAGS += -flto
 +   CPU_ARCH := arm
 +   OPTIMIZE += -Ofast -DNDEBUG=1

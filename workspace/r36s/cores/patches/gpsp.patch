@@ -12,7 +12,7 @@ index dc4b60d..45fce6f 100644
 +   CC = $(CROSS_COMPILE)gcc
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
-+   SHARED := -shared -Wl,--version-script=link.T
++   SHARED := -shared  -Wl,-z,noexecstack -Wl,--version-script=link.T
 +   fpic := -fPIC -DPIC
 +   LDFLAGS += -fPIC -flto
 +   PLATFORM_DEFINES := -DCC_RESAMPLER -DCC_RESAMPLER_NO_HIGHPASS

@@ -12,7 +12,7 @@ index 0d1dc08f81a11cef6b3b7238367b1ff27fcf1ead..7b3f977da6549c435b09b165f5a7589d
 +   CC = $(CROSS_COMPILE)gcc
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
-+   SHARED := -shared
++   SHARED := -shared  -Wl,-z,noexecstack 
 +   LIBM :=
 +   fpic := -fPIC -flto
 +   CFLAGS += $(MYARCH)

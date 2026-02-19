@@ -12,7 +12,7 @@ index 58120a1a88eab75ca13f2ed062f37d075c05a51b..c60ebf68483aebf7a0dc320e4589f29c
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
 +   fpic := -fPIC
-+   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
++   SHARED := -shared  -Wl,-z,noexecstack -Wl,--no-undefined -Wl,--version-script=link.T
 +   CFLAGS += -Ofast \
 +   -flto=4 -fwhole-program -fuse-linker-plugin \
 +   -fdata-sections -ffunction-sections -Wl,--gc-sections \

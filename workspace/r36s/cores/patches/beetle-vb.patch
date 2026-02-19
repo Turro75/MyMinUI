@@ -13,7 +13,7 @@ index 1e94d9eae2e1ce664eecc3edfc5187f393f98a45..912369d4cfad20bc9a0852aa9faf1859
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
 +   fpic := -fPIC
-+   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
++   SHARED := -shared  -Wl,-z,noexecstack -Wl,--no-undefined -Wl,--version-script=link.T
 +   FLAGS += $(MYARCH) -fomit-frame-pointer 
 +   FLAGS += -ffast-math -fdata-sections -ffunction-sections -fsingle-precision-constant -flto -fPIC
 +   NEED_BPP = 16

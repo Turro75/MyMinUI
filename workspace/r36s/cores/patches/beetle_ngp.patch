@@ -13,7 +13,7 @@ index e400288..4c02536 100644
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
 +	fpic := -fPIC
-+	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
++	SHARED := -shared  -Wl,-z,noexecstack -Wl,--no-undefined -Wl,--version-script=link.T
 +	FLAGS += -DARM -Ofast \
 +	-flto=4 -fwhole-program -fuse-linker-plugin \
 +	-fdata-sections -ffunction-sections -Wl,--gc-sections \

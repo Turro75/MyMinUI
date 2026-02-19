@@ -13,7 +13,7 @@ index d580571511b43d1ec4597db4a9611b0924bb2c53..d2a2f9929cee1f7fb45a1a002efd7b04
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
 +   fpic := -fPIC
-+   SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
++   SHARED := -shared  -Wl,-z,noexecstack -Wl,--no-undefined -Wl,--version-script=link.T
 +   FLAGS += $(MYARCH) -fomit-frame-pointer 
 +   FLAGS += -fomit-frame-pointer -ffast-math -D_GNU_SOURCE -flto -fPIC
 +   CXXFLAGS += -std=c++11

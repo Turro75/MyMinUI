@@ -12,7 +12,7 @@ index 0b7d646..cda6694 100644
 +   CC = $(CROSS_COMPILE)gcc
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
-+   SHARED := -shared -Wl,--version-script=link.T -Wl,-no-undefined
++   SHARED := -shared  -Wl,-z,noexecstack -Wl,--version-script=link.T -Wl,-no-undefined
 +	fpic := -fPIC
 +	PLATFORM_FLAGS = -s -Ofast $(MYARCH) -fomit-frame-pointer -flto
 +	USE_EXPERIMENTAL_FLAGS = 1

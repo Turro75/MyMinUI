@@ -12,7 +12,7 @@ index d63a849..fc64b86 100644
 +        CC = $(CROSS_COMPILE)gcc
 +        AR = $(CROSS_COMPILE)ar
 +        fpic := -fPIC
-+        SHARED := -shared -Wl,--version-script=common/libretro-link.T
++        SHARED := -shared  -Wl,-z,noexecstack -Wl,--version-script=common/libretro-link.T
 +        CFLAGS += -fomit-frame-pointer -ffast-math $(MYARCH)
 +        HAVE_NETWORKING=0
 +

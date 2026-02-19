@@ -13,7 +13,7 @@ index 34b050e..2bb65aa 100644
 +	CXX = $(CROSS_COMPILE)g++
 +	AR = $(CROSS_COMPILE)ar
 +	fpic := -fPIC
-+	LDFLAGS += $(fpic) -shared -Wl,--version-script=link.T -Wl,-no-undefined
++	LDFLAGS += $(fpic) -shared  -Wl,-z,noexecstack -Wl,--version-script=link.T -Wl,-no-undefined
 +	CFLAGS += -Ofast \
 +	-flto=4 -fwhole-program -fuse-linker-plugin \
 +	-fdata-sections -ffunction-sections -Wl,--gc-sections \

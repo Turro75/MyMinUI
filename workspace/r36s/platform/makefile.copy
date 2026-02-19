@@ -8,7 +8,11 @@ $(PLATFORM):
 	cp ./workspace/$@/boot/r36s_stage2.sh ./build/BASE/$@/r36s_stage2.sh
 	cp ./workspace/$@/libmsettings/libmsettings.so ./build/BASE/$@/libmsettings.so
 	cp ./workspace/$@/boot/EnableMyMinUI.sh ./build/BASE/$@/
+	cp ./workspace/$@/boot/DetectSystemSpecs.sh ./build/BASE/$@/
+	cp ./workspace/$@/boot/CheckInputEvent.sh ./build/BASE/$@/
 	cp ./workspace/$@/boot/emulationstation.sh ./build/BASE/$@/
+	cp ./workspace/$@/boot/emulationstation_351p.sh ./build/BASE/$@/
+	cp ./workspace/$@/boot/emulationstation_darkos.sh ./build/BASE/$@/
 	cp ./workspace/$@/boot/emulationstation.sh.es ./build/BASE/$@/
 	cp ./workspace/$@/boot/emulationstation.sh.ra ./build/BASE/$@/
 	cp ./workspace/$@/boot/*.png ./build/BASE/$@/

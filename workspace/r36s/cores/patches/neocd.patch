@@ -11,7 +11,7 @@ index 8f2907c..237af98 100644
 +   CC = $(CROSS_COMPILE)gcc
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
-+   SHARED := -s -shared -Wl,--version-script=link.T -Wl,-no-undefined
++   SHARED := -s -shared  -Wl,-z,noexecstack -Wl,--version-script=link.T -Wl,-no-undefined
 +	fpic := -fPIC
 +   CFLAGS +=  -s -Ofast $(MYARCH) -fomit-frame-pointer -flto -DSYNC_CDROM=1
 +   CXXFLAGS += -s -Ofast $(MYARCH) -fomit-frame-pointer -flto -mword-relocations -DSYNC_CDROM=1

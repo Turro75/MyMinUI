@@ -30,7 +30,7 @@ SOURCE += ../common/pixman-arm-neon-asm.S
 CC = $(CROSS_COMPILE)gcc
 CFLAGS   = $(MYARCH) -fomit-frame-pointer -ftree-vectorize -funroll-loops -funsafe-math-optimizations
 CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL) -O3 -std=gnu99
-CFLAGS	+=  -flto -s $(MY_CFLAGS) 
+CFLAGS	+=  -flto=auto -s $(MY_CFLAGS) 
 LDFLAGS	 = -ldl $(LIBS) -lmsettings -l$(SDL) -l$(SDL)_image -l$(SDL)_ttf -lpthread -lm -lz $(MY_LDFLAGS)
 # CFLAGS  += -Wall -Wno-unused-variable -Wno-unused-function -Wno-format-overflow
 # CFLAGS  += -fsanitize=address -fno-common

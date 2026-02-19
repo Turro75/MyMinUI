@@ -12,7 +12,7 @@ index 108148f4579f4727146e5b8c1e05ef7382654208..4ff34d4c2b5c6031ce4c3256f1b70dab
 +   CC = $(CROSS_COMPILE)gcc
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
-+   SHARED := -shared -Wl,--version-script=link.T
++   SHARED := -shared  -Wl,-z,noexecstack -Wl,--version-script=link.T
 +   fpic := -fPIC
 +   PLATFORM_DEFINES += -D_GNU_SOURCE -DHAVE_STRTOF_L -DHAVE_LOCALE
 +   CFLAGS += -fomit-frame-pointer -ffast-math

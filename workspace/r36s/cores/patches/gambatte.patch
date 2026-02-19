@@ -12,7 +12,7 @@ index ffaba21e7a88f90786d818ab550b68acd05738bf..3c5a057d89d12e6c34910350859e9842
 +   CC = $(CROSS_COMPILE)gcc
 +   CXX = $(CROSS_COMPILE)g++
 +   AR = $(CROSS_COMPILE)ar
-+   SHARED := -shared -Wl,--version-script=$(version_script)
++   SHARED := -shared  -Wl,-z,noexecstack -Wl,--version-script=$(version_script)
 +   LDFLAGS += -fPIC -flto
 +   PLATFORM_DEFINES := -DCC_RESAMPLER -DCC_RESAMPLER_NO_HIGHPASS
 +   CFLAGS += $(MYARCH) -fomit-frame-pointer
