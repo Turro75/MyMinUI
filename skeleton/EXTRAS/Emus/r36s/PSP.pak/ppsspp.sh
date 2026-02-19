@@ -49,7 +49,7 @@ elif [[ $1 == "standalone-2021" ]]; then
 #  sudo systemctl restart ${BUTMON}.service
   cp -f $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini
   echo "PPSSPPSDL" > "${KILLSTANDALONE_PATH}"
-  /opt/ppsspp-2021/PPSSPPSDL --fullscreen "$2"
+  sudo -u ark /opt/ppsspp-2021/PPSSPPSDL --fullscreen "$2"
   cp -f $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl
 #  sudo systemctl stop ${BUTMON}.service
   unset SDL_AUDIODRIVER
@@ -64,7 +64,7 @@ else
     mkdir /$directory/psp/SAVEDATA
   fi
   /usr/local/bin/watchpsp.sh $directory &
-  /usr/local/bin/retroarch -L /home/ark/.config/retroarch/cores/ppsspp_libretro.so "$2"
+  sudo -u ark /usr/local/bin/retroarch -L /home/ark/.config/retroarch/cores/ppsspp_libretro.so "$2"
   sudo kill -9 $(pidof watchpsp.sh)
 fi
 if [ -f "${KILLSTANDALONE_PATH}" ]; then
