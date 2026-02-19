@@ -14,7 +14,7 @@ export SDL_NOMOUSE=1
 PID=-1
 # install/update
 # is there an update available?
-if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
+if [ -e ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	NEWFILE=$(ls ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip)
 	#echo "Trovato release file" >> $LOGFILE
 	#echo "Sono nella directory " $(pwd) >> $LOGFILE
@@ -44,7 +44,7 @@ fi
 
 echo "Checking for $UPDATE_PATH update file" >> $LOGFILE
 #same as original MinUI install/update process
-if [ -f "$UPDATE_PATH" ]; then
+if [ -e "$UPDATE_PATH" ]; then
 	echo "Found update file $UPDATE_PATH" >> $LOGFILE
 	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
 	    ACTION="updating"
@@ -85,7 +85,7 @@ sudo mkdir -p "${SDCARD_PATH}/Bios/DC";
 
 ls -l ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/* >> $LOGFILE
 
-if [ -f ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/launch.sh ] ; then
+if [ -e ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/launch.sh ] ; then
     echo "Launching MyMinUI" >> $LOGFILE
     sudo ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/launch.sh
 else

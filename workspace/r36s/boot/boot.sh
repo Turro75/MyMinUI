@@ -52,7 +52,7 @@ else
 	ln -s /roms/MyMinUI $SDCARD_PATH
 fi
 
-if [ -f $SDCARD_PATH/$PLATFORM/r36s_stage2.sh ]; then
+if [ -e $SDCARD_PATH/$PLATFORM/r36s_stage2.sh ]; then
     $SDCARD_PATH/$PLATFORM/r36s_stage2.sh
 else
     echo "Error: $SDCARD_PATH/$PLATFORM/r36s_stage2.sh" >> $LOGFILE

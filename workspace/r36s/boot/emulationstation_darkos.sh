@@ -135,7 +135,7 @@ if [ "$?" -eq "10" ]; then
           done
   done
 else
-    if [ -f /roms/MyMinUI/r36s/r36s.sh ]; then
+    if [ -e /roms/MyMinUI/r36s/r36s.sh ]; then
       sudo /roms/MyMinUI/r36s/r36s.sh
       sudo systemctl poweroff
     fi
@@ -146,12 +146,12 @@ else
         "$esdir/emulationstation" "$@"
         ret=$?
         [ -f /tmp/es-restart ] && continue
-        if [ -f /tmp/es-sysrestart ]; then
+        if [ -e /tmp/es-sysrestart ]; then
             rm -f /tmp/es-sysrestart
             systemctl reboot
             break
         fi
-        if [ -f /tmp/es-shutdown ]; then
+        if [ -e /tmp/es-shutdown ]; then
             rm -f /tmp/es-shutdown
             systemctl poweroff
             break

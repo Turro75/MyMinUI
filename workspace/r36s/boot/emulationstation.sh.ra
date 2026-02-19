@@ -119,7 +119,7 @@ if [ "$?" -eq "10" ]; then
           done
   done
 else
-  if [ -f /roms/MyMinUI/r36s/r36s.sh ]; then
+  if [ -e /roms/MyMinUI/r36s/r36s.sh ]; then
     sudo /roms/MyMinUI/r36s/r36s.sh
     systemctl poweroff
    else
