@@ -1,7 +1,18 @@
 #!/bin/bash
 
-directory=$SDCARD_PATH/Saves/PSP
+
+directory=/MyMinUI/Saves/PSP
 mkdir -p $directory/psp
+#RET=$(sudo cat /etc/issue | grep -i -o Debian)
+KILLSTANDALONE_PATH=/tmp/killstandalone.txt
+if [ -f "${KILLSTANDALONE_PATH}" ]; then
+  sudo rm "${KILLSTANDALONE_PATH}"
+fi
+#BUTMON=killer_daemon
+#if [ -z "$RET" ]; then 
+#  # ArkOS detected
+#  BUTMON=ppsspphotkey
+#fi
 
 if  [[ $1 == "standalone" ]]; then
   if  [[ ! -d "$directory/psp/ppsspp" ]]; then
@@ -13,15 +24,17 @@ if  [[ $1 == "standalone" ]]; then
   if  [[ ! -f "$directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl" ]]; then
     cp -rf /opt/ppsspp/backupforromsfolder/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl
   fi
-  sudo systemctl start ppsspphotkey.service
+ # sudo systemctl restart ${BUTMON}.service
   cp -f $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini
   xres="$(cat /sys/class/graphics/fb0/modes | grep -o -P '(?<=:).*(?=p-)' | cut -dx -f1)"
   if [ $xres -ge "1280" ]; then
     HDMI="/usr/lib/aarch64-linux-gnu/libSDL2-2.0.so.0.10.0"
   fi
-  LD_PRELOAD="$HDMI" /opt/ppsspp/PPSSPPSDL --fullscreen "$2"
+ # LD_LIBRARY_PATH=/opt/ppsspp:$LD_LIBRARY_PATH 
+  echo "PPSSPPSDL" > "${KILLSTANDALONE_PATH}"
+  sudo -u ark LD_PRELOAD="${HDMI}" LD_LIBRARY_PATH=/opt/ppsspp:$LD_LIBRARY_PATH /opt/ppsspp/PPSSPPSDL --fullscreen "$2"
   cp -f $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl
-  sudo systemctl stop ppsspphotkey.service
+  #sudo systemctl stop ${BUTMON}.service
 elif [[ $1 == "standalone-2021" ]]; then
   if  [[ ! -d "$directory/psp/ppsspp" ]]; then
     cp -rf /opt/ppsspp/backupforromsfolder/ppsspp $directory/psp
@@ -33,11 +46,12 @@ elif [[ $1 == "standalone-2021" ]]; then
     cp -rf /opt/ppsspp/backupforromsfolder/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl
   fi
   export SDL_AUDIODRIVER=alsa
-  sudo systemctl start ppsspphotkey.service
+#  sudo systemctl restart ${BUTMON}.service
   cp -f $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini
+  echo "PPSSPPSDL" > "${KILLSTANDALONE_PATH}"
   /opt/ppsspp-2021/PPSSPPSDL --fullscreen "$2"
   cp -f $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini $directory/psp/ppsspp/PSP/SYSTEM/ppsspp.ini.sdl
-  sudo systemctl stop ppsspphotkey.service
+#  sudo systemctl stop ${BUTMON}.service
   unset SDL_AUDIODRIVER
 else
   if [[ ! -d "$directory/psp/PSP" ]]; then
@@ -52,4 +66,7 @@ else
   /usr/local/bin/watchpsp.sh $directory &
   /usr/local/bin/retroarch -L /home/ark/.config/retroarch/cores/ppsspp_libretro.so "$2"
   sudo kill -9 $(pidof watchpsp.sh)
+fi
+if [ -f "${KILLSTANDALONE_PATH}" ]; then
+  sudo rm "${KILLSTANDALONE_PATH}"
 fi

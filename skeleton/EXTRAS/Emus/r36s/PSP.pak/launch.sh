@@ -25,8 +25,8 @@ overclock.elf ${CPU_OC}
 if [ ! -f $SDCARD_PATH/Saves/PSP ]; then
     mkdir -p $SDCARD_PATH/Saves/PSP
 fi
-
-$CURDIR/ppsspp.sh $EMU "$1" > $LOGS_PATH/ppsspp.txt
+cd $CURDIR
+./ppsspp.sh $EMU "$1" > $LOGS_PATH/ppsspp.txt 2>&1
 
 #launch_rom.sh  "$1" "$2" "$3" "$4" ${RUN} ${RUN2} "$CURDIR" "$EMU_EXE" $CPU_OC
 overclock.elf ${CPU_SPEED_MENU}

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+KILLSTANDALONE_PATH=/tmp/killstandalone.txt
+if [ -f "${KILLSTANDALONE_PATH}" ]; then
+  sudo rm "${KILLSTANDALONE_PATH}"
+fi
+
 if [ -f "/boot/rk3326-rg351v-linux.dtb" ] || [ -f "/boot/rk3326-rg351mp-linux.dtb" ] || [ -f "/boot/rk3326-r33s-linux.dtb" ] || [ -f "/boot/rk3326-r35s-linux.dtb" ] || [ -f "/boot/rk3326-r36s-linux.dtb" ] || [ -f "/boot/rk3326-gameforce-linux.dtb" ] || [ -f "/boot/rk3566.dtb" ] || [ -f "/boot/rk3566-OC.dtb" ]; then
   xres="$(cat /sys/class/graphics/fb0/modes | grep -o -P '(?<=:).*(?=p-)' | cut -dx -f1)"
   yres="$(cat /sys/class/graphics/fb0/modes | grep -o -P '(?<=:).*(?=p-)' | cut -dx -f2)"
@@ -49,7 +54,7 @@ if ([[ "${ext,,}" == "zip" ]] || [[ "${ext,,}" == "7z" ]]) && [[ $1 == *"standal
     exit
   fi
 fi
-
+echo "mupen64plus" > "${KILLSTANDALONE_PATH}"
 if [[ $1 == "standalone-Rice" ]]; then
   if [[ $2 == "Widescreen_Aspect" ]]; then
     /opt/mupen64plus/mupen64plus --resolution "${xres}x${yres}" --plugindir /opt/mupen64plus --gfx mupen64plus-video-rice.so --corelib /opt/mupen64plus/libmupen64plus.so.2 --datadir /opt/mupen64plus "$game"
@@ -72,4 +77,6 @@ elif [[ $1 == "standalone-GlideN64" ]]; then
 else
   /usr/local/bin/"$1" -L /home/ark/.config/"$1"/cores/"$2"_libretro.so "$3"
 fi
-
+if [ -f "${KILLSTANDALONE_PATH}" ]; then
+  sudo rm "${KILLSTANDALONE_PATH}"
+fi

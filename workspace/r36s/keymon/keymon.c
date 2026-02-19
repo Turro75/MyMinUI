@@ -43,6 +43,13 @@ static int inputs[INPUT_COUNT];
 static struct input_event ev;
 FILE *file_log;
 
+//add menu+select handling for standalone apps.
+// once a standalone app is launched it writes its name to /tmp/killstandalone.txt -> system("echo blabla > /tmp/killstandalone.txt"); or putFile form utils.c
+// at every cycle it is checked if the file exists, if yes, it is cheched if menu+select is pressed (or any other better combination) and 
+//if yes it is performed a system("kill -9 $pidof $("cat /tmp/killstandalone.txt")"); the file must be deleted by the launch.sh script so in case the kill failed it can retry.
+
+#define KILLSTANDALONE_PATH "/tmp/killstandalone.txt"
+
 int main (int argc, char *argv[]) {
 	InitSettings();
 	int is353v = 0;
@@ -117,7 +124,7 @@ int main (int argc, char *argv[]) {
 		_START_RAW = 310;
 		_SELECT_RAW = 311;
 		_MENU_RAW= 800; //no menu button on rg351p
-		
+		menumissing = 1;		
 	} else {
 		//r36s
 		inputs[0] = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
@@ -202,10 +209,19 @@ int main (int argc, char *argv[]) {
 			up_repeat_at = 0;
 			down_repeat_at = 0;
 		}
-		
+
+		if (access(KILLSTANDALONE_PATH,F_OK)==0) {
+			if (start_pressed && select_pressed) { 
+				char cmd[512];
+				sprintf(cmd, "kill -9 $(pidof $(cat %s))", KILLSTANDALONE_PATH);
+				if (system(cmd) == 0) {
+					unlink(KILLSTANDALONE_PATH);
+				}
+			}
+		}
 		if (up_just_pressed || (up_pressed && now>=up_repeat_at)) {
 			if (isrg351p==0) {
-				if ((menu_pressed) || ((select_pressed) && (start_pressed))) {
+				if ((menu_pressed) || ((menumissing==1) && (select_pressed) && (start_pressed))) {
 					//printf("brightness up\n"); fflush(stdout);
 					val = GetBrightness();
 					if (val<BRIGHTNESS_MAX) SetBrightness(++val);
@@ -233,7 +249,7 @@ int main (int argc, char *argv[]) {
 		
 		if (down_just_pressed || (down_pressed && now>=down_repeat_at)) {
 			if (isrg351p==0) {
-				if ((menu_pressed) || ((select_pressed) && (start_pressed))) {
+				if ((menu_pressed) || ((menumissing==1) && (select_pressed) && (start_pressed))) {
 					//printf("brightness down\n"); fflush(stdout);
 					val = GetBrightness();
 					if (val>BRIGHTNESS_MIN) SetBrightness(--val);

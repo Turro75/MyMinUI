@@ -27,7 +27,7 @@ if [ ! -f $SDCARD_PATH/Saves/N64 ]; then
     mkdir -p $SDCARD_PATH/Saves/N64
 fi
 
-$CURDIR/n64.sh $EMU NOTWIDE "$1" > $LOGS_PATH/N64.txt
+$CURDIR/n64.sh $EMU NOTWIDE "$1" > $LOGS_PATH/N64.txt 2>&1
 
 #launch_rom.sh  "$1" "$2" "$3" "$4" ${RUN} ${RUN2} "$CURDIR" "$EMU_EXE" $CPU_OC
 overclock.elf ${CPU_SPEED_MENU}
