@@ -1277,6 +1277,43 @@ int PLAT_isOnline(void) {
 	return online;
 }
 
+
+char* PLAT_getIPAddress(void) {
+    FILE *fp;
+    char _buffer[256];
+    char *outstr = NULL;
+
+    // Esegue il comando e legge l'output
+    fp = popen("ip route | cut -d' ' -f9 | uniq", "r");
+    if (fp == NULL) {
+        LOG_info("getIpAddress popen failed - %s\n", strerror(errno));
+        return NULL; // Restituisce NULL in caso di errore
+    }
+
+    // Legge l'output riga per riga
+    if (fgets(_buffer, sizeof(_buffer), fp) != NULL) {
+        // Alloca memoria per la stringa di output
+        size_t len = strlen(_buffer);
+        if (len > 0 && _buffer[len - 1] == '\n') {
+            _buffer[len - 1] = '\0'; // Rimuove il carattere di newline
+        }
+        outstr = malloc(len + 1); // Alloca memoria per la stringa
+        if (outstr != NULL) {
+            strcpy(outstr, _buffer); // Copia la stringa
+        } else {
+            LOG_info("Memory allocation failed for IP address\n");
+        }
+    }
+
+    // Chiude lo stream
+    int status = pclose(fp);
+    if (status == -1) {
+        LOG_info("pclose failed - %s\n", strerror(errno));
+    }
+	
+    return outstr; // Restituisce la stringa allocata o NULL
+}
+
 int PLAT_getNumProcessors(void) {
 	//the core can be deactivated by command line
 	return sysconf(_SC_NPROCESSORS_ONLN);

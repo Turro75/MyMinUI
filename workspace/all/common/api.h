@@ -487,6 +487,7 @@ int PLAT_pickSampleRate(int requested, int max);
 
 char* PLAT_getModel(void);
 int PLAT_isOnline(void);
+char* PLAT_getIPAddress(void);
 
 int PLAT_getNumProcessors(void);
 void PLAT_getAudioOutput(void);

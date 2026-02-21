@@ -751,6 +751,13 @@ int PLAT_isOnline(void) {
 	return online;
 }
 
+char* PLAT_getIPAddress(void){
+	char *outstr = NULL;
+	outstr = malloc(8); // Alloca memoria per la stringa
+	strcpy(outstr,"Offline");
+	return outstr;
+}
+
 int PLAT_getScreenRotation(int game) {
 	if (game) {
 		return vid.rotategame;

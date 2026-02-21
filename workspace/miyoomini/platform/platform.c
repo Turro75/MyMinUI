@@ -750,6 +750,13 @@ int PLAT_isOnline(void) {
 	return 0;
 }
 
+char* PLAT_getIPAddress(void){
+	char *outstr = NULL;
+	outstr = malloc(8); // Alloca memoria per la stringa
+	strcpy(outstr,"Offline");
+	return outstr;
+}
+
 int PLAT_getNumProcessors(void) {
 	//the core can be deactivated by command line
 	return 2;

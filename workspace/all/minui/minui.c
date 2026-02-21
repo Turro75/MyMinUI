@@ -2111,7 +2111,7 @@ int main (int argc, char *argv[]) {
 					#define VERSION_LINE_HEIGHT 24
 					int x = l_width + SCALE1(8);
 					int w = x + r_width;
-					int h = SCALE1(VERSION_LINE_HEIGHT*4);
+					int h = SCALE1(VERSION_LINE_HEIGHT*(4+is_online));
 					version = SDL_CreateRGBSurface(0,w,h,16,0,0,0,0);
 					
 					SDL_BlitSurface(release_txt, NULL, version, &(SDL_Rect){0, 0});
@@ -2134,6 +2134,18 @@ int main (int argc, char *argv[]) {
 					SDL_BlitSurface(mode_txt, NULL, version, &(SDL_Rect){x,SCALE1(VERSION_LINE_HEIGHT*3)});
 					SDL_FreeSurface(fixedmode_txt);
 					SDL_FreeSurface(mode_txt);
+
+					if (is_online!=0) {
+						//is connected, shows the IP Address
+						SDL_Surface* ip_txt = TTF_RenderUTF8_Blended(font.large, "IP Addr", COLOR_DARK_TEXT);
+						char * ip_addr = PLAT_getIPAddress();
+						SDL_Surface* ip_addr_txt = TTF_RenderUTF8_Blended(font.large, ip_addr, COLOR_WHITE);
+						SDL_BlitSurface(ip_txt, NULL, version, &(SDL_Rect){0,SCALE1(VERSION_LINE_HEIGHT*4)});
+						SDL_BlitSurface(ip_addr_txt, NULL, version, &(SDL_Rect){x,SCALE1(VERSION_LINE_HEIGHT*4)});
+						SDL_FreeSurface(ip_txt);
+						SDL_FreeSurface(ip_addr_txt);	
+						free(ip_addr);					
+					}	
 				//}
 				SDL_BlitSurface(version, NULL, screen, &(SDL_Rect){(screen->w-version->w)/2,(screen->h-version->h)/4});
 				
