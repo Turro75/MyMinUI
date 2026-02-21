@@ -88,9 +88,9 @@ int main (int argc, char *argv[]) {
 						if (val) up_repeat_at = now + 300;
 					break;
 					case CODE_PWR:
-						file_log = fopen("/mnt/SDCARD/.userdata/my282/logs/keymon.log", "a+"); 
-						fprintf(file_log, "PWR BTN PRESSED Event BTN Code = %d\n",ev.code);
-						fclose(file_log); 
+						//file_log = fopen("/mnt/SDCARD/.userdata/my282/logs/keymon.log", "a+"); 
+						//fprintf(file_log, "PWR BTN PRESSED Event BTN Code = %d\n",ev.code);
+						//fclose(file_log); 
 						system("rm -f /mnt/SDCARD/.system.json.log");
 						fflush(stdout);
 						system("echo -n \"QUIT\" | nc -u -w1 127.0.0.1 55355");
@@ -100,9 +100,9 @@ int main (int argc, char *argv[]) {
 						if (val) down_repeat_at = now + 300;
 					break;
 					default:
-						file_log = fopen("/mnt/SDCARD/.userdata/my282/logs/keymon.log", "a+"); 
-						fprintf(file_log, "Event BTN Code = %d\n",ev.code);
-						fclose(file_log); 
+						//file_log = fopen("/mnt/SDCARD/.userdata/my282/logs/keymon.log", "a+"); 
+						//fprintf(file_log, "Event BTN Code = %d\n",ev.code);
+						//fclose(file_log); 
 					break;
 				}
 			}
