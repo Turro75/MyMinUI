@@ -3729,14 +3729,16 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 	if (downsample == 0) {
 		//as is
 		//this is quite faster than memcpy, in the worst case of 720x720 it takes 0.6msec while memcpy takes 1.5msec.
-		pixman_composite_src_0565_0565_asm_neon(pitch/2, height, output, pitch/2, (uint16_t *)data, pitch/2);
+		//pixman_composite_src_0565_0565_asm_neon(pitch/2, height, output, pitch/2, (uint16_t *)data, pitch/2);
+		neon_copy_rgb565(pitch/2, height, output, pitch/2, (uint16_t *)data, pitch/2);
 	}
 
 	if (downsample == 1) {
 		// from 8888 to 565
 		pitch /= 2;	
 		// using pixman_composite allows to save up to 3msec per frame (pixman requires 2.7msec@720x720, while cycle above takes 5.8msecs)
-		pixman_composite_src_8888_0565_asm_neon(pitch/2, height, output, pitch/2, (uint32_t *)data, pitch/2);
+		//pixman_composite_src_8888_0565_asm_neon(pitch/2, height, output, pitch/2, (uint32_t *)data, pitch/2);
+		neon_convert_8888_to_565(pitch/2, height, output, pitch/2, (uint32_t *)data, pitch/2);
 	} 
 
 	if (downsample == 2) {

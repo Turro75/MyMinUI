@@ -1068,7 +1068,8 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 //		FlipRotate000(vid.screengame, vid.fbmmap[vid.page],vid.linewidth[vid.page], vid.targetRect);
 		if ((vid.targetRect.w == vid.screen->w) && (vid.targetRect.h == vid.screen->h)) {
 			//fullscreen
-			pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap[vid.page], vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
+		//	pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap[vid.page], vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
+			neon_convert_565_to_8888(vid.screengame->w, vid.screengame->h, vid.fbmmap[vid.page], vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
 		} else {
 			//window
 			convert_rgb565_to_argb8888_neon_rect(vid.screengame->pixels, vid.fbmmap[vid.page], vid.screengame->w, vid.screengame->w, vid.targetRect.x, vid.targetRect.y, vid.targetRect.w, vid.targetRect.h);

@@ -245,7 +245,7 @@ void GFX_delay(void); // gfx_sync() is only for everywhere where there is no aud
 void GFX_quit(void);
 void GFX_pan(void);
 
-
+/*
 //used to convert the frame sent by the core ro the rgb565 format, the 0565_0565 acts as memcpy but faster.
 void pixman_composite_src_8888_0565_asm_neon(int width, int height,
 	uint16_t *dst, int dst_stride_pixels, const uint32_t *src, int src_stride_pixels);
@@ -256,8 +256,6 @@ void pixman_composite_src_1555_0565_asm_neon(int width, int height,
 void pixman_composite_src_0565_0565_asm_neon(int width, int height,
 	uint16_t *dst, int dst_stride_pixels, const uint16_t *src, int src_stride_pixels);
 
-void convert_argb1555_to_rgb565_neon(int width, int height,
-    uint16_t *dst, int dst_stride_pixels, const uint16_t *src, int src_stride_pixels);
 
 //retroarch uses it in its sunxi implementation, quick way to convert and copy a buffer.
 void pixman_composite_src_0565_8888_asm_neon(int width,
@@ -274,6 +272,10 @@ void pixman_composite_src_0565_8888_asm_neon_bgr(int width,
 	int dst_stride_pixels,
 	uint16_t *src,
 	int src_stride_pixels);
+*/
+
+void convert_argb1555_to_rgb565_neon(int width, int height,
+    uint16_t *dst, int dst_stride_pixels, const uint16_t *src, int src_stride_pixels);
 
 // chatgpt contributed that, this is the faster and accuratereplacement of SDL_SoftStretch, 
 //better because dedicated to rgb565 format only
@@ -534,5 +536,21 @@ void convert_rgb565_to_abgr8888_neon_rect(
     int rect_width,
     int rect_height
 ); 
+
+void neon_convert_565_to_8888(int width, int height, 
+                              uint32_t *dst, int dst_pitch, 
+                              const uint16_t *src, int src_pitch);
+
+void neon_convert_565_to_8888_abgr(int width, int height, 
+                              uint32_t *dst, int dst_pitch, 
+                              const uint16_t *src, int src_pitch);
+
+void neon_convert_8888_to_565(int width, int height, 
+                              uint16_t *dst, int dst_pitch, 
+                              const uint32_t *src, int src_pitch);
+
+void neon_copy_rgb565(int width, int height, 
+                      uint16_t *dst, int dst_pitch, 
+                      const uint16_t *src, int src_pitch);
 
 #endif

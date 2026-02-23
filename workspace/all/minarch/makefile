@@ -24,7 +24,7 @@ OBJDUMP = $(CROSS_COMPILE)objdump
 TARGET = minarch
 INCDIR = -I. -I./libretro-common/include/ -I../common/ -I../../$(PLATFORM)/platform/ $(MY_INCDIR)
 SOURCE = $(TARGET).c ../common/scaler.c ../common/utils.c ../common/$(SDL)_rotozoom.c ../common/api.c ../../$(PLATFORM)/platform/platform.c 
-SOURCE += ../common/pixman-arm-neon-asm.S
+#SOURCE += ../common/pixman-arm-neon-asm.S
 
 
 CC = $(CROSS_COMPILE)gcc

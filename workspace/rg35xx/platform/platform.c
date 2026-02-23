@@ -517,7 +517,8 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		//orientation ok but red and blue must be swapped
 		if (vid.targetRect.w == vid.screen->w) {
 			//fullscreen
-			pixman_composite_src_0565_8888_asm_neon_bgr(vid.screengame->w,vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
+		//	pixman_composite_src_0565_8888_asm_neon_bgr(vid.screengame->w,vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
+			neon_convert_565_to_8888_abgr(vid.screengame->w,vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
 		} else {
 			//window
 			convert_rgb565_to_abgr8888_neon_rect(vid.screengame->pixels, vid.fbmmap+vid.page*vid.offset, vid.screengame->w, vid.screengame->w, vid.targetRect.x, vid.targetRect.y, vid.targetRect.w, vid.targetRect.h);

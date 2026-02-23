@@ -47,7 +47,7 @@ EXECUTABLE := $(OUTDIR)/MyCommander.elf
 
 OBJS :=	main.o commander.o config.o dialog.o fileLister.o fileutils.o keyboard.o panel.o resourceManager.o \
 	screen.o sdl_ttf_multifont.o sdlutils.o text_edit.o utf8.o axis_direction.o controller_buttons.o text_viewer.o image_viewer.o  window.o \
-	$(SDL)_rotozoom.o platform.o api.o utils.o scaler.o myneon.o
+	$(SDL)_rotozoom.o platform.o api.o utils.o scaler.o
 
 
 #OBJS += ../../$(PLATFORM)/platform.o
@@ -69,10 +69,10 @@ $(OUTDIR)/$(SDL)_rotozoom.o: ../common/$(SDL)_rotozoom.c
 	$(CMD)$(CC) $(CXXFLAGS) -MP -MMD -MF $(@:%.o=%.d) ../common/$(SDL)_rotozoom.c -c -o $@
 	@touch $@ # Force .o file to be newer than .d file.
 
-$(OUTDIR)/myneon.o: ../common/pixman-arm-neon-asm.S
-	$(SUM) "  CXX     $@"
-	$(CMD)$(CC) $(CXXFLAGS) -MP -MMD -MF $(@:%.o=%.d) ../common/pixman-arm-neon-asm.S -c -o $@
-	@touch $@ # Force .o file to be newer than .d file.
+#$(OUTDIR)/myneon.o: ../common/pixman-arm-neon-asm.S
+#	$(SUM) "  CXX     $@"
+#	$(CMD)$(CC) $(CXXFLAGS) -MP -MMD -MF $(@:%.o=%.d) ../common/pixman-arm-neon-asm.S -c -o $@
+#	@touch $@ # Force .o file to be newer than .d file.
 
 $(OUTDIR)/api.o: ../common/api.c
 	$(SUM) "  CXX     $@"

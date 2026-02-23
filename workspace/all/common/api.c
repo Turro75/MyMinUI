@@ -3299,3 +3299,227 @@ int FlipRotate000(SDL_Surface *buffer, void *fbmmap, int linewidth, SDL_Rect tar
     }
     return 0;
 }
+
+
+
+/**
+ * Converts RGB565 (16bpp) to XRGB8888 (32bpp) using NEON.
+ * 
+ * @param width       Width in PIXELS
+ * @param height      Height in PIXELS
+ * @param dst         Pointer to destination (uint32_t - XRGB8888)
+ * @param dst_pitch   Destination pitch in PIXELS
+ * @param src         Pointer to source (uint16_t - RGB565)
+ * @param src_pitch   Source pitch in PIXELS
+ */
+
+void neon_convert_565_to_8888_abgr(int width, int height, 
+                              uint32_t *dst, int dst_pitch, 
+                              const uint16_t *src, int src_pitch) 
+{
+    for (int y = 0; y < height; y++) {
+        const uint16_t *s = src + (y * src_pitch);
+        uint32_t *d = dst + (y * dst_pitch);
+        
+        int x = 0;
+        for (; x <= width - 8; x += 8) {
+            uint16x8_t rgb565 = vld1q_u16(s + x);
+
+            // Estrazione canali (5-6-5)
+            uint16x8_t r5 = vshrq_n_u16(rgb565, 11);
+            uint16x8_t g6 = vshrq_n_u16(vshlq_n_u16(rgb565, 5), 10);
+            uint16x8_t b5 = vshrq_n_u16(vshlq_n_u16(rgb565, 11), 11);
+
+            // Espansione a 8 bit (Replicazione bit per coprire 0-255)
+            // Rosso (5 bit): (r << 3) | (r >> 2)
+            uint8x8_t r8 = vorr_u8(vmovn_u16(vshlq_n_u16(r5, 3)), vmovn_u16(vshrq_n_u16(r5, 2)));
+            // Verde (6 bit): (g << 2) | (g >> 4)
+            uint8x8_t g8 = vorr_u8(vmovn_u16(vshlq_n_u16(g6, 2)), vmovn_u16(vshrq_n_u16(g6, 4)));
+            // Blu (5 bit): (b << 3) | (b >> 2)
+            uint8x8_t b8 = vorr_u8(vmovn_u16(vshlq_n_u16(b5, 3)), vmovn_u16(vshrq_n_u16(b5, 2)));
+            
+            uint8x8_t a8 = vdup_n_u8(0xFF);
+
+            // Interleave in formato [B, G, R, X] (Little Endian XRGB)
+            uint8x8x4_t xrgb;
+            xrgb.val[0] = r8;
+            xrgb.val[1] = g8;
+            xrgb.val[2] = b8;
+            xrgb.val[3] = a8;
+
+            vst4_u8((uint8_t *)(d + x), xrgb);
+        }
+
+        // Tail handling
+        for (; x < width; x++) {
+            uint16_t p = s[x];
+            uint32_t r = (p >> 11) & 0x1F;
+            uint32_t g = (p >> 5) & 0x3F;
+            uint32_t b = p & 0x1F;
+            r = (r << 3) | (r >> 2);
+            g = (g << 2) | (g >> 4);
+            b = (b << 3) | (b >> 2);
+            d[x] = 0xFF000000 | (b << 16) | (g << 8) | r;
+        }
+    }
+}
+
+
+
+/**
+ * Converts RGB565 (16bpp) to XRGB8888 (32bpp) using NEON.
+ * 
+ * @param width       Width in PIXELS
+ * @param height      Height in PIXELS
+ * @param dst         Pointer to destination (uint32_t - XRGB8888)
+ * @param dst_pitch   Destination pitch in PIXELS
+ * @param src         Pointer to source (uint16_t - RGB565)
+ * @param src_pitch   Source pitch in PIXELS
+ */
+
+void neon_convert_565_to_8888(int width, int height, 
+                              uint32_t *dst, int dst_pitch, 
+                              const uint16_t *src, int src_pitch) 
+{
+    for (int y = 0; y < height; y++) {
+        const uint16_t *s = src + (y * src_pitch);
+        uint32_t *d = dst + (y * dst_pitch);
+        
+        int x = 0;
+        for (; x <= width - 8; x += 8) {
+            uint16x8_t rgb565 = vld1q_u16(s + x);
+
+            // Estrazione canali (5-6-5)
+            uint16x8_t r5 = vshrq_n_u16(rgb565, 11);
+            uint16x8_t g6 = vshrq_n_u16(vshlq_n_u16(rgb565, 5), 10);
+            uint16x8_t b5 = vshrq_n_u16(vshlq_n_u16(rgb565, 11), 11);
+
+            // Espansione a 8 bit (Replicazione bit per coprire 0-255)
+            // Rosso (5 bit): (r << 3) | (r >> 2)
+            uint8x8_t r8 = vorr_u8(vmovn_u16(vshlq_n_u16(r5, 3)), vmovn_u16(vshrq_n_u16(r5, 2)));
+            // Verde (6 bit): (g << 2) | (g >> 4)
+            uint8x8_t g8 = vorr_u8(vmovn_u16(vshlq_n_u16(g6, 2)), vmovn_u16(vshrq_n_u16(g6, 4)));
+            // Blu (5 bit): (b << 3) | (b >> 2)
+            uint8x8_t b8 = vorr_u8(vmovn_u16(vshlq_n_u16(b5, 3)), vmovn_u16(vshrq_n_u16(b5, 2)));
+            
+            uint8x8_t a8 = vdup_n_u8(0xFF);
+
+            // Interleave in formato [B, G, R, X] (Little Endian XRGB)
+            uint8x8x4_t xrgb;
+            xrgb.val[0] = b8;
+            xrgb.val[1] = g8;
+            xrgb.val[2] = r8;
+            xrgb.val[3] = a8;
+
+            vst4_u8((uint8_t *)(d + x), xrgb);
+        }
+
+        // Tail handling
+        for (; x < width; x++) {
+            uint16_t p = s[x];
+            uint32_t r = (p >> 11) & 0x1F;
+            uint32_t g = (p >> 5) & 0x3F;
+            uint32_t b = p & 0x1F;
+            r = (r << 3) | (r >> 2);
+            g = (g << 2) | (g >> 4);
+            b = (b << 3) | (b >> 2);
+            d[x] = 0xFF000000 | (r << 16) | (g << 8) | b;
+        }
+    }
+}
+
+
+/**
+ * Sostituto di pixman_composite_src_0565_0565_asm_neon
+ * Copia un'area RGB565 da sorgente a destinazione usando NEON.
+ * 
+ * @param width       Larghezza in PIXEL
+ * @param height      Altezza in PIXEL
+ * @param dst         Puntatore alla destinazione (RGB565)
+ * @param dst_pitch   Pitch di destinazione in PIXEL (non byte)
+ * @param src         Puntatore alla sorgente (RGB565)
+ * @param src_pitch   Pitch di sorgente in PIXEL (non byte)
+ */
+void neon_copy_rgb565(int width, int height, 
+                      uint16_t *dst, int dst_pitch, 
+                      const uint16_t *src, int src_pitch) 
+{
+    for (int y = 0; y < height; y++) {
+        const uint16_t *s = src + (y * src_pitch);
+        uint16_t *d = dst + (y * dst_pitch);
+        
+        int x = 0;
+        // Processiamo 16 pixel alla volta (32 byte -> due registri Q da 128 bit)
+        for (; x <= width - 16; x += 16) {
+            // Carica 16 pixel (uint16x8_t x 2)
+            uint16x8_t pixels_low = vld1q_u16(s + x);
+            uint16x8_t pixels_high = vld1q_u16(s + x + 8);
+            
+            // Salva 16 pixel nella destinazione
+            vst1q_u16(d + x, pixels_low);
+            vst1q_u16(d + x + 8, pixels_high);
+        }
+        
+        // Gestione dei pixel rimanenti (Tail) se width non è multiplo di 16
+        for (; x < width; x++) {
+            d[x] = s[x];
+        }
+    }
+}
+
+/**
+ * Sostituto di pixman_composite_src_8888_0565_asm_neon
+ * Converte da XRGB8888 (32bpp) a RGB565 (16bpp) usando NEON.
+ * 
+ * @param width       Larghezza in PIXEL
+ * @param height      Altezza in PIXEL
+ * @param dst         Puntatore destinazione (uint16_t - RGB565)
+ * @param dst_pitch   Pitch destinazione in PIXEL
+ * @param src         Puntatore sorgente (uint32_t - XRGB8888)
+ * @param src_pitch   Pitch sorgente in PIXEL
+ */
+void neon_convert_8888_to_565(int width, int height, 
+                              uint16_t *dst, int dst_pitch, 
+                              const uint32_t *src, int src_pitch) 
+{
+    for (int y = 0; y < height; y++) {
+        const uint32_t *s = src + (y * src_pitch);
+        uint16_t *d = dst + (y * dst_pitch);
+        
+        int x = 0;
+        for (; x <= width - 8; x += 8) {
+            // Carica 8 pixel (32 byte) e separa i canali R, G, B, X
+            // Nota: In Little Endian XRGB8888 è [B][G][R][X] in memoria
+            uint8x8x4_t rgba = vld4_u8((const uint8_t *)(s + x));
+
+            // Estraiamo i canali e promuoviamoli a 16 bit (uint16x8_t)
+            uint16x8_t r = vmovl_u8(rgba.val[2]); // Rosso (8 bit -> 16 bit)
+            uint16x8_t g = vmovl_u8(rgba.val[1]); // Verde (8 bit -> 16 bit)
+            uint16x8_t b = vmovl_u8(rgba.val[0]); // Blu   (8 bit -> 16 bit)
+
+            // Scaliamo e spostiamo i bit nelle posizioni RGB565:
+            // Rosso:   (r >> 3) << 11  => r << 8 (ma con maschera 0xF800)
+            // Verde:   (g >> 2) << 5   => g << 3 (ma con maschera 0x07E0)
+            // Blu:     (b >> 3)        => b >> 3 (ma con maschera 0x001F)
+            
+            uint16x8_t r5 = vshlq_n_u16(vshrq_n_u16(r, 3), 11);
+            uint16x8_t g6 = vshlq_n_u16(vshrq_n_u16(g, 2), 5);
+            uint16x8_t b5 = vshrq_n_u16(b, 3);
+
+            // Combiniamo i canali
+            uint16x8_t rgb565 = vorrq_u16(vorrq_u16(r5, g6), b5);
+
+            // Salviamo 8 pixel nella destinazione
+            vst1q_u16(d + x, rgb565);
+        }
+
+        // Gestione pixel rimanenti
+        for (; x < width; x++) {
+            uint32_t p = s[x];
+            uint16_t r = (p >> 19) & 0x1F;
+            uint16_t g = (p >> 10) & 0x3F;
+            uint16_t b = (p >> 3)  & 0x1F;
+            d[x] = (r << 11) | (g << 5) | b;
+        }
+    }
+}
