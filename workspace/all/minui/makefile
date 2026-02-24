@@ -21,9 +21,7 @@ SDL?=SDL
 
 TARGET = minui
 INCDIR = -I. -I../minarch/libretro-common/include/ -I../common/ -I../../$(PLATFORM)/platform/ $(MY_INCDIR)
-SOURCE = $(TARGET).c ../common/scaler.c ../common/utils.c ../common/$(SDL)_rotozoom.c ../common/api.c ../../$(PLATFORM)/platform/platform.c 
-#SOURCE += ../common/pixman-arm-neon-asm.S
-#SOURCE += ../common/pixman-arm-neon-asm.S
+SOURCE = $(TARGET).c ../common/utils.c ../common/$(SDL)_rotozoom.c ../common/api.c ../../$(PLATFORM)/platform/platform.c 
 
 CC = $(CROSS_COMPILE)gcc
 AR = $(CROSS_COMPILE)ar

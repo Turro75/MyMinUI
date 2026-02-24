@@ -942,10 +942,6 @@ void PLAT_vsync(int remaining) {
 	}
 }
 
-scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
-	return NULL;
-}
-
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	if (effect_type!=next_effect) {
 		effect_type = next_effect;

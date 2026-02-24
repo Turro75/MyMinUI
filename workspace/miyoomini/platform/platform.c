@@ -20,7 +20,6 @@
 #include "platform.h"
 #include "api.h"
 #include "utils.h"
-#include "scaler.h"
 
 ///////////////////////////////
 // based on eggs GFXSample_rev15
@@ -441,10 +440,6 @@ void PLAT_vsync(int remaining) {
 		int res = 0;
 		ioctl(vid.fdfb, FBIO_WAITFORVSYNC, &res);
 	}
-}
-
-scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
-	return NULL;
 }
 
 void PLAT_blitRenderer(GFX_Renderer* renderer) {

@@ -1136,11 +1136,6 @@ void PLAT_vsync(int remaining) {
 	}
 }
 
-scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
-	return NULL;
-}
-
-
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	if (effect_type!=next_effect) {
 		effect_type = next_effect;
@@ -1412,6 +1407,9 @@ int PLAT_pickSampleRate(int requested, int max) {
 }
 
 char* PLAT_getModel(void) {
+	if (ism22) {
+		return "SJGAM M22pro";
+	}
 	return "SJGAM M21";
 }
 

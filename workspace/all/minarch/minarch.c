@@ -21,8 +21,6 @@
 #include "utils.h"
 #include "api.h"
 
-#include "scaler.h"
-
 #include <sys/sysinfo.h>
 #include <sys/time.h>
 

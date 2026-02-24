@@ -17,7 +17,6 @@
 #include "api.h"
 #include "utils.h"
 
-#include "scaler.h"
 ////////////////////////////////
 //test for vsync
 struct owlfb_sync_info {
@@ -448,12 +447,6 @@ void PLAT_vsync(int remaining) {
 		ioctl(vid.fdfb, OWLFB_WAITFORVSYNC, &res);
 	}
 }
-
-scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
-	return NULL;
-}
-
-
 
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	if (effect_type!=next_effect) {

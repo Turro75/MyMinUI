@@ -600,184 +600,6 @@ struct blend_args {
 	uint16_t *blend_line;
 } blend_args;
 
-#if __ARM_ARCH >= 5
-static inline uint32_t average16(uint32_t c1, uint32_t c2) {
-	uint32_t ret, lowbits = 0x0821;
-	asm ("eor %0, %2, %3\r\n"
-	     "and %0, %0, %1\r\n"
-	     "add %0, %3, %0\r\n"
-	     "add %0, %0, %2\r\n"
-	     "lsr %0, %0, #1\r\n"
-	     : "=&r" (ret) : "r" (lowbits), "r" (c1), "r" (c2) : );
-	return ret;
-}
-static inline uint32_t average32(uint32_t c1, uint32_t c2) {
-	uint32_t ret, lowbits = 0x08210821;
-
-	asm ("eor %0, %3, %1\r\n"
-	     "and %0, %0, %2\r\n"
-	     "adds %0, %1, %0\r\n"
-	     "and %1, %1, #0\r\n"
-	     "movcs %1, #0x80000000\r\n"
-	     "adds %0, %0, %3\r\n"
-	     "rrx %0, %0\r\n"
-	     "orr %0, %0, %1\r\n"
-	     : "=&r" (ret), "+r" (c2) : "r" (lowbits), "r" (c1) : "cc" );
-
-	return ret;
-}
-
-#define AVERAGE16_NOCHK(c1, c2) (average16((c1), (c2)))
-#define AVERAGE32_NOCHK(c1, c2) (average32((c1), (c2)))
-
-#else
-
-static inline uint32_t average16(uint32_t c1, uint32_t c2) {
-	return (c1 + c2 + ((c1 ^ c2) & 0x0821))>>1;
-}
-static inline uint32_t average32(uint32_t c1, uint32_t c2) {
-	uint32_t sum = c1 + c2;
-	uint32_t ret = sum + ((c1 ^ c2) & 0x08210821);
-	uint32_t of = ((sum < c1) | (ret < sum)) << 31;
-
-	return (ret >> 1) | of;
-}
-
-#define AVERAGE16_NOCHK(c1, c2) (average16((c1), (c2)))
-#define AVERAGE32_NOCHK(c1, c2) (average32((c1), (c2)))
-
-#endif
-
-#define AVERAGE16(c1, c2) ((c1) == (c2) ? (c1) : AVERAGE16_NOCHK((c1), (c2)))
-#define AVERAGE16_1_3(c1, c2) ((c1) == (c2) ? (c1) : (AVERAGE16_NOCHK(AVERAGE16_NOCHK((c1), (c2)), (c2))))
-
-#define AVERAGE32(c1, c2) ((c1) == (c2) ? (c1) : AVERAGE32_NOCHK((c1), (c2)))
-#define AVERAGE32_1_3(c1, c2) ((c1) == (c2) ? (c1) : (AVERAGE32_NOCHK(AVERAGE32_NOCHK((c1), (c2)), (c2))))
-
-static inline int gcd(int a, int b) {
-	return b ? gcd(b, a % b) : a;
-}
-
-static void scaleAA(void* __restrict src, void* __restrict dst, uint32_t w, uint32_t h, uint32_t pitch, uint32_t dst_w, uint32_t dst_h, uint32_t dst_p) {
-	int dy = 0;
-	int lines = h;
-
-	int rat_w = blend_args.w_ratio_in;
-	int rat_dst_w = blend_args.w_ratio_out;
-	uint16_t *bw = blend_args.w_bp;
-
-	int rat_h = blend_args.h_ratio_in;
-	int rat_dst_h = blend_args.h_ratio_out;
-	uint16_t *bh = blend_args.h_bp;
-
-	while (lines--) {
-		while (dy < rat_dst_h) {
-			uint16_t *dst16 = (uint16_t *)dst;
-			uint16_t *pblend = (uint16_t *)blend_args.blend_line;
-			int col = w;
-			int dx = 0;
-
-			uint16_t *pnext = (uint16_t *)(src + pitch);
-			if (!lines)
-				pnext -= (pitch / sizeof(uint16_t));
-
-			if (dy > rat_dst_h - bh[0]) {
-				pblend = pnext;
-			} else if (dy <= bh[0]) {
-				/* Drops const, won't get touched later though */
-				pblend = (uint16_t *)src;
-			} else {
-				const uint32_t *src32 = (const uint32_t *)src;
-				const uint32_t *pnext32 = (const uint32_t *)pnext;
-				uint32_t *pblend32 = (uint32_t *)pblend;
-				int count = w / 2;
-
-				if (dy <= bh[1]) {
-					const uint32_t *tmp = pnext32;
-					pnext32 = src32;
-					src32 = tmp;
-				}
-
-				if (dy > rat_dst_h - bh[1] || dy <= bh[1]) {
-					while(count--) {
-						*pblend32++ = AVERAGE32_1_3(*src32, *pnext32);
-						src32++;
-						pnext32++;
-					}
-				} else {
-					while(count--) {
-						*pblend32++ = AVERAGE32(*src32, *pnext32);
-						src32++;
-						pnext32++;
-					}
-				}
-			}
-
-			while (col--) {
-				uint16_t a, b, out;
-
-				a = *pblend;
-				b = *(pblend+1);
-
-				while (dx < rat_dst_w) {
-					if (a == b) {
-						out = a;
-					} else if (dx > rat_dst_w - bw[0]) { // top quintile, bbbb
-						out = b;
-					} else if (dx <= bw[0]) { // last quintile, aaaa
-						out = a;
-					} else {
-						if (dx > rat_dst_w - bw[1]) { // 2nd quintile, abbb
-							a = AVERAGE16_NOCHK(a,b);
-						} else if (dx <= bw[1]) { // 4th quintile, aaab
-							b = AVERAGE16_NOCHK(a,b);
-						}
-
-						out = AVERAGE16_NOCHK(a, b); // also 3rd quintile, aabb
-					}
-					*dst16++ = out;
-					dx += rat_w;
-				}
-
-				dx -= rat_dst_w;
-				pblend++;
-			}
-
-			dy += rat_h;
-			dst += dst_p;
-		}
-
-		dy -= rat_dst_h;
-		src += pitch;
-	}
-}
-
-scaler_t GFX_getAAScaler(GFX_Renderer* renderer) {
-	int gcd_w, div_w, gcd_h, div_h;
-	blend_args.blend_line = calloc(renderer->src_w, sizeof(uint16_t));
-
-	gcd_w = gcd(renderer->src_w, renderer->dst_w);
-	blend_args.w_ratio_in = renderer->src_w / gcd_w;
-	blend_args.w_ratio_out = renderer->dst_w / gcd_w;
-	
-	double blend_denominator = (renderer->src_w>renderer->dst_w) ? 5 : 2.5; // TODO: these values are really only good for the nano...
-	// blend_denominator = 5.0; // better for trimui
-	// LOG_info("blend_denominator: %f (%i && %i)\n", blend_denominator, HAS_SKINNY_SCREEN, renderer->dst_w>renderer->src_w);
-	
-	div_w = round(blend_args.w_ratio_out / blend_denominator);
-	blend_args.w_bp[0] = div_w;
-	blend_args.w_bp[1] = blend_args.w_ratio_out >> 1;
-
-	gcd_h = gcd(renderer->src_h, renderer->dst_h);
-	blend_args.h_ratio_in = renderer->src_h / gcd_h;
-	blend_args.h_ratio_out = renderer->dst_h / gcd_h;
-
-	div_h = round(blend_args.h_ratio_out / blend_denominator);
-	blend_args.h_bp[0] = div_h;
-	blend_args.h_bp[1] = blend_args.h_ratio_out >> 1;
-	
-	return scaleAA;
-}
 void GFX_freeAAScaler(void) {
 	if (blend_args.blend_line != NULL) {
 		free(blend_args.blend_line);
@@ -3522,4 +3344,73 @@ void neon_convert_8888_to_565(int width, int height,
             d[x] = (r << 11) | (g << 5) | b;
         }
     }
+}
+
+
+// from gambatte-dms
+//from RGB565
+#define cR(A) (((A) & 0xf800) >> 11)
+#define cG(A) (((A) & 0x7e0) >> 5)
+#define cB(A) ((A) & 0x1f)
+//to RGB565
+#define Weight2_3(A, B)  (((((cR(A) << 1) + (cR(B) * 3)) / 5) & 0x1f) << 11 | ((((cG(A) << 1) + (cG(B) * 3)) / 5) & 0x3f) << 5 | ((((cB(A) << 1) + (cB(B) * 3)) / 5) & 0x1f))
+#define Weight3_1(A, B)  ((((cR(B) + (cR(A) * 3)) >> 2) & 0x1f) << 11 | (((cG(B) + (cG(A) * 3)) >> 2) & 0x3f) << 5 | (((cB(B) + (cB(A) * 3)) >> 2) & 0x1f))
+#define Weight3_2(A, B)  (((((cR(B) << 1) + (cR(A) * 3)) / 5) & 0x1f) << 11 | ((((cG(B) << 1) + (cG(A) * 3)) / 5) & 0x3f) << 5 | ((((cB(B) << 1) + (cB(A) * 3)) / 5) & 0x1f))
+
+#define MIN(a, b) (a) < (b) ? (a) : (b)
+void scale1x_line(void* __restrict src, void* __restrict dst, uint32_t sw, uint32_t sh, uint32_t sp, uint32_t dw, uint32_t dh, uint32_t dp) {
+	// pitch of src image not src buffer!
+	// eg. gb has a 160 pixel wide image but 
+	// gambatte uses a 256 pixel wide buffer
+	// (only matters when using memcpy) 
+	int ip = sw * FIXED_BPP; 
+	int src_stride = 2 * sp / FIXED_BPP;
+	int dst_stride = 2 * dp / FIXED_BPP;
+	int cpy_pitch = MIN(ip, dp);
+	
+	uint16_t k = 0x0000;
+	uint16_t* restrict src_row = (uint16_t*)src;
+	uint16_t* restrict dst_row = (uint16_t*)dst;
+	for (int y=0; y<sh; y+=2) {
+		memcpy(dst_row, src_row, cpy_pitch);
+		dst_row += dst_stride;
+		src_row += src_stride;
+		for (unsigned x=0; x<sw; x++) {
+			uint16_t s = *(src_row + x);
+			*(dst_row + x) = Weight3_1(s, k);
+		}
+	}
+}
+
+void scale1x_grid(void* __restrict src, void* __restrict dst, uint32_t sw, uint32_t sh, uint32_t sp, uint32_t dw, uint32_t dh, uint32_t dp) {
+	// pitch of src image not src buffer!
+	// eg. gb has a 160 pixel wide image but 
+	// gambatte uses a 256 pixel wide buffer
+	// (only matters when using memcpy) 
+	int ip = sw * FIXED_BPP; 
+	int src_stride =  sp / FIXED_BPP;
+	int dst_stride =  dp / FIXED_BPP;
+	int cpy_pitch = MIN(ip, dp);
+	
+	uint16_t k = 0x0000;
+	uint16_t* restrict src_row = (uint16_t*)src;
+	uint16_t* restrict dst_row = (uint16_t*)dst;
+	for (int y=0; y<sh; y++) {
+		memcpy(dst_row, src_row, cpy_pitch);
+		if (y % 2 == 0){
+			for (unsigned x=0; x<sw; x++) {
+				uint16_t s = *(src_row + x);
+				*(dst_row + x) = Weight3_1(s, k);
+				//*(dst_row + x) = k;
+			}
+		} else {
+			for (unsigned x=0; x<sw; x+=2) {
+				//uint16_t s = *(src_row + x);
+				//*(dst_row + x) = Weight3_2(s, k);
+				*(dst_row + x) = k;	
+			}
+		}
+		dst_row += dst_stride;
+		src_row += src_stride;
+	}
 }

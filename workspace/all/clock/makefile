@@ -21,8 +21,7 @@ SDL?=SDL
 
 TARGET = clock
 INCDIR = -I. -I../common/ -I../../$(PLATFORM)/platform/ $(MY_INCDIR)
-SOURCE = $(TARGET).c ../common/utils.c ../common/api.c ../common/scaler.c ../../$(PLATFORM)/platform/platform.c
-#SOURCE += ../common/pixman-arm-neon-asm.S
+SOURCE = $(TARGET).c ../common/utils.c ../common/api.c ../../$(PLATFORM)/platform/platform.c
 INCDIR += -I../minarch/libretro-common/include/ 
 
 CC = $(CROSS_COMPILE)gcc

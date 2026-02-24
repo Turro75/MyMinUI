@@ -47,7 +47,7 @@ EXECUTABLE := $(OUTDIR)/MyCommander.elf
 
 OBJS :=	main.o commander.o config.o dialog.o fileLister.o fileutils.o keyboard.o panel.o resourceManager.o \
 	screen.o sdl_ttf_multifont.o sdlutils.o text_edit.o utf8.o axis_direction.o controller_buttons.o text_viewer.o image_viewer.o  window.o \
-	$(SDL)_rotozoom.o platform.o api.o utils.o scaler.o
+	$(SDL)_rotozoom.o platform.o api.o utils.o
 
 
 #OBJS += ../../$(PLATFORM)/platform.o
@@ -84,10 +84,10 @@ $(OUTDIR)/utils.o: ../common/utils.c
 	$(CMD)$(CC) $(CXXFLAGS) -MP -MMD -MF $(@:%.o=%.d) ../common/utils.c -c -o $@
 	@touch $@ # Force .o file to be newer than .d file.
 
-$(OUTDIR)/scaler.o: ../common/scaler.c
-	$(SUM) "  CXX     $@"
-	$(CMD)$(CC) $(CXXFLAGS) -MP -MMD -MF $(@:%.o=%.d) ../common/scaler.c -c -o $@
-	@touch $@ # Force .o file to be newer than .d file.
+#$(OUTDIR)/scaler.o: ../common/scaler.c
+#	$(SUM) "  CXX     $@"
+#	$(CMD)$(CC) $(CXXFLAGS) -MP -MMD -MF $(@:%.o=%.d) ../common/scaler.c -c -o $@
+#	@touch $@ # Force .o file to be newer than .d file.
 
 $(OUTDIR)/platform.o: ../../$(UNION_PLATFORM)/platform/platform.c
 	$(SUM) "  CXX     $@"

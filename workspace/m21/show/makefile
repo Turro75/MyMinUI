@@ -9,7 +9,7 @@ CC = $(CROSS_COMPILE)gcc
 include ../platform/makefile.env
 
 INCDIR = -I. -I../../all/common/ -I../platform/ $(MY_INCDIR) -I../../all/minarch/libretro-common/include/
-SOURCE = $(TARGET).c ../../all/common/utils.c ../../all/common/api.c ../../all/common/scaler.c ../platform/platform.c ../../all/common/$(SDL)_rotozoom.c
+SOURCE = $(TARGET).c ../../all/common/utils.c ../../all/common/api.c ../platform/platform.c ../../all/common/$(SDL)_rotozoom.c
 #SOURCE += ../../all/common/pixman-arm-neon-asm.S
 INCDIR += -I../all/minarch/libretro-common/include/ 
 

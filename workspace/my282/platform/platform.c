@@ -18,7 +18,6 @@
 #include "api.h"
 #include "utils.h"
 
-#include "scaler.h"
 #include "sunxi_display2.h"
 
 ///////////////////////////////
@@ -550,10 +549,6 @@ void PLAT_vsync(int remaining) {
 	} else {
 		pan_display(vid.page);
 	}
-}
-
-scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
-	return NULL;
 }
 
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
