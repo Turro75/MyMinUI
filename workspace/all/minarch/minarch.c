@@ -5887,8 +5887,11 @@ static void* flipThread(void *arg) {
 	int run = 0;
 	int render_ = 0;
 	LOG_info("flipThread started now on cpu %i\n", sched_getcpu());fflush(stdout);
+#ifdef __arm__
+	// On ARM32, set affinity inside thread
 	int moved = pthread_setaffinity_np(flip_pt, sizeof(cpu_set_t), &flipt);
 	LOG_info("flipThread moved to cpu %i with result %i\n", sched_getcpu(), moved);fflush(stdout);
+#endif
 	flipThreadStarted = 1;
 	while (!quit) {
 		pthread_mutex_lock(&flip_mx);
@@ -5917,8 +5920,11 @@ static void* flipThread(void *arg) {
 }
 static void* coreThread(void *arg) {
 	LOG_info("coreThread started now on cpu %i\n", sched_getcpu());fflush(stdout);
+#ifdef __arm__
+	// On ARM32, set affinity inside thread
 	int moved = pthread_setaffinity_np(core_pt, sizeof(cpu_set_t), &coret);
 	LOG_info("coreThread moved to cpu %i with result %i\n", sched_getcpu(),moved);fflush(stdout);
+#endif
 	coreThreadStarted = 1;
 	while (!quit) {
 		int run = 0;
@@ -6061,12 +6067,25 @@ int main(int argc , char* argv[]) {
 	Menu_initState(); // make ready for state shortcuts
 	
 	gamerotate = PLAT_getScreenRotation(1);
+	
+	// Initialize ALL mutexes and conditions BEFORE creating threads
 	core_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 	core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-	pthread_create(&core_pt, NULL, &coreThread, NULL);
 	flip_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 	flip_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
-	pthread_create(&flip_pt, NULL, &flipThread, NULL);	
+	
+	// Create threads
+	pthread_create(&core_pt, NULL, &coreThread, NULL);
+	pthread_create(&flip_pt, NULL, &flipThread, NULL);
+	
+	// Small delay to ensure threads are ready
+	usleep(1000);
+	
+#ifndef __arm__
+	// On ARM64, set affinity after threads are created
+	pthread_setaffinity_np(core_pt, sizeof(cpu_set_t), &coret);
+	pthread_setaffinity_np(flip_pt, sizeof(cpu_set_t), &flipt);
+#endif
 	
 	PWR_warn(1);
 	PWR_disableAutosleep();

@@ -159,6 +159,7 @@ enum {
 	EFFECT_COUNT,
 };
 
+/*
 struct mybackbuffer {
 	int size;
 	int depth;
@@ -166,7 +167,17 @@ struct mybackbuffer {
 	int h;
 	int pitch;
 	uint16_t* pixels;
-};
+};*/
+// api.h - Aggiungi padding:
+struct mybackbuffer {
+    int size;
+    int depth;
+    int w;
+    int h;
+    int pitch;
+    uint16_t* pixels;
+    char __padding[8];  // ← Per 64-bit alignment
+} __attribute__((aligned(64)));  // ← Evita false sharing
 
 typedef struct GFX_Renderer {
 	void* src;
