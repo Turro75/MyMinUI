@@ -3481,11 +3481,20 @@ SDL_Rect video_refresh_callback_resize_extended(void) {
 	//calculate offsets
 }
 
-SDL_Rect video_refresh_callback_resize_custom(int aspect_w, int aspect_h) {
+SDL_Rect video_refresh_callback_resize_custom(int use_screen_rotation, int aspect_w, int aspect_h) {
 	LOG_info("RESIZE CUSTOM %d:%d\n", aspect_w, aspect_h);fflush(stdout);
 	//maximum scaling keeping custom aspect ratio
 	SDL_Rect retvalue;
 	int dst_x,dst_y,dst_w,dst_h;
+	int is_screen_portrait = (GAME_HEIGHT > GAME_WIDTH);
+    
+    // Se lo schermo è verticale, invertiamo l'aspect ratio per adattarlo alla rotazione
+    if (is_screen_portrait & use_screen_rotation) {
+        int temp = aspect_w;
+        aspect_w = aspect_h;
+        aspect_h = temp;
+    }
+    
 	double sysaspect = 1.0 * aspect_w / aspect_h;
 	dst_x = 0;
 	dst_y = 0;
@@ -3517,7 +3526,7 @@ void video_refresh_callback_resize(void) {
 	SDL_Rect targetarea = {0,0,GAME_WIDTH,GAME_HEIGHT};
 	switch(screen_scaling) {
 		case SCALE_ASPECT: { 
-							targetarea = video_refresh_callback_resize_custom(renderer.src_surface->w, renderer.src_surface->h);
+							targetarea = video_refresh_callback_resize_custom(0,renderer.src_surface->w, renderer.src_surface->h);
 							resizemode = 'A';
 							break;
 							};
@@ -3538,12 +3547,12 @@ void video_refresh_callback_resize(void) {
 								break;
 							};
 		case SCALE_4_3: 	{ 
-							targetarea = video_refresh_callback_resize_custom(4,3);
+							targetarea = video_refresh_callback_resize_custom(1,4,3);
 							resizemode = '4';
 							break;
 							};
 		case SCALE_3_2: 	{ 
-							targetarea = video_refresh_callback_resize_custom(3,2);
+							targetarea = video_refresh_callback_resize_custom(1,3,2);
 							resizemode = '3';
 							break;
 							};
