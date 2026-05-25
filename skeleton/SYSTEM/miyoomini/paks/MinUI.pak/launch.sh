@@ -157,6 +157,9 @@ EXEC_PATH=/tmp/minui_exec
 NEXT_PATH="/tmp/next"
 touch "$EXEC_PATH"  && sync
 while [ -f "$EXEC_PATH" ]; do
+	if [ -f "$SDCARD_PATH/update.log" ]; then
+		rm -f "$SDCARD_PATH/update.log"
+	fi
 	overclock.elf $CPU_SPEED_MENU
 	minui.elf &> $LOGS_PATH/minui.txt
 	
