@@ -290,11 +290,13 @@ https://github.com/christianhaitian/arkos/wiki
 
 At first You must install ArkOS, follow installation instructions provided by ArkOS support page. If You have a wifi dongle configure now the network to get is working even in MyMinUI.
 
-Once ArkOS successfully installed create the folder <EASYROMS>/roms/MyMinUI in the sdcard, all Roms/Bios must be saved here. You don't have to use the rom/bios folder structure of ArkOS.
+Once ArkOS successfully installed create the folder <EASYROMS>/MyMinUI in the sdcard, all Roms/Bios must be saved here. You don't have to use the rom/bios folder structure of ArkOS.
 
-in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the <EASYROMS>/roms/MyMinUI/ created the step above.
-Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder <EASYROMS>/roms/tools/
-Copy also the whole release zip file (leave it zipped) in the <EASYROMS>/roms/MyMinUI.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the <EASYROMS>/MyMinUI/ created the step above.
+Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder <EASYROMS>/tools/
+Copy also the whole release zip file (leave it zipped) in the <EASYROMS>/MyMinUI.
+
+Please note that the partition EASYROMS is accessible in the folder /roms while in the device. The target folder is <EASYROMS>/MyMinUI when the sdcard is in a pc and is seen as /roms/MyMinUI while navigating the filesystem with ArkOS running. 
 
 the partition EASYROMS must contains now: (+ the whole arkos stuff)
 
@@ -334,10 +336,13 @@ https://github.com/christianhaitian/arkos/wiki
 
 On the FIRST sdcard You must install ArkOS, follow installation instructions provided by ArkOS support page. If You have a wifi dongle configure now the network to get is working even in MyMinUI.
 
-Once ArkOS is successfully installed create the folder <EASYROMS>/roms/MyMinUI in the FIRST sdcard
+Once ArkOS successfully installed create the folder \<EASYROMS\>/MyMinUI in the sdcard, all Roms/Bios must be saved here. You don't have to use the rom/bios folder structure of ArkOS.
 
-in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the <EASYROMS>/roms/MyMinUI/ created the step above.
-Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder <EASYROMS>/roms/tools/
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the \<EASYROMS\>/MyMinUI/ created the step above.
+Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder \<EASYROMS\>/tools/
+Copy also the whole release zip file (leave it zipped) in the \<EASYROMS\>/MyMinUI.
+
+Please note that the partition EASYROMS is accessible in the folder /roms while in the device. The target folder is \<EASYROMS\>/MyMinUI when the sdcard is in a pc and is seen as /roms/MyMinUI while navigating the filesystem with ArkOS running. 
 
 the partition EASYROMS on FIRST sdcard must contains now: (+ the whole arkos stuff)
 
