@@ -73,6 +73,28 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+# Release 25/05/2026
+
+### ALL:
+- Make minarch compiled and working even on 64bit platforms
+- Replaced pixman dependency with tailored neon intrinsics functions (helped by gemini)
+- Clean up of many unused scaler functions
+- improved forced aspect ratios (4:3 and 3:2) now working correctly even on rotated screen devices
+
+### R36S:
+- Added dArkOS support, now cores are able to run even in a recent environment
+- fixed menu+select unable to exit from ppsspp and n64 standalomne emulators
+- fixed rg351p installation issues
+- improve a bit the installation documentation to avoid confusion (hopefully)
+- added the current IP address in the version screen if connected 
+
+### Miyoo Mini / Miyoo Mini Plus / Miyoo Mini Flip:
+- fixed a bug in Mini flip the speaker still active with headphone inserted
+- unified the libSDL2 from base system and native pico8 now able to work with miyoo audioserver, thanks to that there are no more audio pops at start/ending of a game
+- refined a bit nds support, due to the a different audio driver the audio pop at start/exit of nds games is still present
+
+
+
 # Release 08/02/2026
 
 ### ALL:

@@ -286,7 +286,9 @@ The r36s platform supports: Anbernic rg353p(s), v(s) and m while arc is not test
 
 MyMinUI for r36s is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
 MyMinUI for rg353x is built over the latest official ArkOS image for available here at the end of the page: 
-https://github.com/christianhaitian/arkos/wiki
+https://github.com/christianhaitian/arkos/wiki.
+
+Added support for dArkOS, install process is the same as ArkOS, not extensively tested as there are many options outside: dArkOS, dArkOS4clone, dArkOSRE all should work.
 
 At first You must install ArkOS, follow installation instructions provided by ArkOS support page. If You have a wifi dongle configure now the network to get is working even in MyMinUI.
 
@@ -310,6 +312,10 @@ the partition EASYROMS must contains now: (+ the whole arkos stuff)
    │       ├── emulationstation.sh.ra
    │       ├── emulationstation.sh
    │       ├── emulationstation.sh.es
+   │       ├── emulationstation_rg351p.sh
+   │       ├── emulationstation_darkos.es
+   │       ├── CheckInputEvent.sh
+   │       ├── DetectSystemSpecs.sh
    │       ├── libmsettings.so
    │       ├── r36s.sh
    │       ├── r36s_stage2.sh
@@ -332,35 +338,43 @@ The r36s platform supports: Anbernic rg353p(s), v(s) and m while arc is not test
 
 MyMinUI for r36s is built over the latest ArkOS image for r36s available here: https://aeolusux.github.io/ArkOS-R3XS/ 
 MyMinUI for rg353x is built over the latest official ArkOS image available at the end of the page: 
-https://github.com/christianhaitian/arkos/wiki
+https://github.com/christianhaitian/arkos/wiki.
+
+Added support for dArkOS, install process is the same as ArkOS, not extensively tested as there are many options outside: dArkOS, dArkOS4clone, dArkOSRE all should work.
+
 
 On the FIRST sdcard You must install ArkOS, follow installation instructions provided by ArkOS support page. If You have a wifi dongle configure now the network to get is working even in MyMinUI.
 
-Once ArkOS successfully installed create the folder \<EASYROMS\>/MyMinUI in the sdcard, all Roms/Bios must be saved here. You don't have to use the rom/bios folder structure of ArkOS.
+Once ArkOS successfully installed create the folder <EASYROMS>/MyMinUI in the sdcard, all Roms/Bios must be saved here. You don't have to use the rom/bios folder structure of ArkOS.
 
-in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the \<EASYROMS\>/MyMinUI/ created the step above.
-Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder \<EASYROMS\>/tools/
-Copy also the whole release zip file (leave it zipped) in the \<EASYROMS\>/MyMinUI.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-r36s.zip) there is a folder called "r36s" copy that folder as is in the <EASYROMS>/MyMinUI/ created the step above.
+Move (or just copy) the file r36s/EnableMyMinUI.sh to the folder <EASYROMS>/tools/
+Copy also the whole release zip file (leave it zipped) in the <EASYROMS>/MyMinUI.
 
-Please note that the partition EASYROMS is accessible in the folder /roms while in the device. The target folder is \<EASYROMS\>/MyMinUI when the sdcard is in a pc and is seen as /roms/MyMinUI while navigating the filesystem with ArkOS running. 
+Please note that the partition EASYROMS is accessible in the folder /roms while in the device. The target folder is <EASYROMS>/MyMinUI when the sdcard is in a pc and is seen as /roms/MyMinUI while navigating the filesystem with ArkOS running. 
 
 the partition EASYROMS on FIRST sdcard must contains now: (+ the whole arkos stuff)
 
- ├── MyMinUI
- │   └── r36s
- │       ├── unzip
- │       ├── show.elf
- │       ├── updating.png
- │       ├── installing.png
- │       ├── emulationstation.sh.ra
- │       ├── emulationstation.sh
- │       ├── emulationstation.sh.es
- │       ├── libmsettings.so 
- │       ├── r36s.sh
- │       ├── r36s_stage2.sh
- │       └── EnableMyMinUI.sh
- └── tools
-     └── EnableMyMinUI.sh
+   ├── MyMinUI
+   │   ├── MyMinUI-YYYYMMDDb-0-r36s.zip
+   │   └── r36s
+   │       ├── unzip
+   │       ├── show.elf
+   │       ├── updating.png
+   │       ├── installing.png
+   │       ├── emulationstation.sh.ra
+   │       ├── emulationstation.sh
+   │       ├── emulationstation.sh.es
+   │       ├── emulationstation_rg351p.sh
+   │       ├── emulationstation_darkos.es
+   │       ├── CheckInputEvent.sh
+   │       ├── DetectSystemSpecs.sh
+   │       ├── libmsettings.so
+   │       ├── r36s.sh
+   │       ├── r36s_stage2.sh
+   │       └── EnableMyMinUI.sh
+   └── tools
+       └── EnableMyMinUI.sh
 
 
 Format the SECOND sdcard as FAT32, it is also supported exFAT if You like.
@@ -378,15 +392,20 @@ The SECOND sdcard file structure must be:
     ├── emulationstation.sh.ra
     ├── emulationstation.sh
     ├── emulationstation.sh.es
+    ├── emulationstation_rg351p.sh
+    ├── emulationstation_darkos.es
+    ├── CheckInputEvent.sh
+    ├── DetectSystemSpecs.sh
     ├── libmsettings.so
     ├── r36s.sh
     ├── r36s_stage2.sh
     └── EnableMyMinUI.sh
 
-
 While in EmulationStation go to options->Tools then run the tool EnableMyMinUI.sh 
 at reboot the installation process will start showing the screen "installing MyMinUI..."
 Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
+
+
 
 # Share sdcard across other devices:
 
