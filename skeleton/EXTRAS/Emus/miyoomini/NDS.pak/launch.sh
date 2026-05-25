@@ -49,14 +49,12 @@ fi
 
 
 TMP_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+TMP_PATH=$PATH
 export HOME=$mydir
-export PATH=$mydir:$PATH
+export PATH=$mydir:$TMP_PATH
 export LD_LIBRARY_PATH=$mydir/lib:$LD_LIBRARY_PATH
 export SDL_VIDEODRIVER=NDS
 export SDL_AUDIODRIVER=alsa
-
-
-
 
 #purge_devil
 
@@ -84,6 +82,7 @@ if $IS_PLUS; then
 else
     killall -9 audioserver.mod
 fi
+unset LD_PRELOAD
 sleep 0.2
 set_snd_level "${curvol}" &
 
@@ -103,13 +102,18 @@ fi
 #killall -9 keymon.elf
 sleep 0.2
 if $IS_PLUS; then
-	/customer/app/audioserver -60 & # &> $SDCARD_PATH/audioserver.txt &
-	export LD_PRELOAD=/customer/lib/libpadsp.so
+    /customer/app/audioserver -60 & #> $SDCARD_PATH/audioserver.txt &
+    export LD_PRELOAD=/customer/lib/libpadsp.so
 else
-	if [ -f /customer/lib/libpadsp.so ]; then
-	     ${SDCARD_PATH}/.system/miyoomini/bin/audioserver.mod -60 &
-	fi
+    if [ -f /customer/lib/libpadsp.so ]; then
+        LD_PRELOAD=as_preload.so audioserver.mod &
+        export LD_PRELOAD=libpadsp.so
+    fi
 fi
-wait_for_device &
+export LD_LIBRARY_PATH=$TMP_LD_LIBRARY_PATH
+export PATH=$TMP_PATH
+unset SDL_VIDEODRIVER
+unset SDL_AUDIODRIVER
+wait_for_device 
 overclock.elf $CPU_SPEED_MENU
-LD_LIBRARY_PATH=$TMP_LD_LIBRARY_PATH
+
