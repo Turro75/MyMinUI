@@ -82,11 +82,13 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 - improved forced aspect ratios (4:3 and 3:2) now working correctly even on rotated screen devices
 
 ### R36S:
-- Added dArkOS support, now cores are able to run even in a recent environment
+- Added dArkOS support, now cores are able to run even in a recent environment. The install process remains the same as ArkOS maybe not all devices supported by dArkOS, dArkOSRE and ArkOS4clone are able to work, open a github issue in case of problems. I added 2 tools which are helpful on adding new devices.
 - fixed menu+select unable to exit from ppsspp and n64 standalomne emulators
 - fixed rg351p installation issues
 - improve a bit the installation documentation to avoid confusion (hopefully)
-- added the current IP address in the version screen if connected 
+- added the current IP address in the version screen if connected
+
+Many of those were ready since a while, I waited a bit to let dArkOS and Arch-R established, anyway I dropped the Arch-R support plan as it moved from arch to rocknix platform making MyMinUI unable to get installed easily.
 
 ### Miyoo Mini / Miyoo Mini Plus / Miyoo Mini Flip:
 - fixed a bug in Mini flip the speaker still active with headphone inserted
