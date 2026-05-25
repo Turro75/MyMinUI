@@ -1,0 +1,300 @@
+diff --git a/configure.ac b/configure.ac
+index 765e78d..2c1d4f9 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1,4 +1,3 @@
+-dnl Process this file with autoconf to produce a configure script.
+ AC_PREREQ([2.63])
+ AC_INIT
+ AC_CONFIG_SRCDIR([src/SDL.c])
+@@ -2390,7 +2389,7 @@ CheckMMiyooVideo()
+         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
+         SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+         have_video=yes
+-        EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
++        EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I/opt/miyoomini-toolchain/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
+         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c"
+         SUMMARY_video="${SUMMARY_video} mmiyoo"
+     fi
+diff --git a/run.sh b/run.sh
+index afe4d50..b13baf4 100755
+--- a/run.sh
++++ b/run.sh
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ export MOD=mmiyoo
+-export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
++export CROSS=${CROSS_COMPILE}
+ export CC=${CROSS}gcc
+ export AR=${CROSS}ar
+ export AS=${CROSS}as
+diff --git a/src/audio/mmiyoo/SDL_audio_mmiyoo.c b/src/audio/mmiyoo/SDL_audio_mmiyoo.c
+index 862645e..721ff5d 100644
+--- a/src/audio/mmiyoo/SDL_audio_mmiyoo.c
++++ b/src/audio/mmiyoo/SDL_audio_mmiyoo.c
+@@ -22,7 +22,6 @@
+   3. This notice may not be removed or altered from any source distribution.
+ */
+ #include "../../SDL_internal.h"
+-
+ #if SDL_AUDIO_DRIVER_MMIYOO
+ 
+ #include <stdio.h>
+@@ -43,35 +42,44 @@
+ 
+ #define MI_AUDIO_SAMPLE_PER_FRAME 768
+ 
+-#if defined(MMIYOO)
+ #include "mi_sys.h"
+ #include "mi_common_datatype.h"
+ #include "mi_ao.h"
+ 
++#include <fcntl.h>
++#include <unistd.h>
++#include <sys/ioctl.h>
++
++// Manteniamo le variabili SigmaStar solo per retrocompatibilità di compilazione se necessarie altrove
+ static MI_AUDIO_Attr_t stSetAttr;
+-static MI_AUDIO_Attr_t stGetAttr;
+-static MI_AO_CHN AoChn = 0;
+-static MI_AUDIO_DEV AoDevId = 0;
+-#endif
++int audio_device_active = 0;
++#include <sys/soundcard.h> // Header standard Linux per la gestione di /dev/dsp (OSS)
++
+ 
+-static void MMIYOO_CloseDevice(_THIS)
++static void MyMIYOO_CloseDevice(_THIS)
+ {
+-    SDL_free(this->hidden->mixbuf);
+-    SDL_free(this->hidden);
+-#if defined(MMIYOO)
+-    MI_AO_DisableChn(AoDevId, AoChn);
+-    MI_AO_Disable(AoDevId);
+-#endif
++    audio_device_active = 0;
++
++    /* 1. CHIUDIAMO IL DESCRITTORE LOGICO /DEV/DSP
++       In questo modo rilasciamo solo il flusso logico ad audioserver, 
++       mentre il demone terrà l'hardware acceso (Zero Pop!). */
++    if (this->hidden && this->hidden->audio_fd >= 0) {
++        close(this->hidden->audio_fd);
++        this->hidden->audio_fd = -1;
++    }
++
++    /* 2. LIBERIAMO LA MEMORIA DI SDL2 */
++    if (this->hidden) {
++        SDL_free(this->hidden->mixbuf);
++        SDL_free(this->hidden);
++    }
+ }
+ 
+-static int MMIYOO_OpenDevice(_THIS, void *handle, const char *devname, int iscapture)
++static int MyMIYOO_OpenDevice(_THIS, void *handle, const char *devname, int iscapture)
+ {
+-#if defined(MMIYOO)
+-    MI_S32 miret = 0;
+-    MI_S32 s32SetVolumeDb = 0;
+-    MI_S32 s32GetVolumeDb = 0;
+-    MI_SYS_ChnPort_t stAoChn0OutputPort0;
+-#endif
++    int format;
++    int channels;
++    int speed;
+ 
+     this->hidden = (struct SDL_PrivateAudioData *)SDL_malloc((sizeof * this->hidden));
+     if(this->hidden == NULL) {
+@@ -82,125 +90,100 @@ static int MMIYOO_OpenDevice(_THIS, void *handle, const char *devname, int iscap
+     this->hidden->mixlen = this->spec.samples * 2 * this->spec.channels;
+     this->hidden->mixbuf = (Uint8 *) SDL_malloc(this->hidden->mixlen);
+     if(this->hidden->mixbuf == NULL) {
++        SDL_free(this->hidden);
+         return SDL_OutOfMemory();
+     }
+ 
+-#if defined(MMIYOO)
+-    stSetAttr.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
+-    stSetAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
+-    stSetAttr.u32FrmNum = 6;
+-    stSetAttr.u32PtNumPerFrm = this->spec.samples;
+-    stSetAttr.u32ChnCnt = this->spec.channels;
+-    stSetAttr.eSoundmode = this->spec.channels == 2 ? E_MI_AUDIO_SOUND_MODE_STEREO : E_MI_AUDIO_SOUND_MODE_MONO;
+-    stSetAttr.eSamplerate = (MI_AUDIO_SampleRate_e)this->spec.freq;
+-    printf("%s, freq:%d sample:%d channels:%d\n", __func__, this->spec.freq, this->spec.samples, this->spec.channels);
+-    miret = MI_AO_SetPubAttr(AoDevId, &stSetAttr);
+-    if(miret != MI_SUCCESS) {
+-        printf("%s, failed to set PubAttr\n", __func__);
+-        return -1;
+-    }
+-    miret = MI_AO_GetPubAttr(AoDevId, &stGetAttr);
+-    if(miret != MI_SUCCESS) {
+-        printf("%s, failed to get PubAttr\n", __func__);
+-        return -1;
+-    }
+-    miret = MI_AO_Enable(AoDevId);
+-    if(miret != MI_SUCCESS) {
+-        printf("%s, failed to enable AO\n", __func__);
+-        return -1;
+-    }
+-    miret = MI_AO_EnableChn(AoDevId, AoChn);
+-    if(miret != MI_SUCCESS) {
+-        printf("%s, failed to enable Channel\n", __func__);
++    /* 1. APERTURA DI /DEV/DSP (INTERFACCIA INTERCETTATA DA AUDIOSERVER)
++       Apriamo l'interfaccia standard. Se audioserver è attivo ed è presente 
++       il preload di sistema, reindirizzerà questo flusso nel suo socket interno. */
++    this->hidden->audio_fd = open("/dev/dsp", O_WRONLY);
++    if (this->hidden->audio_fd < 0) {
++        printf("%s, failed to open /dev/dsp. Is audioserver active?\n", __func__);
++        SDL_free(this->hidden->mixbuf);
++        SDL_free(this->hidden);
+         return -1;
+     }
+-    miret = MI_AO_SetVolume(AoDevId, s32SetVolumeDb);
+-    if(miret != MI_SUCCESS) {
+-        printf("%s, failed to set Volume\n", __func__);
+-        return -1;
+-    }
+-    MI_AO_GetVolume(AoDevId, &s32GetVolumeDb);
+-    stAoChn0OutputPort0.eModId = E_MI_MODULE_ID_AO;
+-    stAoChn0OutputPort0.u32DevId = AoDevId;
+-    stAoChn0OutputPort0.u32ChnId = AoChn;
+-    stAoChn0OutputPort0.u32PortId = 0;
+-    MI_SYS_SetChnOutputPortDepth(&stAoChn0OutputPort0, 12, 13);
+-#endif
++
++    /* 2. CONFIGURAZIONE DEI PARAMETRI AUDIO TRAMITE IOCTL STANDARD OSS
++       Invece di usare le macro SigmaStar, comunichiamo al driver virtuale il formato. */
++    format = AFMT_S16_LE; 
++    ioctl(this->hidden->audio_fd, SNDCTL_DSP_SETFMT, &format);
++
++    // Forza audioserver a ricevere SEMPRE in Stereo (2 canali)
++    channels = 2; 
++    ioctl(this->hidden->audio_fd, SNDCTL_DSP_CHANNELS, &channels);
++    this->spec.channels = 2; // Comunica a SDL2 di mixare in Stereo
++
++    // Forza audioserver a lavorare a 44100Hz stabili (o 22050 se preferisci la build stock)
++    speed = this->spec.freq;
++    ioctl(this->hidden->audio_fd, SNDCTL_DSP_SPEED, &speed);
++    //this->spec.freq = 48000; // Comunica a SDL2 di fare il resample interno a 44100Hz
++
++    // Aggiorniamo le variabili fittizie per prevenire warning o errori di compilazione latenti
++    stSetAttr.u32PtNumPerFrm = this->spec.samples;
++    stSetAttr.eSamplerate = (MI_AUDIO_SampleRate_e)this->spec.freq;
++    
++    audio_device_active = 1;
++    printf("%s, Connected to audioserver virtual DSP. freq:%d channels:%d\n", __func__, this->spec.freq, this->spec.channels);
++
+     return 0;
+ }
+ 
+-static void MMIYOO_WaitDevice(_THIS)
++static void MyMIYOO_WaitDevice(_THIS)
+ {
+-    const MI_U32 needed = this->spec.samples;
+-    MI_AO_ChnState_t aoState;
+-    while(SDL_AtomicGet(&this->enabled)) {
+-        const MI_U32 available = aoState.u32ChnFreeNum;
+-        MI_AO_QueryChnStat(AoDevId, AoChn, &aoState);
+-        // printf("%s, Needed: %u, Available: %u, Busy: %u\n", __func__, needed, available, aoState.u32ChnBusyNum);
+-        if(available < needed) {
+-            const MI_U32 delay = ((needed - available) * 1000) / this->spec.freq;
+-            SDL_Delay(SDL_max(delay, 10));
+-            printf("%s, Not enough audio left in channel \n", __func__);
+-        }
+-        else {
+-            break;
+-        }
+-    }
++    /* Lasciamo che sia la funzione PlayDevice a gestire la precisione matematica
++       dello svuotamento del buffer tramite usleep dinamico, evitando ritardi approssimativi qui. */
++    return;
+ }
+ 
+-//MI_AO_ClearChnBuf(AoDevId, AoChn);  // clear the buffer if we hit something stupid
+-
+-static void MMIYOO_PlayDevice(_THIS) 
++static void MyMIYOO_PlayDevice(_THIS) 
+ {
+-#if defined(MMIYOO)
+-    MI_AUDIO_Frame_t aoTestFrame;
+-    float delay_adjustment = 6.8; 
+-    MI_S32 s32RetSendStatus = 0;
+-
+-    aoTestFrame.eBitwidth = stGetAttr.eBitwidth;
+-    aoTestFrame.eSoundmode = stGetAttr.eSoundmode;
+-    aoTestFrame.u32Len = this->hidden->mixlen;
+-    aoTestFrame.apVirAddr[0] = this->hidden->mixbuf;
+-    aoTestFrame.apVirAddr[1] = NULL;
+-    do {
+-        MI_AO_ChnState_t aoState; 
+-        int buffer_diff;
+-        float adjustment_factor;
+-        int scaling_factor;
+-        MI_AO_QueryChnStat(AoDevId, AoChn, &aoState); // query the size of the buffer
+-        scaling_factor = 1; // scale our influence on the delay
+-        buffer_diff = aoState.u32ChnBusyNum - this->hidden->mixlen * 2;
+-        adjustment_factor = (float) abs(buffer_diff) / this->hidden->mixlen * 2 * scaling_factor;
+-
+-        if (buffer_diff < 0) {
+-            delay_adjustment += adjustment_factor;
++    if (audio_device_active && this->hidden && this->hidden->audio_fd >= 0) {
++        
++        // 1. CALCOLO DELLA DURATA MATEMATICA DEL FRAME AUDIO
++        // Determina quanti microsecondi esatti dura questo blocco di campioni.
++        // Formula: (Campioni / Frequenza) * 1000000 microsecondi
++        Uint32 frame_duration_us = ((Uint64)this->spec.samples * 1000000) / this->spec.freq;
++
++        // 2. REGOLAZIONE DINAMICA DELLA CODA (Anti-Gracchio)
++        // Audioserver elabora i pacchetti a intervalli fissi. Per compensare i lag di calcolo
++        // del gioco, riduciamo leggermente il tempo di attesa teorico (un overhead di circa il 10%).
++        Uint32 sleep_time = (frame_duration_us * 90) / 100;
++
++        // 3. SCRITTURA DIRETTA IN BLOCCHI
++        // Trasmettiamo il buffer PCM ad audioserver tramite /dev/dsp.
++        int written = write(this->hidden->audio_fd, this->hidden->mixbuf, this->hidden->mixlen);
++        
++        if (written > 0) {
++            // Se la scrittura ha successo, addormentiamo il thread per il tempo esatto 
++            // di durata del suono, impedendo a SDL2 di "sovrascrivere" audioserver.
++            usleep(sleep_time);
+         } else {
+-            delay_adjustment -= adjustment_factor;
++            // Se il socket di audioserver è congestionato (ritorna -1 o EAGAIN),
++            // cediamo immediatamente il passo alla CPU per evitare loop infiniti.
++            usleep(1000);
+         }
+-
+-        usleep(((stSetAttr.u32PtNumPerFrm * 1000) / stSetAttr.eSamplerate - delay_adjustment) * 1000);
+-        s32RetSendStatus = MI_AO_SendFrame(AoDevId, AoChn, &aoTestFrame, 1);
+     }
+-    while(s32RetSendStatus == MI_AO_ERR_NOBUF);
+-#endif
+ }
+ 
+-static Uint8 *MMIYOO_GetDeviceBuf(_THIS)
++
++
++static Uint8 *MyMIYOO_GetDeviceBuf(_THIS)
+ {
+     return (this->hidden->mixbuf);
+ }
+ 
+ static int MMIYOO_Init(SDL_AudioDriverImpl *impl)
+ {
+-    impl->OpenDevice = MMIYOO_OpenDevice;
+-    impl->PlayDevice = MMIYOO_PlayDevice;
+-    impl->WaitDevice = MMIYOO_WaitDevice;
+-    impl->GetDeviceBuf = MMIYOO_GetDeviceBuf;
+-    impl->CloseDevice = MMIYOO_CloseDevice;
++    impl->OpenDevice = MyMIYOO_OpenDevice;
++    impl->PlayDevice = MyMIYOO_PlayDevice;
++    impl->WaitDevice = MyMIYOO_WaitDevice;
++    impl->GetDeviceBuf = MyMIYOO_GetDeviceBuf;
++    impl->CloseDevice = MyMIYOO_CloseDevice;
+     impl->OnlyHasDefaultOutputDevice = 1;
+     return 1;
+ }
+ 
+ AudioBootStrap MMIYOOAUDIO_bootstrap = {"MMIYOO", "MMIYOO AUDIO DRIVER", MMIYOO_Init, 0};
+-
+ #endif

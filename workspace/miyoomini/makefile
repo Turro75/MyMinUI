@@ -10,8 +10,7 @@ endif
 
 ###########################################################
 
-REQUIRES_SDL=other/sdl
-REQUIRES_COMMANDER=other/DinguxCommander
+REQUIRES_SDL=other/sdl2
 REQUIRES_NDS=other/nds
 
 all: readmes
@@ -24,10 +23,11 @@ all: readmes
 #	cd $(REQUIRES_NDS) && make -f Makefile.miyoo_mini all
 	cd $(REQUIRES_NDS) && make -f Makefile.mini cfg
 	cd $(REQUIRES_NDS) && make -f Makefile.mini all
+	cd $(REQUIRES_SDL) && ./run.sh config
 
 	cp -L ${PREFIX}/lib/libjson-c.so.2 $(REQUIRES_NDS)/drastic/lib/
 
-early:  $(REQUIRES_NDS) #$(REQUIRES_SDL)
+early:  $(REQUIRES_NDS) $(REQUIRES_SDL)
 	cd other/latency_reduction && make
 
 clean:
@@ -38,13 +38,14 @@ clean:
 	cd other/latency_reduction && make clean
 #	cd $(REQUIRES_NDS) && make -f Makefile.miyoo_mini clean
 	cd $(REQUIRES_NDS) && make -f Makefile.mini clean
+	cd $(REQUIRES_SDL) && make clean
 
 ###########################################################
 
 $(REQUIRES_SDL):
-	git clone --depth 1 --branch miniui-miyoomini https://github.com/shauninman/SDL-1.2.git $(REQUIRES_SDL)
-$(REQUIRES_COMMANDER):
-	git clone --depth 1 --branch miniui-miyoomini https://github.com/shauninman/DinguxCommander.git $(REQUIRES_COMMANDER)
+	git clone --depth 1 --branch pico8 https://github.com/XK9274/sdl2_miyoo.git $(REQUIRES_SDL)
+	cp other/libneon.so $(REQUIRES_SDL)/
+	cd $(REQUIRES_SDL) && patch -p1 < ../sdl2pico8.patch
 
 $(REQUIRES_NDS):
 	rmdir -r $(REQUIRES_NDS) | true

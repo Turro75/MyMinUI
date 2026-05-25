@@ -1,0 +1,43 @@
+diff --git a/configure.ac b/configure.ac
+index e2c7cc4..5a2da46 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -2391,7 +2391,7 @@ CheckMMiyooVideo()
+         AC_DEFINE(SDL_VIDEO_RENDER_MMIYOO, 1, [ ])
+         SOURCES="$SOURCES $srcdir/src/video/mmiyoo/*.c"
+         have_video=yes
+-        EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3 -I/opt/mmiyoo/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
++        EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC -mcpu=cortex-a7 -mfpu=neon-vfpv4 -DSDL_FLT_EPSILON=1.1920928955078125e-07F -O3 -I/opt/miyoomini-toolchain/arm-buildroot-linux-gnueabihf/sysroot/usr/include/SDL2"
+         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L. -lEGL -lGLESv2 -lrt -lSDL2_image -lSDL2_ttf -ljson-c"
+         SUMMARY_video="${SUMMARY_video} mmiyoo"
+     fi
+@@ -2405,7 +2405,7 @@ CheckMMiyooAudio()
+         have_audio=yes
+         if test x$HOST = xarm-linux; then
+             EXTRA_CFLAGS="$EXTRA_CFLAGS -DMMIYOO -mcpu=cortex-a7 -mfpu=neon-vfpv4 -O3"
+-            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Lmmiyoo/libs -lmi_ao -lshmvar -lmi_common -lmi_sys -lmi_gfx -lneonarmmiyoo"
++            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Lmmiyoo/libs -lmi_ao -lshmvar -lmi_common -lmi_sys -lmi_gfx -lneon"
+         fi
+         SUMMARY_audio="${SUMMARY_audio} mmiyoo"
+     fi
+diff --git a/run.sh b/run.sh
+index 8cf490c..25d6331 100755
+--- a/run.sh
++++ b/run.sh
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ export MOD=mmiyoo
+-export CROSS=/opt/mmiyoo/bin/arm-linux-gnueabihf-
++export CROSS=${CROSS_COMPILE}
+ export CC=${CROSS}gcc
+ export AR=${CROSS}ar
+ export AS=${CROSS}as
+@@ -11,7 +11,7 @@ export HOST=arm-linux
+ echo "Building SDL2 for Miyoo Mini / Miyoo Mini Plus"
+ if [ ! -z "$1" ] && [ "$1" == "config" ]; then
+     ./autogen.sh
+-    ./configure --disable-joystick-virtual --disable-power --disable-alsa --disable-diskaudio --disable-video-x11 --disable-video-wayland --disable-video-kmsdrm --disable-video-vulkan --disable-dbus --disable-ime --disable-fcitx --disable-hidapi --disable-pulseaudio --disable-sndio --disable-libudev --disable-jack --disable-video-opengl --disable-video-opengles --disable-video-opengles2 --disable-oss --disable-dummyaudio --disable-video-dummy --host=${HOST}
++    ./configure --disable-joystick-virtual --disable-power --disable-alsa --disable-diskaudio --disable-video-x11 --disable-video-wayland --disable-video-kmsdrm --disable-video-vulkan --disable-dbus --disable-ime --disable-fcitx --disable-hidapi --disable-pulseaudio --disable-sndio --disable-libudev --disable-jack --disable-video-opengl --disable-video-opengles --disable-video-opengles2 --disable-dummyaudio --disable-video-dummy --host=${HOST}
+ fi
+ 
+ make -j4 V=99
