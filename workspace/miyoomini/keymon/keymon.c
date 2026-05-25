@@ -229,7 +229,6 @@ static void* runADC(void *arg) {
 	}
 	return 0;
 }
-#define LID_PATH "/sys/devices/soc0/soc/soc:hall-mh248/hallvalue"
 
 int msettingsGetInt(char* path) {
 	int i = 0;
@@ -240,6 +239,58 @@ int msettingsGetInt(char* path) {
 	}
 	return i;
 }
+
+void msettingsPutInt(char* path, int value) {
+	char buffer[8];
+	sprintf(buffer, "%d", value);
+	FILE *file = fopen(path, "w");
+	if (file!=NULL) {
+		fputs(buffer, file);
+		fclose(file);
+	}
+}
+
+#define LID_PATH "/sys/devices/soc0/soc/soc:hall-mh248/hallvalue"
+
+//make silent the speaker (gpio44=1) if usbc adapter is inserted (gpio45=1)
+static void checkUSB(void) {
+	static int init = 0;
+	static int is_flip;
+	if (!init) {
+		is_flip = access(LID_PATH, F_OK)==0;
+		int has_gpio = access("/sys/class/gpio/gpio45/value", F_OK)==0;
+		if (!has_gpio) msettingsPutInt("/sys/class/gpio/export", 45);
+		init = 1;
+	}
+	if (!is_flip) return;
+		
+	static int last_state = -1;
+	int current_state = msettingsGetInt("/sys/class/gpio/gpio45/value");
+	if (last_state==-1 || current_state!=last_state) {
+		last_state = current_state;
+		msettingsPutInt("/sys/class/gpio/gpio44/value", current_state);
+		SetJack(!current_state);
+	}
+}
+static void* runChecks(void *arg) {
+	static int ticks = 0;
+	while (1) {
+		usleep(500000);
+
+		// every half second
+		checkUSB();
+		ticks += 1;
+		
+		// every 5 seconds
+		if (ticks==10) {
+			checkADC();
+			ticks = 0;
+		}
+	}
+	return 0;
+}
+
+
 static int lid_open_last=0;
 int checkLidChanged(void) {
 	int lid_open=0;
@@ -267,7 +318,8 @@ char * sa_process_name[NUM_PROCESSSNAME] = {
 int main (int argc, char *argv[]) {
 	initADC();
 	checkADC();
-	pthread_create(&adc_pt, NULL, &runADC, NULL);
+	checkUSB();
+	pthread_create(&adc_pt, NULL, &runChecks, NULL);
 	
 	// Set Initial Volume / Brightness
 	InitSettings();
