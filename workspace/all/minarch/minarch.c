@@ -3612,6 +3612,9 @@ static uint32_t last_flip_time = 0;
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
 //	uint32_t now = SDL_GetTicks();
  	if (!data) return;
+	if (waiting_for_thread_stop){
+		return;
+	}
 	if (!thread_video) rendering = 0;
 	fps_ticks += 1;
 //	LOG_info("Video_refresh_callback_main IN ABS:%d\n", SDL_GetTicks());fflush(stdout);
@@ -3725,7 +3728,9 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 		//LOG_info("backbuffer.pixels not yet ready\n");fflush(stdout);	
 		return;
 	}
-
+    if (waiting_for_thread_stop){
+		return;
+	}
 //	if (backbuffer.size != pitch * height) {
 //		realloc(backbuffer.pixels, pitch * height);	
 //	}
@@ -3805,6 +3810,9 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 // NOTE: sound must be disabled for fast forward to work...
 static void audio_sample_callback(int16_t left, int16_t right) {
 	if (fast_forward) return;
+	if (waiting_for_thread_stop){
+		return;
+	}
 	SND_Frame frame;
 	frame.left = left;
 	frame.right = right;
@@ -3828,6 +3836,9 @@ static uint64_t microsvalue = 0;
 static uint32_t frame_period_usecs = 0;
 static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) { 
 	if (fast_forward) return frames;
+	if (waiting_for_thread_stop){
+		return frames;
+	}
 //	struct timeval now;
 //	gettimeofday(&now, NULL);
 //	unsigned long long now_usec = now.tv_sec * 1000000 + now.tv_usec;
