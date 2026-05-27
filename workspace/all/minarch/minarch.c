@@ -5474,10 +5474,22 @@ static void Menu_loop(void) {
 	}
 	if (firstmenu) PLAT_clearAll();
 	firstmenu = 0;
-	menu.bitmap = rotozoomSurface(screengame, (4-gamerotate)*90.0, 1.0, 1);
-	SDL_Surface* backing = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH,DEVICE_HEIGHT,FIXED_DEPTH,RGBA_MASK_565); 
-//	SDL_BlitSurface(menu.bitmap, NULL, backing, NULL);
-	SDL_BlitScaled(menu.bitmap, NULL, backing, NULL);
+	// 1. Perform the rotation first
+	SDL_Surface* rotated = rotozoomSurface(screengame, (4 - gamerotate) * 90.0, 1.0, 1);
+
+	// 2. Calculate scale factors based on the target device dimensions
+	double zoomX = (double)DEVICE_WIDTH / rotated->w;
+	double zoomY = (double)DEVICE_HEIGHT / rotated->h;
+
+	// 3. Generate the final scaled surface
+	menu.bitmap = zoomSurface(rotated, zoomX, zoomY, 1);
+
+	// 4. Clean up the intermediate rotated surface to avoid memory leaks
+	SDL_FreeSurface(rotated);
+
+	// 5. Create backing surface and copy it normally
+	SDL_Surface* backing = SDL_CreateRGBSurface(SDL_SWSURFACE, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
+	SDL_BlitSurface(menu.bitmap, NULL, backing, NULL);
 	int restore_w = screen->w;
 	int restore_h = screen->h;
 	int restore_p = screen->pitch;

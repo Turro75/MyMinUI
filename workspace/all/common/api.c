@@ -362,6 +362,13 @@ void GFX_flipNoFix(SDL_Surface* screen) {
 	PLAT_flip(screen, should_vsync);
 }
 
+uint64_t MY_GetPerformanceCounter(void) {
+	struct timespec ts;
+    // Uses monotonic clock to avoid time jumps if system clock shifts
+    clock_gettime(CLOCK_MONOTONIC, &ts); 
+    return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
+}
+
 
 void GFX_flip(SDL_Surface* screen) {
 	
@@ -371,8 +378,9 @@ void GFX_flip(SDL_Surface* screen) {
 	currentfps = current_fps;
 	fps_counter++;
 
-	uint64_t performance_frequency = SDL_GetPerformanceFrequency();
-	uint64_t frame_duration = SDL_GetPerformanceCounter() - per_frame_start;
+//	uint64_t performance_frequency = SDL_GetPerformanceFrequency();
+	uint64_t performance_frequency = 1000000000ULL; 
+	uint64_t frame_duration = MY_GetPerformanceCounter() - per_frame_start;
 	double elapsed_time_s = (double)frame_duration / performance_frequency;
 	double tempfps = 1.0 / elapsed_time_s;
 
@@ -392,7 +400,7 @@ void GFX_flip(SDL_Surface* screen) {
 		current_fps = average_fps;
 	}
 	
-	per_frame_start = SDL_GetPerformanceCounter();
+	per_frame_start = MY_GetPerformanceCounter();
 }
 // eventually this function should be removed as its only here because of all the audio buffer based delay stuff
 void GFX_sync(void) {
@@ -416,8 +424,9 @@ void GFX_flip_fixed_rate(SDL_Surface* screen, double target_fps) {
 	static int64_t first_frame_start_time = 0;
 	static double last_target_fps = 0.0;
 
-	int64_t perf_freq = SDL_GetPerformanceFrequency();
-	int64_t now = SDL_GetPerformanceCounter();
+//	int64_t perf_freq = SDL_GetPerformanceFrequency();
+	int64_t perf_freq = 1000000000ULL; 
+	int64_t now = MY_GetPerformanceCounter();
 
 	if (++frame_index == 0 || target_fps != last_target_fps) {
 		frame_index = 0;
@@ -441,14 +450,14 @@ void GFX_flip_fixed_rate(SDL_Surface* screen, double target_fps) {
 		if (offset > max_lost_frames * frame_duration) {
 			frame_index = -1;
 			last_target_fps = 0.0;
-			LOG_debug("%s: lost sync by more than %d frames (late) @%llu -> reset\n\n", __FUNCTION__, max_lost_frames, SDL_GetPerformanceCounter());
+			LOG_debug("%s: lost sync by more than %d frames (late) @%llu -> reset\n\n", __FUNCTION__, max_lost_frames, MY_GetPerformanceCounter());
 		}
 	}
 	else {
 		if (offset < -max_lost_frames * frame_duration) {
 			frame_index = -1;
 			last_target_fps = 0.0;
-			LOG_debug("%s: lost sync by more than %d frames (early ?!) @%llu -> reset\n\n", __FUNCTION__, max_lost_frames, SDL_GetPerformanceCounter());
+			LOG_debug("%s: lost sync by more than %d frames (early ?!) @%llu -> reset\n\n", __FUNCTION__, max_lost_frames, MY_GetPerformanceCounter());
 		}
 		else if (offset < 0) {
 			useconds_t time_to_sleep_us = (useconds_t) ((time_of_frame - now) * 1e6 / perf_freq);
@@ -461,7 +470,7 @@ void GFX_flip_fixed_rate(SDL_Surface* screen, double target_fps) {
 				usleep(time_to_sleep_us - min_waiting_time);
 			}
 
-			while (SDL_GetPerformanceCounter() < time_of_frame) {
+			while (MY_GetPerformanceCounter() < time_of_frame) {
 				// nothing...
 			}
 	}	
@@ -469,7 +478,7 @@ void GFX_flip_fixed_rate(SDL_Surface* screen, double target_fps) {
 	int should_vsync = (gfx.vsync!=VSYNC_OFF && (gfx.vsync==VSYNC_STRICT || frame_start==0 || SDL_GetTicks()-frame_start<FRAME_BUDGET));
 	PLAT_flip(screen, should_vsync);
 
-	double elapsed_time_s = (double)(SDL_GetPerformanceCounter() - per_frame_start) / perf_freq;
+	double elapsed_time_s = (double)(MY_GetPerformanceCounter() - per_frame_start) / perf_freq;
 	double tempfps = 1.0 / elapsed_time_s;
 	
 	fps_buffer[fps_buffer_index] = tempfps;
@@ -488,7 +497,7 @@ void GFX_flip_fixed_rate(SDL_Surface* screen, double target_fps) {
 	else {
 		currentfps = current_fps = target_fps;
 	}
-	per_frame_start = SDL_GetPerformanceCounter();
+	per_frame_start = MY_GetPerformanceCounter();
 }
 
 void GFX_sync_fixed_rate(double target_fps) {

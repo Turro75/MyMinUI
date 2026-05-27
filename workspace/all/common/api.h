@@ -566,4 +566,6 @@ void neon_copy_rgb565(int width, int height,
 void scale1x_line(void* __restrict src, void* __restrict dst, uint32_t sw, uint32_t sh, uint32_t sp, uint32_t dw, uint32_t dh, uint32_t dp);
 void scale1x_grid(void* __restrict src, void* __restrict dst, uint32_t sw, uint32_t sh, uint32_t sp, uint32_t dw, uint32_t dh, uint32_t dp);
 
+uint64_t MY_GetPerformanceCounter(void);
+
 #endif
