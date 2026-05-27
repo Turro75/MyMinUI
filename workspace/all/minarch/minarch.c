@@ -3612,7 +3612,7 @@ static uint32_t last_flip_time = 0;
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
 //	uint32_t now = SDL_GetTicks();
  	if (!data) return;
-	if (waiting_for_thread_stop){
+	if (waiting_for_thread_stop == 1){
 		return;
 	}
 	if (!thread_video) rendering = 0;
@@ -3728,7 +3728,7 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 		//LOG_info("backbuffer.pixels not yet ready\n");fflush(stdout);	
 		return;
 	}
-    if (waiting_for_thread_stop){
+    if (waiting_for_thread_stop == 1){
 		return;
 	}
 //	if (backbuffer.size != pitch * height) {
@@ -3810,7 +3810,7 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 // NOTE: sound must be disabled for fast forward to work...
 static void audio_sample_callback(int16_t left, int16_t right) {
 	if (fast_forward) return;
-	if (waiting_for_thread_stop){
+	if (waiting_for_thread_stop == 1){
 		return;
 	}
 	SND_Frame frame;
