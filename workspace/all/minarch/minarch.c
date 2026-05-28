@@ -35,6 +35,8 @@
 
 static SDL_Surface* screen;
 static SDL_Surface* screengame;
+uint32_t black_pixel; 
+uint32_t white_pixel;
 
 static int quit = 0;
 static int show_menu = 0;
@@ -3265,8 +3267,7 @@ static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int
 	if (temp == NULL) return;
 
 	// Sfondo nero opaco (Alpha impostato a 255/massimo, così non è trasparente)
-	SDL_FillRect(temp, NULL, SDL_MapRGBA(temp->format, 0, 0, 0, 255));
-	uint32_t white_pixel = SDL_MapRGBA(temp->format, 255, 255, 255, 255);
+	SDL_FillRect(temp, NULL, black_pixel);
 
 	// Gestione sicura del Lock per SDL 1.2 e SDL2
 #if SDL_MAJOR_VERSION >= 2
@@ -6065,6 +6066,24 @@ int main(int argc , char* argv[]) {
 	//backbuffer.pixels = (uint16_t*)malloc(backbuffer.size);
 	posix_memalign((void **)&backbuffer.pixels,16,backbuffer.size);
 	backbuffer.depth = -1;
+
+	//improving performances of debug hud
+	// Superficie a 32-bit fissa: garantisce la compatibilità con rotozoom su SDL 1.2 e SDL2
+	SDL_Surface *temp = SDL_CreateRGBSurface(SDL_SWSURFACE, GAME_WIDTH, GAME_HEIGHT, 32, 
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff
+#else
+		0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000
+#endif
+	);
+
+	// Sfondo nero opaco (Alpha impostato a 255/massimo, così non è trasparente)
+	
+	black_pixel = SDL_MapRGBA(temp->format, 0, 0, 0, 255);
+	white_pixel = SDL_MapRGBA(temp->format, 255, 255, 255, 255);
+	SDL_FreeSurface(temp);
+
+	//end of debug hud performances improvement
 
 	renderer.src_surface = malloc(sizeof(struct mybackbuffer));//backbuffer.size);
 	posix_memalign((void **)&renderer.src_surface->pixels,16,backbuffer.size);
