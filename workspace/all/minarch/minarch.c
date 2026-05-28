@@ -3239,6 +3239,10 @@ static const char* bitmap_font[] = {
 */
 int gamerotate = 0;
 
+#ifndef SDL_MUSTLOCK
+#define SDL_MUSTLOCK(thissurface) ((thissurface)->flags & SDL_HWSURFACE)
+#endif
+
 static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int x, int y, int width, int height) {
 	#define _CHAR_WIDTH 10
 	#define _CHAR_HEIGHT 16
@@ -3246,22 +3250,55 @@ static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int
 
 	
 	int len = strlen(text);
-	int w = ((_CHAR_WIDTH+_LETTERSPACING)*len)-1;
+	int w = ((_CHAR_WIDTH+_LETTERSPACING)*len)-_LETTERSPACING;
 	int h = _CHAR_HEIGHT;
-	SDL_Surface *temp = SDL_CreateRGBSurface(SDL_SWSURFACE,w,h,FIXED_DEPTH,RGBA_MASK_565);
-	for (int y=0; y<_CHAR_HEIGHT; y++) {
-		uint16_t* row = temp->pixels + y * temp->pitch;
-		memset(row, 0, w);
-		for (int i=0; i<len; i++) {
-			const char* c = bitmap_font[text[i]];
-			for (int x=0; x<_CHAR_WIDTH; x++) {
-				int j = y * _CHAR_WIDTH + x;
-				if (c[j]=='1') *row = 0xffff;
-				row++;
+    
+	// Superficie a 32-bit fissa: garantisce la compatibilità con rotozoom su SDL 1.2 e SDL2
+	SDL_Surface *temp = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, 
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff
+#else
+		0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000
+#endif
+	);
+	
+	if (temp == NULL) return;
+
+	// Sfondo nero opaco (Alpha impostato a 255/massimo, così non è trasparente)
+	SDL_FillRect(temp, NULL, SDL_MapRGBA(temp->format, 0, 0, 0, 255));
+	uint32_t white_pixel = SDL_MapRGBA(temp->format, 255, 255, 255, 255);
+
+	// Gestione sicura del Lock per SDL 1.2 e SDL2
+#if SDL_MAJOR_VERSION >= 2
+	if (SDL_MUSTLOCK(temp)) SDL_LockSurface(temp);
+#else
+	if ((temp->flags & SDL_HWSURFACE) || (temp->flags & SDL_RLEACCEL)) SDL_LockSurface(temp);
+#endif
+
+	for (int y_idx = 0; y_idx < _CHAR_HEIGHT; y_idx++) {
+		uint32_t* row_ptr = (uint32_t*)((uint8_t*)temp->pixels + (y_idx * temp->pitch));
+		int current_pixel_x = 0;
+
+		for (int i = 0; i < len; i++) {
+			const char* c = bitmap_font[(unsigned char)text[i]];
+			for (int x_idx = 0; x_idx < _CHAR_WIDTH; x_idx++) {
+				int j = y_idx * _CHAR_WIDTH + x_idx;
+				
+				if (c[j] == '1') {
+					row_ptr[current_pixel_x] = white_pixel;
+				}
+				current_pixel_x++;
 			}
-			row += _LETTERSPACING;
+			current_pixel_x += _LETTERSPACING;
 		}
 	}
+
+#if SDL_MAJOR_VERSION >= 2
+	if (SDL_MUSTLOCK(temp)) SDL_UnlockSurface(temp);
+#else
+	if ((temp->flags & SDL_HWSURFACE) || (temp->flags & SDL_RLEACCEL)) SDL_UnlockSurface(temp);
+#endif
+
 	SDL_Surface* rotated;
 	
 //	int screenrotate = PLAT_getScreenRotation(0);
