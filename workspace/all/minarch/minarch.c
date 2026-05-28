@@ -4917,11 +4917,16 @@ static int OptionCheats_openMenu(MenuList* list, int i) {
 	return MENU_CALLBACK_NOP;
 }
 
+#if defined (USE_SDL2)
+#define SDLSTRINGVERSION "SDL2" 
+#else
+#define SDLSTRINGVERSION "SDL1" 
+#endif
 
 static MenuList options_menu = {
 	.type = MENU_LIST,
 	.items = (MenuItem[]) {
-		{"Frontend", "MyMinUI (" BUILD_DATE " " BUILD_HASH ")",.on_confirm=OptionFrontend_openMenu},
+		{"Frontend", "MyMinUI (" BUILD_DATE " " BUILD_HASH ") "SDLSTRINGVERSION" ",.on_confirm=OptionFrontend_openMenu},
 		{"Emulator",.on_confirm=OptionEmulator_openMenu},
 		{"Cheats",.on_confirm=OptionCheats_openMenu},
 		{"Controls",.on_confirm=OptionControls_openMenu},
