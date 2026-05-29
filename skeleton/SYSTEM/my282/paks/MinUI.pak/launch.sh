@@ -19,7 +19,7 @@ export LD_LIBRARY_PATH=$SYSTEM_PATH/lib:$LD_LIBRARY_PATH
 
 #######################################
 
-export CPU_SPEED_MENU=576
+export CPU_SPEED_MENU=816
 export CPU_SPEED_POWERSAVE=816
 export CPU_SPEED_GAME=1200
 export CPU_SPEED_PERF=1344

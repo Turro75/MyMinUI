@@ -26,7 +26,7 @@ echo on > /sys/devices/b0230000.mmc/mmc_host/mmc1/power/control
 
 #######################################
 export NUM_CPU=3
-export CPU_SPEED_MENU=504000
+export CPU_SPEED_MENU=840000
 export CPU_SPEED_POWERSAVE=1104000
 export CPU_SPEED_GAME=1200000
 export CPU_SPEED_PERF=1392000

@@ -51,9 +51,9 @@ mkdir -p "$SHARED_USERDATA_PATH/.minui"
 
 #######################################
 
-export CPU_SPEED_MENU=504000
-export CPU_SPEED_POWERSAVE=1104000
-export CPU_SPEED_GAME=1296000
+export CPU_SPEED_MENU=840000
+export CPU_SPEED_POWERSAVE=1008000
+export CPU_SPEED_GAME=1200000
 export CPU_SPEED_PERF=1488000
 if $IS_PLUS; then
     export CPU_SPEED_MAX=1800000
