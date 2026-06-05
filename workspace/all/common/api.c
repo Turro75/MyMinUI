@@ -21,6 +21,7 @@
 ///////////////////////////////
 
 extern int fancy_mode;
+int PWR_isSleeping = 0;
 int DEVICE_WIDTH;
 int DEVICE_HEIGHT;
 int GAME_WIDTH;
@@ -2032,6 +2033,7 @@ static void* PWR_monitorBattery(void *arg) {
 
 void PWR_init(void) {
 	pwr.can_sleep = 1;
+	PWR_isSleeping = 0;
 	pwr.can_poweroff = 1;
 	pwr.can_autosleep = 1;
 	pwr.should_warn = 0;
@@ -2111,6 +2113,7 @@ void PWR_update(int* _dirty, int* _show_setting, PWR_callback_t before_sleep, PW
 	) {
 		if (before_sleep) before_sleep();
 		PWR_fauxSleep();
+		PWR_isSleeping = 1;
 		if (after_sleep) after_sleep();
 		
 		last_input_at = now = SDL_GetTicks();

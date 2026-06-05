@@ -2052,6 +2052,9 @@ static void wait_For_Thread(void) {
 //	LOG_info("wait_For_Thread IN5: render = %i - rendering = %i\n",render,rendering);fflush(stdout);
 	rendering = 0;
 	render = 0;
+	pthread_mutex_lock(&flip_mx);
+	should_run_flip = 0;
+	pthread_mutex_unlock(&flip_mx);
 	waiting_for_thread_stop = 0;
 }
 
@@ -2087,8 +2090,19 @@ static void input_poll_callback(void) {
 		if (thread_video) {
 			wait_For_Thread();
 		}
-		Menu_beforeSleep();
-		PWR_powerOff();
+		if (PWR_isSleeping == 1) {
+			PWR_isSleeping = 0;
+			pthread_mutex_lock(&flip_mx);
+			should_run_flip = 1;
+			pthread_mutex_unlock(&flip_mx);
+			pthread_mutex_lock(&core_mx);
+			should_run_core = 1;
+			pthread_mutex_unlock(&core_mx);
+		} else {
+			Menu_beforeSleep();
+			PWR_powerOff();
+		}
+		
 	}
 
 	static int toggled_ff_on = 0; // this logic only works because TOGGLE_FF is before HOLD_FF in the menu...
@@ -3246,10 +3260,14 @@ int gamerotate = 0;
 #endif
 
 static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int x, int y, int width, int height) {
-	#define _CHAR_WIDTH 10
-	#define _CHAR_HEIGHT 16
-	#define _LETTERSPACING 2
-
+	int  _CHAR_WIDTH = 10;
+	int _CHAR_HEIGHT = 16;
+	int _LETTERSPACING = 2;
+	if ((surface->h > 720) || (surface->w > 720)){
+		_CHAR_WIDTH = 15;
+		_CHAR_HEIGHT = 24;
+		_LETTERSPACING = 3;	
+	}
 	
 	int len = strlen(text);
 	int w = ((_CHAR_WIDTH+_LETTERSPACING)*len)-_LETTERSPACING;
@@ -5896,6 +5914,9 @@ static void Menu_loop(void) {
 			LOG_info("Exiting menu, returning to video_thread\n");fflush(stdout);
 			render = 0;
 			rendering = 0;
+			pthread_mutex_lock(&flip_mx);
+			should_run_flip = 1;
+			pthread_mutex_unlock(&flip_mx);
 			pthread_mutex_lock(&core_mx);
 			should_run_core = 1;
 			pthread_mutex_unlock(&core_mx);		

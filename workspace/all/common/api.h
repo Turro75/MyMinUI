@@ -99,6 +99,7 @@ extern int currentbuffersize;
 extern int currentsampleratein;
 extern int currentsamplerateout;
 extern int use_nofix;
+extern int PWR_isSleeping;
 
 extern int FIXED_SCALE;
 
