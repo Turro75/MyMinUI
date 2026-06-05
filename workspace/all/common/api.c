@@ -22,6 +22,11 @@
 
 extern int fancy_mode;
 int PWR_isSleeping = 0;
+#if defined(USE_SDL2)
+SDL_AudioDeviceID audioDeviceID;
+#else
+int audioDeviceID;
+#endif
 int DEVICE_WIDTH;
 int DEVICE_HEIGHT;
 int GAME_WIDTH;
@@ -1476,6 +1481,9 @@ size_t SND_batchSamples_fixed_rate(const SND_Frame *frames, size_t frame_count) 
 	return total_consumed_frames;
 }
 
+SDL_AudioSpec spec_in;
+SDL_AudioSpec spec_out;
+
 void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 	LOG_info("SND_init\n");
 	currentreqfps = frame_rate;
@@ -1499,16 +1507,17 @@ void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 	memset(&snd, 0, sizeof(struct SND_Context));
 	snd.frame_rate = frame_rate;
 
-	SDL_AudioSpec spec_in;
-	SDL_AudioSpec spec_out;
-
 	spec_in.freq = PLAT_pickSampleRate(sample_rate, MAX_SAMPLE_RATE);
 	spec_in.format = AUDIO_S16;
 	spec_in.channels = 2;
 	spec_in.samples = SAMPLES;
 	spec_in.callback = SND_audioCallback;
-	
-	if (SDL_OpenAudio(&spec_in, &spec_out)<0) LOG_info("SDL_OpenAudio error: %s\n", SDL_GetError());
+#if defined(USE_SDL2)
+	audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, 0);
+#else
+	audioDevideID = SDL_OpenAudio(&spec_in, &spec_out);
+#endif
+	if (audioDeviceID<=0) LOG_info("SDL_OpenAudio error: %s\n", SDL_GetError());
 	
 	snd.frame_count = ((float)spec_out.freq/SCREEN_FPS)*6; // buffer size based on sample rate out (with 6 frames headroom), ideally you want to use actual FPS but don't know it at this point yet 
 	currentbuffersize = snd.frame_count;
@@ -1521,17 +1530,25 @@ void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 	SND_selectResampler();
 	
 	SND_resizeBuffer();
+#if defined(USE_SDL2)
+	SDL_PauseAudioDevice(audioDeviceID, 0); 
+#else
 	SDL_PauseAudio(0);
+#endif	
 
 	LOG_info("sample rate: %i (req) %i (rec) [samples %i]\n", snd.sample_rate_in, snd.sample_rate_out, SAMPLES);
 	snd.initialized = 1;
 }
 void SND_quit(void) { // plat_sound_finish
 	if (!snd.initialized) return;
-	
+
+#if defined(USE_SDL2)
+	SDL_PauseAudioDevice(audioDeviceID, 1); 
+	SDL_CloseAudioDevice(audioDeviceID);
+#else
 	SDL_PauseAudio(1);
 	SDL_CloseAudio();
-	
+#endif	
 	if (snd.buffer) {
 		free(snd.buffer);
 		snd.buffer = NULL;
@@ -2197,7 +2214,17 @@ void PWR_powerOff(void) {
 }
 
 static void PWR_enterSleep(void) {
+	
+	// Entering Sleep Mode: Cleanly destroy the thread
+#if defined(USE_SDL2)
+	if (audioDeviceID != 0) {
+		SDL_PauseAudioDevice(audioDeviceID, 1); // Pause
+    	SDL_CloseAudioDevice(audioDeviceID);
+    	audioDeviceID = 0; // CPU drops to 0%
+	}
+#else
 	SDL_PauseAudio(1);
+#endif
 	if (GetHDMI()) {
 		PLAT_clearVideo(gfx.screen);
 		PLAT_flip(gfx.screen, 0);
@@ -2219,8 +2246,15 @@ static void PWR_exitSleep(void) {
 		PLAT_enableBacklight(1);
 		SetVolume(GetVolume());
 	}
+#if defined(USE_SDL2)
+	// Exiting Sleep Mode: Safely open whatever the current default device is
+	audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, 0);
+	if (audioDeviceID != 0) {
+		SDL_PauseAudioDevice(audioDeviceID, 0); // Resume
+	}
+#else
 	SDL_PauseAudio(0);
-	
+#endif	
 	sync();
 }
 

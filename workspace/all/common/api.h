@@ -100,7 +100,11 @@ extern int currentsampleratein;
 extern int currentsamplerateout;
 extern int use_nofix;
 extern int PWR_isSleeping;
-
+#if defined(USE_SDL2)
+extern SDL_AudioDeviceID audioDeviceID;
+#else
+extern int audioDeviceID;
+#endif
 extern int FIXED_SCALE;
 
 enum {
