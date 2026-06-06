@@ -3098,7 +3098,7 @@ static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int
 			//	LOG_info("blitBitmapText180 rot2 Text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d rotated_w:%d rotated_h:%d\n", text, ox, oy, x, y, w, h, width, height, rotated->w, rotated->h);fflush(stdout);
 
 				if (ox<0) {ox = x - ox;} else { ox = width  + x - ox - w; }
-				if (oy<0) {_oy = y - _oy;} else { oy = height + y - _oy - h; }
+				if (_oy<0) {_oy = y - _oy;} else { _oy = height + y - _oy - h; }
 				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){ox,_oy});
 				SDL_FreeSurface(rotated);
 				break;
