@@ -73,6 +73,19 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+# Release 06/06/2026
+
+### ALL:
+- Improved debug hud to scale char size according to real screen resolution -> height of 8 (<480p), 16 (<720p) and 24 pixels (>720p)
+- Improved debug hud to reduce load that was causing some loss fps on certain devices (i.e. 5fps lost on miyoo a30) 
+- Fixed a bug where exiting from sleep mode was causing a shutdown
+- Entering sleep mode now closes the audio devices instead of just pausing, this reduces the cpu usage from 7% (sdl audio thread still running) down to 0% (no cpu activity due to minarch/minui/keymon) 
+- Increased the menu cpu clock frequency to improve ui speed
+- Replaced some libSDL2 specific functions to let compilation against libSDL1.2
+
+### M21:
+- confident that the latest changes can work even on this platform, unfortunately also the m22pro is broken (no display after a drop) so I have to stop supporting it. No more releases. 
+
 # Release 25/05/2026
 
 ### ALL:
