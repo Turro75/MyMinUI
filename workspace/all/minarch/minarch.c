@@ -2727,501 +2727,207 @@ static void MSG_quit(void) {
 
 ///////////////////////////////
 
-static const char* bitmap_font[] = {
-	['0'] = 
-		"  111111  "
-		" 11111111 "
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		" 11111111 "
-		"  111111  ",
-	['1'] =
-		"      11  "
-		"    1111  "
-		"  111111  "
-		" 1111111  "
-		"      11  "
-		"      11  "
-		"      11  "
-		"      11  "
-		"      11  "
-		"      11  "
-		"      11  "
-		"      11  "
-		"      11  "
-		"      11  "
-		"      11  "
-		"      11  ",		
-	['2'] =
-		"  111111  "
-		" 11111111 "
-		"11      11"
-		"11      11"
-		"       11 "
-		"      11  "
-		"     11   "
-		"    11    "
-		"   11     "
-		"  11      "
-		" 11       "
-		"11        "
-		"11        "
-		"11        "
-		"1111111111"
-		"1111111111",
-	['3'] =
-		"  111111  "
-		" 11111111 "
-		"11      11"
-		"        11"
-		"        11"
-		"        11"
-		"        11"
-		" 11111111 "
-		" 11111111 "
-		"        11"
-		"        11"
-		"        11"
-		"        11"
-		"11      11"
-		" 11111111 "
-		"  111111  ",
-	['4'] =
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"1111111111"
-		" 111111111"
-		"        11"
-		"        11"
-		"        11"
-		"        11"
-		"        11"
-		"        11",
-	['5'] =
-		"1111111111"
-		"1111111111"
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"111111111 "
-		"1111111111"
-		"        11"
-		"        11"
-		"        11"
-		"        11"
-		"        11"
-		"11      11"
-		"1111111111"
-		" 11111111 ",
-	['6'] =
-		" 11111111 "
-		"1111111111"
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"111111111 "
-		"1111111111"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"1111111111"
-		" 11111111 ",
-	['7'] =
-		"1111111111"
-		"1111111111"
-		"        11"
-		"        11"
-		"        11"
-		"        11"
-		"       11 "
-		"      11  "
-		"     11   "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    ",
-	['8'] =
-		"  111111  "
-		" 11111111 "
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		" 11111111 "
-		" 11111111 "
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		" 11111111 "
-		"  111111  ",
-	['9'] =
-		"  111111  "
-		" 11111111 "
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		" 11111111 "
-		"  1111111 "
-		"        11"
-		"        11"
-		"        11"
-		"        11"
-		"        11"
-		" 11111111 "
-		"  111111  ",
-	['.'] = 
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"  1111	   "
-		"  1111    "
-		"  1111    ",
-	[':'] = 
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"  1111    "
-		"  1111    "
-		"  1111    "
-		"          "
-		"          "
-		"          "
-		"          "
-		"  1111    "
-		"  1111    "
-		"  1111    "
-		"          ",
-	[','] = 
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"    111   "
-		"   111	   "
-		"  111     "
-		" 111      ",
-	[' '] = 
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          ",
-	['('] = 
-		"       11 "
-		"      11  "
-		"     11   "
-		"    11    "
-		"   11     "
-		"  11      "
-		" 11       "
-		" 11       "
-		" 11       "
-		" 11       "
-		"  11      "
-		"   11     "
-		"    11    "
-		"     11   "
-		"      11  "
-		"       11 ",
-	[')'] = 
-		" 11       "
-		"  11      "
-		"   11     "
-		"    11    "
-		"     11   "
-		"      11  "
-		"       11 "
-		"       11 "
-		"       11 "
-		"       11 "
-		"      11  "
-		"     11   "
-		"    11    "
-		"   11     "
-		"  11      "
-		" 11       ",
-	['/'] = 
-		"       11 "
-		"       11 "
-		"      11  "
-		"      11  "
-		"     11   "
-		"     11   "
-		"    11    "
-		"    11    "
-		"   11     "
-		"   11     "
-		"  11      "
-		"  11      "
-		" 11       "
-		" 11       "
-		"11        "
-		"11        ",
-	['x'] = 
-		"          "
-		"          "
-		"          "
-		"          "
-		"11      11"
-		"11      11"
-		" 11    11 "
-		"  11  11  "
-		"   1111   "
-		"    11    "
-		"    11    "
-		"   1111   "
-		"  11  11  "
-		" 11    11 "
-		"11      11"
-		"11      11",
-	['%'] = 
-	    "          "
-		"  11      "
-		" 1111     "
-		"11  11 11 "
-		" 1111  11 "
-		"  11   11 "
-		"      11  "
-		"     11   "
-		"    11    "
-		"    11    "
-		"   11     "
-		"  11  11  "
-		" 11  1111 "
-		" 11 11  11"
-		"     1111 "
-		"      11  ",
-	['T'] = 
-		"1111111111"
-		"1111111111"
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    "
-		"    11    ",	
-	['F'] = 
-		"1111111111"
-		"1111111111"
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"1111111   "
-		"1111111   "
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"11        ",	
-	['E'] = 
-		"1111111111"
-		"1111111111"
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"1111111   "
-		"1111111   "
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"11        "
-		"1111111111"
-		"1111111111",
-	['A'] = 
-		"   1111   "
-		"  111111  "
-		"111    111"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"1111111111"
-		"1111111111"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11",
-	['B'] =
-		"11111111  "
-		"111111111 "
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"111111111 "
-		"111111111 "
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"111111111 "
-		"11111111  ",
-	['N'] = 
-		"11      11"
-		"11      11"
-		"111     11"
-		"1111    11"
-		"11 11   11"
-		"11  11  11"
-		"11   11 11"
-		"11    1111"
-		"11     111"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11",	
-	['M'] = 
-		"11      11"
-		"111    111"
-		"1111  1111"
-		"11 1111 11"
-		"11  11  11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11",	
-	['H'] = 
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"1111111111"
-		"1111111111"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11"
-		"11      11",
-	['z'] = 
-		"          "
-		"          "
-		"          "
-		"          "
-		"1111111111"
-		"1111111111"
-		"        11"
-		"       11 "
-		"      11  "
-		"     11   "
-		"    11    "
-		"  11      "
-		" 11       "
-		"11        "
-		"1111111111"
-		"1111111111",
-	['c'] = 
-		"  1111    "
-		" 11  11   "
-		"11    11  "
-		" 11  11   "
-		"  1111    "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          "
-		"          ",				
+static const uint16_t bitmap_font_16x10[][16] = {
+    [' '] = {
+        0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+        0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+    },
+    ['%'] = {
+        0x0000, 0x3000, 0x7800, 0xCD80, 0x7980, 0x3180, 0x0300, 0x0600, 
+        0x0C00, 0x0C00, 0x1800, 0x3300, 0x6780, 0x6CC0, 0x0780, 0x0300, 
+    },
+    ['('] = {
+        0x0180, 0x0300, 0x0600, 0x0C00, 0x1800, 0x3000, 0x6000, 0x6000, 
+        0x6000, 0x6000, 0x3000, 0x1800, 0x0C00, 0x0600, 0x0300, 0x0180, 
+    },
+    [')'] = {
+        0x6000, 0x3000, 0x1800, 0x0C00, 0x0600, 0x0300, 0x0180, 0x0180, 
+        0x0180, 0x0180, 0x0300, 0x0600, 0x0C00, 0x1800, 0x3000, 0x6000, 
+    },
+    [','] = {
+        0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+        0x0000, 0x0000, 0x0000, 0x0000, 0x0E00, 0x1C00, 0x3800, 0x7000, 
+    },
+    ['.'] = {
+        0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+        0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x3C00, 0x3C00, 0x3C00, 
+    },
+    ['/'] = {
+        0x0180, 0x0180, 0x0300, 0x0300, 0x0600, 0x0600, 0x0C00, 0x0C00, 
+        0x1800, 0x1800, 0x3000, 0x3000, 0x6000, 0x6000, 0xC000, 0xC000, 
+    },
+    ['0'] = {
+        0x3F00, 0x7F80, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 
+        0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0x7F80, 0x3F00, 
+    },
+    ['1'] = {
+        0x0300, 0x0F00, 0x3F00, 0x7F00, 0x0300, 0x0300, 0x0300, 0x0300, 
+        0x0300, 0x0300, 0x0300, 0x0300, 0x0300, 0x0300, 0x0300, 0x0300, 
+    },
+    ['2'] = {
+        0x3F00, 0x7F80, 0xC0C0, 0xC0C0, 0x0180, 0x0300, 0x0600, 0x0C00, 
+        0x1800, 0x3000, 0x6000, 0xC000, 0xC000, 0xC000, 0xFFC0, 0xFFC0, 
+    },
+    ['3'] = {
+        0x3F00, 0x7F80, 0xC0C0, 0x00C0, 0x00C0, 0x00C0, 0x00C0, 0x7F80, 
+        0x7F80, 0x00C0, 0x00C0, 0x00C0, 0x00C0, 0xC0C0, 0x7F80, 0x3F00, 
+    },
+    ['4'] = {
+        0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 
+        0xFFC0, 0x7FC0, 0x00C0, 0x00C0, 0x00C0, 0x00C0, 0x00C0, 0x00C0, 
+    },
+    ['5'] = {
+        0xFFC0, 0xFFC0, 0xC000, 0xC000, 0xC000, 0xC000, 0xFF80, 0xFFC0, 
+        0x00C0, 0x00C0, 0x00C0, 0x00C0, 0x00C0, 0xC0C0, 0xFFC0, 0x7F80, 
+    },
+    ['6'] = {
+        0x7F80, 0xFFC0, 0xC000, 0xC000, 0xC000, 0xC000, 0xC000, 0xFF80, 
+        0xFFC0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xFFC0, 0x7F80, 
+    },
+    ['7'] = {
+        0xFFC0, 0xFFC0, 0x00C0, 0x00C0, 0x00C0, 0x00C0, 0x0180, 0x0300, 
+        0x0600, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 
+    },
+    ['8'] = {
+        0x3F00, 0x7F80, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0x7F80, 
+        0x7F80, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0x7F80, 0x3F00, 
+    },
+    ['9'] = {
+        0x3F00, 0x7F80, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0x7F80, 
+        0x3F80, 0x00C0, 0x00C0, 0x00C0, 0x00C0, 0x00C0, 0x7F80, 0x3F00, 
+    },
+    [':'] = {
+        0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x3C00, 0x3C00, 0x3C00, 
+        0x0000, 0x0000, 0x0000, 0x0000, 0x3C00, 0x3C00, 0x3C00, 0x0000, 
+    },
+    ['A'] = {
+        0x1E00, 0x3F00, 0xE1C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 
+        0xFFC0, 0xFFC0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 
+    },
+    ['B'] = {
+        0xFF00, 0xFF80, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xFF80, 
+        0xFF80, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xFF80, 0xFF00, 
+    },
+    ['E'] = {
+        0xFFC0, 0xFFC0, 0xC000, 0xC000, 0xC000, 0xC000, 0xC000, 0xFE00, 
+        0xFE00, 0xC000, 0xC000, 0xC000, 0xC000, 0xC000, 0xFFC0, 0xFFC0, 
+    },
+    ['F'] = {
+        0xFFC0, 0xFFC0, 0xC000, 0xC000, 0xC000, 0xC000, 0xC000, 0xFE00, 
+        0xFE00, 0xC000, 0xC000, 0xC000, 0xC000, 0xC000, 0xC000, 0xC000, 
+    },
+    ['H'] = {
+        0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xFFC0, 
+        0xFFC0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 
+    },
+    ['M'] = {
+        0xC0C0, 0xE1C0, 0xF3C0, 0xDEC0, 0xCCC0, 0xC0C0, 0xC0C0, 0xC0C0, 
+        0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 
+    },
+    ['N'] = {
+        0xC0C0, 0xC0C0, 0xE0C0, 0xF0C0, 0xD8C0, 0xCCC0, 0xC6C0, 0xC3C0, 
+        0xC1C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 0xC0C0, 
+    },
+    ['T'] = {
+        0xFFC0, 0xFFC0, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 
+        0x0C00, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 0x0C00, 
+    },
+    ['c'] = {
+        0x3C00, 0x6600, 0xC300, 0x6600, 0x3C00, 0x0000, 0x0000, 0x0000, 
+        0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+    },
+    ['x'] = {
+        0x0000, 0x0000, 0x0000, 0x0000, 0xC0C0, 0xC0C0, 0x6180, 0x3300, 
+        0x1E00, 0x0C00, 0x0C00, 0x1E00, 0x3300, 0x6180, 0xC0C0, 0xC0C0, 
+    },
+    ['z'] = {
+        0x0000, 0x0000, 0x0000, 0x0000, 0xFFC0, 0xFFC0, 0x00C0, 0x0180, 
+        0x0300, 0x0600, 0x0C00, 0x3000, 0x6000, 0xC000, 0xFFC0, 0xFFC0, 
+    },
 };
+
+
+static const uint8_t bitmap_font_9x5[][9] = {
+    [' '] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+    ['%'] = { 0x40, 0xA0, 0xA8, 0x50, 0x20, 0x50, 0xA8, 0x28, 0x40 },
+    ['('] = { 0x10, 0x20, 0x40, 0x40, 0x40, 0x40, 0x40, 0x20, 0x10 },
+    [')'] = { 0x40, 0x20, 0x10, 0x10, 0x10, 0x10, 0x10, 0x20, 0x40 },
+    [','] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x20, 0x40 },
+    ['-'] = { 0x00, 0x00, 0x00, 0x00, 0x38, 0x00, 0x00, 0x00, 0x00 },
+    ['.'] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x30 },
+    ['/'] = { 0x10, 0x10, 0x10, 0x20, 0x20, 0x20, 0x40, 0x40, 0x40 },
+    [':'] = { 0x00, 0x20, 0x20, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00 },
+    ['0'] = { 0x70, 0x88, 0x88, 0x98, 0xA8, 0xC8, 0x88, 0x88, 0x70 },
+    ['1'] = { 0x10, 0x70, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10 },
+    ['2'] = { 0x70, 0x88, 0x08, 0x10, 0x20, 0x40, 0x80, 0x80, 0xF8 },
+    ['3'] = { 0x70, 0x88, 0x08, 0x08, 0x70, 0x08, 0x08, 0x88, 0x70 },
+    ['4'] = { 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0xF8, 0x08, 0x08 },
+    ['5'] = { 0xF8, 0x80, 0x80, 0xF0, 0x08, 0x08, 0x08, 0x88, 0x70 },
+    ['6'] = { 0x70, 0x80, 0x80, 0xF0, 0x88, 0x88, 0x88, 0x88, 0x70 },
+    ['7'] = { 0xF8, 0x08, 0x08, 0x10, 0x20, 0x20, 0x20, 0x20, 0x20 },
+    ['8'] = { 0x70, 0x88, 0x88, 0x88, 0x70, 0x88, 0x88, 0x88, 0x70 },
+    ['9'] = { 0x70, 0x88, 0x88, 0x88, 0x88, 0x78, 0x08, 0x08, 0x70 },
+    ['A'] = { 0x20, 0x50, 0x88, 0x88, 0xF8, 0x88, 0x88, 0x88, 0x88 },
+    ['B'] = { 0xF0, 0x88, 0x88, 0x88, 0xF0, 0x88, 0x88, 0x88, 0xF0 },
+    ['E'] = { 0xF8, 0xF8, 0x80, 0x80, 0xF0, 0xF0, 0x80, 0x80, 0xF8 },
+    ['F'] = { 0xF8, 0xF8, 0x80, 0x80, 0xF0, 0xF0, 0x80, 0x80, 0x80 },
+    ['H'] = { 0x88, 0x88, 0x88, 0x88, 0xF8, 0x88, 0x88, 0x88, 0x88 },
+    ['M'] = { 0x88, 0xD8, 0xF8, 0xA8, 0x88, 0x88, 0x88, 0x88, 0x88 },
+    ['N'] = { 0x88, 0xC8, 0xC8, 0xA8, 0xA8, 0x98, 0x98, 0x88, 0x88 },
+    ['T'] = { 0xF8, 0xF8, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20 },
+    ['c'] = { 0x70, 0x88, 0x80, 0x88, 0x70, 0x00, 0x00, 0x00, 0x00 },
+    ['x'] = { 0x00, 0x00, 0x88, 0x88, 0x50, 0x20, 0x50, 0x88, 0x88 },
+    ['z'] = { 0x00, 0x00, 0x00, 0xF8, 0x10, 0x20, 0x40, 0x80, 0xF8 },
+};
+
+#include <stdint.h>
+
+static const uint16_t bitmap_font_24x15[][24] = {
+    [' '] = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 },
+    ['%'] = { 0x1C00, 0x1C00, 0x1C00, 0xE380, 0xE380, 0xE380, 0xE38E, 0xE38E, 0x1C70, 0x1C70, 0x1C70, 0x0380, 0x0380, 0x0380, 0x1C70, 0x1C70, 0xE38E, 0xE38E, 0xE38E, 0x038E, 0x038E, 0x038E, 0x1C00, 0x1C00 },
+    ['('] = { 0x0070, 0x0070, 0x0070, 0x0380, 0x0380, 0x0380, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x0380, 0x0380, 0x0380, 0x0070, 0x0070 },
+    [')'] = { 0x1C00, 0x1C00, 0x1C00, 0x0380, 0x0380, 0x0380, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0380, 0x0380, 0x0380, 0x1C00, 0x1C00 },
+    [','] = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x1C00, 0x1C00 },
+    ['-'] = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x03FE, 0x03FE, 0x03FE, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 },
+    ['.'] = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x03F0, 0x03F0, 0x03F0, 0x03F0, 0x03F0 },
+    ['/'] = { 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00, 0x1C00 },
+    [':'] = { 0x0000, 0x0000, 0x0000, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 },
+    ['0'] = { 0x1FF0, 0x1FF0, 0x1FF0, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE07E, 0xE07E, 0xE07E, 0xE38E, 0xE38E, 0xE38E, 0xFC0E, 0xFC0E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0x1FF0, 0x1FF0 },
+    ['1'] = { 0x0070, 0x0070, 0x0070, 0x1FF0, 0x1FF0, 0x1FF0, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070, 0x0070 },
+    ['2'] = { 0x1FF0, 0x1FF0, 0x1FF0, 0xE00E, 0xE00E, 0xE00E, 0x000E, 0x000E, 0x0070, 0x0070, 0x0070, 0x0380, 0x0380, 0x0380, 0x1C00, 0x1C00, 0xE000, 0xE000, 0xE000, 0xE000, 0xE000, 0xE000, 0xFFFE, 0xFFFE },
+    ['3'] = { 0x1FF0, 0x1FF0, 0x1FF0, 0xE00E, 0xE00E, 0xE00E, 0x000E, 0x000E, 0x000E, 0x000E, 0x000E, 0x1FF0, 0x1FF0, 0x1FF0, 0x000E, 0x000E, 0x000E, 0x000E, 0x000E, 0xE00E, 0xE00E, 0xE00E, 0x1FF0, 0x1FF0 },
+    ['4'] = { 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xFFFE, 0xFFFE, 0xFFFE, 0x000E, 0x000E, 0x000E, 0x000E, 0x000E },
+    ['5'] = { 0xFFFE, 0xFFFE, 0xFFFE, 0xE000, 0xE000, 0xE000, 0xE000, 0xE000, 0xFFF0, 0xFFF0, 0xFFF0, 0x000E, 0x000E, 0x000E, 0x000E, 0x000E, 0x000E, 0x000E, 0x000E, 0xE00E, 0xE00E, 0xE00E, 0x1FF0, 0x1FF0 },
+    ['6'] = { 0x1FF0, 0x1FF0, 0x1FF0, 0xE000, 0xE000, 0xE000, 0xE000, 0xE000, 0xFFF0, 0xFFF0, 0xFFF0, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0x1FF0, 0x1FF0 },
+    ['7'] = { 0xFFFE, 0xFFFE, 0xFFFE, 0x000E, 0x000E, 0x000E, 0x000E, 0x000E, 0x0070, 0x0070, 0x0070, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380 },
+    ['8'] = { 0x1FF0, 0x1FF0, 0x1FF0, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0x1FF0, 0x1FF0, 0x1FF0, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0x1FF0, 0x1FF0 },
+    ['9'] = { 0x1FF0, 0x1FF0, 0x1FF0, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0x1FFE, 0x1FFE, 0x000E, 0x000E, 0x000E, 0x000E, 0x000E, 0x000E, 0x1FF0, 0x1FF0 },
+    ['A'] = { 0x0380, 0x0380, 0x0380, 0x1C70, 0x1C70, 0x1C70, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xFFFE, 0xFFFE, 0xFFFE, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E },
+    ['B'] = { 0xFFF0, 0xFFF0, 0xFFF0, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xFFF0, 0xFFF0, 0xFFF0, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xFFF0, 0xFFF0 },
+    ['H'] = { 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xFFFE, 0xFFFE, 0xFFFE, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E },
+    ['M'] = { 0xE00E, 0xE00E, 0xE00E, 0xFC7E, 0xFC7E, 0xFC7E, 0xFFFE, 0xFFFE, 0xE38E, 0xE38E, 0xE38E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E },
+    ['N'] = { 0xE00E, 0xE00E, 0xE00E, 0xFC0E, 0xFC0E, 0xFC0E, 0xFC0E, 0xFC0E, 0xE38E, 0xE38E, 0xE38E, 0xE38E, 0xE38E, 0xE38E, 0xE07E, 0xE07E, 0xE07E, 0xE07E, 0xE07E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E },
+    ['c'] = { 0x1FF0, 0x1FF0, 0x1FF0, 0xE00E, 0xE00E, 0xE00E, 0xE000, 0xE000, 0xE00E, 0xE00E, 0xE00E, 0x1FF0, 0x1FF0, 0x1FF0, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 },
+    ['x'] = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0x1C70, 0x1C70, 0x1C70, 0x0380, 0x0380, 0x1C70, 0x1C70, 0x1C70, 0xE00E, 0xE00E, 0xE00E, 0xE00E, 0xE00E },
+    ['z'] = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFE, 0xFFFE, 0xFFFE, 0x0070, 0x0070, 0x0070, 0x0380, 0x0380, 0x1C00, 0x1C00, 0x1C00, 0xE000, 0xE000, 0xE000, 0xFFFE, 0xFFFE },
+	['E'] = { 
+        0xFFFE, 0xFFFE, 0xFFFE, 0xFFFE, 0xE000, 0xE000, 0xE000, 0xE000, 
+        0xE000, 0xE000, 0xE000, 0xFFF0, 0xFFF0, 0xFFF0, 0xFFF0, 0xFFF0, 
+        0xE000, 0xE000, 0xE000, 0xE000, 0xE000, 0xE000, 0xFFFE, 0xFFFE 
+    },
+    ['F'] = { 
+        0xFFFE, 0xFFFE, 0xFFFE, 0xFFFE, 0xE000, 0xE000, 0xE000, 0xE000, 
+        0xE000, 0xE000, 0xE000, 0xFFF0, 0xFFF0, 0xFFF0, 0xFFF0, 0xFFF0, 
+        0xE000, 0xE000, 0xE000, 0xE000, 0xE000, 0xE000, 0xE000, 0xE000 
+    },
+    ['T'] = { 
+        0xFFFE, 0xFFFE, 0xFFFE, 0xFFFE, 0x0380, 0x0380, 0x0380, 0x0380, 
+        0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 
+        0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380 
+    },
+};
+
+
 
 /*static void blitBitmapTextOrig(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
 	#define _CHAR_WIDTH 10
@@ -3260,62 +2966,105 @@ int gamerotate = 0;
 #endif
 
 static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int x, int y, int width, int height) {
-	int  _CHAR_WIDTH = 10;
-	int _CHAR_HEIGHT = 16;
-	int _LETTERSPACING = 2;
-	if ((surface->h > 720) || (surface->w > 720)){
-		_CHAR_WIDTH = 15;
-		_CHAR_HEIGHT = 24;
-		_LETTERSPACING = 3;	
-	}
-	
-	int len = strlen(text);
-	int w = ((_CHAR_WIDTH+_LETTERSPACING)*len)-_LETTERSPACING;
-	int h = _CHAR_HEIGHT;
+
+    if (surface == NULL || text == NULL) return;
+
+    // 1. Configurazione dinamica delle dimensioni basata sulla larghezza della superficie
+    int _CHAR_WIDTH;
+    int _CHAR_HEIGHT;
+    int _LETTERSPACING;
+    int _oy = oy;
+
+    // Puntatore generico al font selezionato e flag per il tipo di dato
+    const void* font_ptr = NULL;
+    int font_type = 0; // 0 = uint8_t (9x5), 1 = uint16_t (16x10), 2 = uint16_t (24x15)
+	int targetscreenwidth = surface->w;
+	if (targetscreenwidth <= surface->h) targetscreenwidth = surface->h;
+    if (targetscreenwidth <= 480) {
+        _CHAR_WIDTH     = 5;
+        _CHAR_HEIGHT    = 9;
+        _LETTERSPACING  = 1;
+        _oy /= 2;
+        font_ptr = bitmap_font_9x5;
+        font_type = 0;
+    } else if (targetscreenwidth <= 720) {
+        _CHAR_WIDTH     = 10;
+        _CHAR_HEIGHT    = 16;
+        _LETTERSPACING  = 2;
+        font_ptr = bitmap_font_16x10;
+        font_type = 1;
+    } else { // > 720
+        _CHAR_WIDTH     = 15;
+        _CHAR_HEIGHT    = 24;
+        _LETTERSPACING  = 3;
+        _oy *= 2;
+        font_ptr = bitmap_font_24x15;
+        font_type = 2;
+    }
+
+    int len = strlen(text);
+    int w = ((_CHAR_WIDTH + _LETTERSPACING) * len) - _LETTERSPACING;
+    int h = _CHAR_HEIGHT;
     
-	// Superficie a 32-bit fissa: garantisce la compatibilità con rotozoom su SDL 1.2 e SDL2
-	SDL_Surface *temp = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, 
+    // Superficie a 32-bit fissa: garantisce la compatibilità con rotozoom su SDL 1.2 e SDL2
+    SDL_Surface *temp = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-		0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff
+        0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff
 #else
-		0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000
+        0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000
 #endif
-	);
-	
-	if (temp == NULL) return;
+    );
+    
+    if (temp == NULL) return;
 
-	// Sfondo nero opaco (Alpha impostato a 255/massimo, così non è trasparente)
-	SDL_FillRect(temp, NULL, black_pixel);
+    // Sfondo nero opaco (Alpha impostato a 255/massimo, così non è trasparente)
+    SDL_FillRect(temp, NULL, black_pixel);
 
-	// Gestione sicura del Lock per SDL 1.2 e SDL2
+    // Gestione sicura del Lock per SDL 1.2 e SDL2
 #if SDL_MAJOR_VERSION >= 2
-	if (SDL_MUSTLOCK(temp)) SDL_LockSurface(temp);
+    if (SDL_MUSTLOCK(temp)) SDL_LockSurface(temp);
 #else
-	if ((temp->flags & SDL_HWSURFACE) || (temp->flags & SDL_RLEACCEL)) SDL_LockSurface(temp);
+    if ((temp->flags & SDL_HWSURFACE) || (temp->flags & SDL_RLEACCEL)) SDL_LockSurface(temp);
 #endif
 
-	for (int y_idx = 0; y_idx < _CHAR_HEIGHT; y_idx++) {
-		uint32_t* row_ptr = (uint32_t*)((uint8_t*)temp->pixels + (y_idx * temp->pitch));
-		int current_pixel_x = 0;
+    // 2. Rendering diretto senza riscalamento a runtime
+    for (int y_idx = 0; y_idx < h; y_idx++) {
+        uint32_t* row_ptr = (uint32_t*)((uint8_t*)temp->pixels + (y_idx * temp->pitch));
+        int current_pixel_x = 0;
 
-		for (int i = 0; i < len; i++) {
-			const char* c = bitmap_font[(unsigned char)text[i]];
-			for (int x_idx = 0; x_idx < _CHAR_WIDTH; x_idx++) {
-				int j = y_idx * _CHAR_WIDTH + x_idx;
-				
-				if (c[j] == '1') {
-					row_ptr[current_pixel_x] = white_pixel;
-				}
-				current_pixel_x++;
-			}
-			current_pixel_x += _LETTERSPACING;
-		}
-	}
+        for (int i = 0; i < len; i++) {
+            unsigned char char_code = (unsigned char)text[i];
+            uint16_t row_bits = 0;
+            int shift_base = 15; // I font a 16 bit (16x10 e 24x15) partono dal bit 15
+
+            // Estrazione esatta dei bit in base al font selezionato senza calcoli di scaling
+            if (font_type == 0) {
+                // Font 9x5: array di uint8_t [256][9]
+                row_bits = ((const uint8_t(*)[9])font_ptr)[char_code][y_idx];
+                shift_base = 7; // Il font a 8 bit parte dal bit 7
+            } else if (font_type == 1) {
+                // Font 16x10: array di uint16_t [256][16]
+                row_bits = ((const uint16_t(*)[16])font_ptr)[char_code][y_idx];
+            } else {
+                // Font 24x15: array di uint16_t [256][24]
+                row_bits = ((const uint16_t(*)[24])font_ptr)[char_code][y_idx];
+            }
+            
+            for (int x_idx = 0; x_idx < _CHAR_WIDTH; x_idx++) {
+                // Controlla se il bit è attivo usando la base di shift corretta (7 o 15)
+                if (row_bits & (1 << (shift_base - x_idx))) {
+                    row_ptr[current_pixel_x] = white_pixel;
+                }
+                current_pixel_x++;
+            }
+            current_pixel_x += _LETTERSPACING;
+        }
+    }
 
 #if SDL_MAJOR_VERSION >= 2
-	if (SDL_MUSTLOCK(temp)) SDL_UnlockSurface(temp);
+    if (SDL_MUSTLOCK(temp)) SDL_UnlockSurface(temp);
 #else
-	if ((temp->flags & SDL_HWSURFACE) || (temp->flags & SDL_RLEACCEL)) SDL_UnlockSurface(temp);
+    if ((temp->flags & SDL_HWSURFACE) || (temp->flags & SDL_RLEACCEL)) SDL_UnlockSurface(temp);
 #endif
 
 	SDL_Surface* rotated;
@@ -3328,8 +3077,8 @@ static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int
 		//		LOG_info("blitBitmapText180 rot0 Text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d \n", text, ox, oy, x, y, w, h, width, height);fflush(stdout);
 
 				if (ox<0) {ox = width+x-w+ox;} else { ox = x + ox; }
-				if (oy<0) {oy = height+y-h+oy;} else { oy = y + oy; }
-				SDL_BlitSurface(temp, NULL, surface, &(SDL_Rect){ox, oy});
+				if (_oy<0) {_oy = height+y-h+_oy;} else { _oy = y + _oy; }
+				SDL_BlitSurface(temp, NULL, surface, &(SDL_Rect){ox, _oy});
 				break;
 			
 		case 1: //my282
@@ -3337,10 +3086,10 @@ static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int
 		//		LOG_info("blitBitmapText180 rot1 text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d rotated_w:%d rotated_h:%d\n", text, ox, oy, x, y, w, h, width, height, rotated->w, rotated->h);fflush(stdout);
 
 				int fx = ox;
-				int fy = oy;
+				int fy = _oy;
 
 				if (ox >= 0) { fy = height + y - w - ox; } else {fy = y - ox ; }
-				if (oy >= 0) { fx = x + oy; } else {fx = width + x - h + oy; }
+				if (_oy >= 0) { fx = x + _oy; } else {fx = width + x - h + _oy; }
 				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){fx,fy});
 				SDL_FreeSurface(rotated);
 				break;
@@ -3349,18 +3098,18 @@ static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int
 			//	LOG_info("blitBitmapText180 rot2 Text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d rotated_w:%d rotated_h:%d\n", text, ox, oy, x, y, w, h, width, height, rotated->w, rotated->h);fflush(stdout);
 
 				if (ox<0) {ox = x - ox;} else { ox = width  + x - ox - w; }
-				if (oy<0) {oy = y - oy;} else { oy = height + y - oy - h; }
-				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){ox,oy});
+				if (oy<0) {_oy = y - _oy;} else { oy = height + y - _oy - h; }
+				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){ox,_oy});
 				SDL_FreeSurface(rotated);
 				break;
 		case 3: //m22pro
 				rotated = rotateSurface90Degrees(temp, 1);
 			//	LOG_info("blitBitmapText180 rot3 Text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d rotated_w:%d rotated_h:%d\n", text, ox, oy, x, y, w, h, width, height, rotated->w, rotated->h);fflush(stdout);
 				int fax = ox;
-				int fay = oy;
+				int fay = _oy;
 
 				if (ox >= 0) {fay = y + ox ; } else { fay = height + y - w + ox; }
-				if (oy >= 0) {fax = width + x - h  - oy; } else { fax = x - oy; }
+				if (_oy >= 0) {fax = width + x - h  - _oy; } else { fax = x - _oy; }
 				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){fax,fay});
 				SDL_FreeSurface(rotated);
 				break;			
