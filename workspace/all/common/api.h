@@ -425,7 +425,7 @@ int VIB_getStrength(void);
 typedef void (*PWR_callback_t)(void);
 void PWR_init(void);
 void PWR_quit(void);
-void PWR_warn(int enable);
+//void PWR_warn(int enable);
 
 int PWR_ignoreSettingInput(int btn, int show_setting);
 void PWR_update(int* dirty, int* show_setting, PWR_callback_t before_sleep, PWR_callback_t after_sleep);

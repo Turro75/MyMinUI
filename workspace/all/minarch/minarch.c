@@ -2642,91 +2642,6 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 
 ///////////////////////////////
 
-// TODO: this is a dumb API
-SDL_Surface* digits;
-#define DIGIT_WIDTH 9
-#define DIGIT_HEIGHT 8
-#define DIGIT_TRACKING -2
-enum {
-	DIGIT_SLASH = 10,
-	DIGIT_DOT,
-	DIGIT_PERCENT,
-	DIGIT_X,
-	DIGIT_OP, // (
-	DIGIT_CP, // )
-	DIGIT_COUNT,
-};
-#define DIGIT_SPACE DIGIT_COUNT
-static void MSG_init(void) {
-	digits = SDL_CreateRGBSurface(SDL_SWSURFACE,SCALE1(DIGIT_WIDTH*DIGIT_COUNT) , SCALE1(DIGIT_HEIGHT) ,FIXED_DEPTH, 0,0,0,0);
-	SDL_FillRect(digits, NULL, RGB_BLACK);
-	
-	SDL_Surface* digit;
-	char* chars[] = { "0","1","2","3","4","5","6","7","8","9","/",".","%","x","(",")", NULL };
-	char* c;
-	int i = 0;
-	while ((c = chars[i])) {
-		digit = TTF_RenderUTF8_Blended(font.tiny, c, COLOR_WHITE);
-		SDL_BlitSurface(digit, NULL, digits, &(SDL_Rect){ (i * SCALE1(DIGIT_WIDTH)) + (SCALE1(DIGIT_WIDTH) - digit->w)/2, (SCALE1(DIGIT_HEIGHT) - digit->h)/2});
-		SDL_FreeSurface(digit);
-		i += 1;
-	}
-}
-static int MSG_blitChar(int n, int x, int y) {
-	if (n!=DIGIT_SPACE) SDL_BlitSurface(digits, &(SDL_Rect){n*SCALE1(DIGIT_WIDTH),0,SCALE1(DIGIT_WIDTH),SCALE1(DIGIT_HEIGHT)}, screen, &(SDL_Rect){x,y});
-	return x + SCALE1(DIGIT_WIDTH + DIGIT_TRACKING);
-}
-static int MSG_blitInt(int num, int x, int y) {
-	int i = num;
-	int n;
-	
-	if (i > 999) {
-		n = i / 1000;
-		i -= n * 1000;
-		x = MSG_blitChar(n,x,y);
-	}
-	if (i > 99) {
-		n = i / 100;
-		i -= n * 100;
-		x = MSG_blitChar(n,x,y);
-	}
-	else if (num>99) {
-		x = MSG_blitChar(0,x,y);
-	}
-	if (i > 9) {
-		n = i / 10;
-		i -= n * 10;
-		x = MSG_blitChar(n,x,y);
-	}
-	else if (num>9) {
-		x = MSG_blitChar(0,x,y);
-	}
-	
-	n = i;
-	x = MSG_blitChar(n,x,y);
-	
-	return x;
-}
-static int MSG_blitDouble(double num, int x, int y) {
-	int i = num;
-	int r = (num-i) * 10;
-	int n;
-	
-	x = MSG_blitInt(i, x,y);
-
-	n = DIGIT_DOT;
-	x = MSG_blitChar(n,x,y);
-	
-	n = r;
-	x = MSG_blitChar(n,x,y);
-	return x;
-}
-static void MSG_quit(void) {
-	SDL_FreeSurface(digits);
-}
-
-///////////////////////////////
-
 static const uint16_t bitmap_font_16x10[][16] = {
     [' '] = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 },
     ['%'] = { 0x0000, 0x3000, 0x7800, 0xCD80, 0x7980, 0x3180, 0x0300, 0x0600, 0x0C00, 0x0C00, 0x1800, 0x3300, 0x6780, 0x6CC0, 0x0780, 0x0300 },
@@ -5178,7 +5093,7 @@ static void Menu_loop(void) {
 	
 	SRAM_write();
 	RTC_write();
-	PWR_warn(0);
+	//PWR_warn(0);
 	if (!HAS_POWER_BUTTON) PWR_enableSleep();
 	PWR_setCPUSpeed(CPU_SPEED_MENU); // set Hz directly
 	GFX_setVsync(VSYNC_STRICT);
@@ -5510,7 +5425,7 @@ static void Menu_loop(void) {
 	SDL_FreeSurface(preview);
 	
 	PAD_reset();
-	PWR_warn(1);
+	//PWR_warn(1);
 	GFX_clearAll();
 	GFX_flip(screen);
 	if (!quit) {
@@ -5759,7 +5674,7 @@ int main(int argc , char* argv[]) {
 	VIB_init();
 	PWR_init();
 	if (!HAS_POWER_BUTTON) PWR_disableSleep();
-	MSG_init();
+	//MSG_init();
 
 	// Overrides_init();
 
@@ -5819,7 +5734,7 @@ int main(int argc , char* argv[]) {
 	pthread_setaffinity_np(flip_pt, sizeof(cpu_set_t), &flipt);
 #endif
 	
-	PWR_warn(1);
+	//PWR_warn(1);
 	PWR_disableAutosleep();
 
 	// force a vsync immediately before loop
@@ -5933,7 +5848,7 @@ finish:
 	
 	Config_quit();
 	
-	MSG_quit();
+	//MSG_quit();
 	PWR_quit();
 	VIB_quit();
 	SND_quit();

@@ -2056,7 +2056,7 @@ void PWR_init(void) {
 	pwr.should_warn = 0;
 	pwr.charge = PWR_LOW_CHARGE;
 	
-	PWR_initOverlay();
+	//PWR_initOverlay();
 
 	PWR_updateBatteryStatus();
 	pthread_create(&pwr.battery_pt, NULL, &PWR_monitorBattery, NULL);
@@ -2065,17 +2065,18 @@ void PWR_init(void) {
 void PWR_quit(void) {
 	if (!pwr.initialized) return;
 	
-	PLAT_quitOverlay();
+	//PLAT_quitOverlay();
 	
 	// cancel battery thread
 	pthread_cancel(pwr.battery_pt);
 	pthread_join(pwr.battery_pt, NULL);
 }
+/*
 void PWR_warn(int enable) {
 	pwr.should_warn = enable;
 	PLAT_enableOverlay(pwr.should_warn && pwr.charge<=PWR_LOW_CHARGE);
 }
-
+*/
 int PWR_ignoreSettingInput(int btn, int show_setting) {
 	return show_setting && (btn==BTN_MOD_PLUS || btn==BTN_MOD_MINUS);
 }
