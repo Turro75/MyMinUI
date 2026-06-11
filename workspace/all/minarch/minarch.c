@@ -755,15 +755,27 @@ finish:
 ///////////////////////////////////////
 
 static void SRAM_getPath(char* filename) {
-	sprintf(filename, "%s/%s.sav", core.saves_dir, game.name);
+	char filenameold[MAX_PATH];
+	int tmpres = -1;
+	sprintf(filenameold, "%s/%s.sav", core.saves_dir, game.name);
+	sprintf(filename, "%s/%s.srm", core.saves_dir, game.name);
+	if (exists(filenameold)){
+		LOG_info("Found old %s SRAM save file\n", filenameold);
+		tmpres = rename(filenameold, filename);
+		if (tmpres==0)LOG_info("Renamed %s to %s\n", filenameold, filename);
+	}
 }
 static void SRAM_read(void) {
 	size_t sram_size = core.get_memory_size(RETRO_MEMORY_SAVE_RAM);
-	if (!sram_size) return;
+	if (!sram_size){
+		LOG_info("SRAM_SIZE is not valid\n");
+		return;
+	} 
+	LOG_info("SRAM_SIZE to read = %d bytes\n", sram_size);fflush(stdout);
 	
 	char filename[MAX_PATH];
 	SRAM_getPath(filename);
-	printf("sav path (read): %s\n", filename);
+	printf("srm path (read): %s\n", filename);
 	
 	FILE *sram_file = fopen(filename, "r");
 	if (!sram_file) return;
@@ -778,11 +790,15 @@ static void SRAM_read(void) {
 }
 static void SRAM_write(void) {
 	size_t sram_size = core.get_memory_size(RETRO_MEMORY_SAVE_RAM);
-	if (!sram_size) return;
+	if (!sram_size){
+		LOG_info("SRAM_SIZE is not valid\n");
+		return;
+	}
+	LOG_info("SRAM_SIZE to write = %d bytes\n", sram_size);fflush(stdout);
 	
 	char filename[MAX_PATH];
 	SRAM_getPath(filename);
-	printf("sav path (write): %s\n", filename);
+	printf("srm path (write): %s\n", filename);
 		
 	FILE *sram_file = fopen(filename, "w");
 	if (!sram_file) {
