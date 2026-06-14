@@ -28,17 +28,31 @@ void putInt(char* path, int value) {
 	sprintf(buffer, "%d", value);
 	putFile(path, buffer);
 }
-///////////////////////////////////////
 
+int getInt(char* path) {
+	int i = 0;
+	FILE *file = fopen(path, "r");
+	if (file!=NULL) {
+		fscanf(file, "%i", &i);
+		fclose(file);
+	}
+	return i;
+}
+
+long map(int x, int in_min, int in_max, int out_min, int out_max) {
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+///////////////////////////////////////
+#define BRIGHTNESS_MAX_PATH "/sys/devices/platform/backlight/backlight/backlight/max_brightness"
 #define SETTINGS_VERSION 1
 typedef struct Settings {
 	int version; // future proofing
 	int brightness;
 	int headphones; // available?
 	int speaker;
-	int unused[2]; // for future use
-	// NOTE: doesn't really need to be persisted but still needs to be shared
-	int jack; 
+	int jack;
+	int unused[3]; // for future use
 } Settings;
 static Settings DefaultSettings = {
 	.version = SETTINGS_VERSION,
@@ -46,6 +60,7 @@ static Settings DefaultSettings = {
 	.headphones = 4,
 	.speaker = 8,
 	.jack = 0,
+	.unused = {0,0,0}
 };
 static Settings *settings;
 
@@ -56,6 +71,10 @@ static int disp_fd = -1;
 static int is_host = 0;
 static int shm_size = sizeof(Settings);
 static int preinitialized = 0;
+
+static int max_brightness = 0;
+static int max_volume = 0;
+static int min_volume = 0;
 
 void preInitSettings(void) {
 	//printf("InitSettings\n");system("sync");
@@ -76,23 +95,48 @@ void preInitSettings(void) {
 		int fd = open(SettingsPath, O_RDONLY);
 		if (fd>=0) {
 			read(fd, settings, shm_size);
-			// TODO: use settings->version for future proofing?
 			close(fd);
 		}
 		else {
 			// load defaults
 			memcpy(settings, &DefaultSettings, shm_size);
 		}
-		
-		// these shouldn't be persisted
-		// settings->jack = 0;
-		// settings->hdmi = 0;
 	}
 	preinitialized = 1;
 }
+#define MAX_VOLUME_PATH "/MyMinUI/.userdata/r36s/max_volume.txt"
+#define MIN_VOLUME_PATH "/MyMinUI/.userdata/r36s/min_volume.txt"
+char channel[50];
+
 void InitSettings(void) {
 	if (!preinitialized) preInitSettings();
 	
+	max_brightness = getInt(BRIGHTNESS_MAX_PATH);
+
+	char cmd[256];	
+	
+	if (access("/dev/input/by-path/platform-fdd40000.i2c-platform-rk805-pwrkey-event",F_OK)==0) {
+		//is the rk3566 based rg353v/353p/rgb30
+		sprintf(channel, "Master");
+	} else {
+		//is the r36s
+		sprintf(channel, "Playback");
+	}
+
+	sprintf(cmd, "amixer sget %s | grep Limits | cut -d'-' -f2 > %s", channel, MAX_VOLUME_PATH);
+	system(cmd);
+	char *tmpminval = getenv("MIN_VOLUME_VALUE");
+	if (tmpminval!=NULL) {
+		sprintf(cmd, "echo %s > %s", tmpminval, MIN_VOLUME_PATH);
+	} else { //use the minimal raw value set at boot by the system
+		sprintf(cmd, "amixer sget %s | grep Limits | cut -d':' -f2 | cut -d'-' -f1 > %s", channel,  MIN_VOLUME_PATH);	
+	}
+	system(cmd);
+	system("sync");
+	min_volume = getInt(MIN_VOLUME_PATH);
+	max_volume = getInt(MAX_VOLUME_PATH);
+	
+
 	printf("brightness: %i \nspeaker: %i\n", settings->brightness, settings->speaker); fflush(stdout);
 	
 	SetVolume(GetVolume());
@@ -100,10 +144,11 @@ void InitSettings(void) {
 	// system("echo $(< " BRIGHTNESS_PATH ")");
 }
 static inline void SaveSettings(void) {
-	shm_fd = open(SettingsPath, O_WRONLY, 0644);
-	if (shm_fd>=0) {
-		write(shm_fd, &settings, shm_size);
-		
+	int fd = open(SettingsPath, O_CREAT|O_WRONLY, 0644);
+	if (fd>=0) {
+		write(fd, settings, shm_size);
+		close(fd);
+		//sync();
 	}
 }
 void QuitSettings(void) {
@@ -117,21 +162,7 @@ int GetBrightness(void) { // 0-10
 void SetBrightness(int value) {
 	settings->brightness = value;
 
-	int raw;
-	switch (value) {
-		case  0: raw =  3; break;
-		case  1: raw =  15; break;
-		case  2: raw =  30; break;
-		case  3: raw =  45; break;
-		case  4: raw =  60; break;
-		case  5: raw =  75; break;
-		case  6: raw =  90; break;
-		case  7: raw =  105; break;
-		case  8: raw = 120; break;
-		case  9: raw = 135; break;
-		case 10: raw = 150; break;
-	}
-	
+	int raw = map(value,0,10,3,max_brightness);
 	SetRawBrightness(raw);
 	SaveSettings();
 }
@@ -149,37 +180,17 @@ void SetVolume(int value) {
 
 #define BRIGHTNESS_PATH "/sys/devices/platform/backlight/backlight/backlight/brightness"
 void SetRawBrightness(int val) { // 0 - 120
-//	unsigned int args[4] = {0};
-//	args[1] = val;
-//	disp_fd=open("/sys/devices/platform/backlight/backlight/brightness",O_RDWR);
-//	if (ioctl(disp_fd, DISP_LCD_SET_BRIGHTNESS, args) <0)
-//	{
-//		printf("ioctl DISP_LCD_SET_BRIGHTNESS failed\n");
-//	} 
-//	close(disp_fd);
+
 	putInt(BRIGHTNESS_PATH, val);
-	// printf("SetRawBrightness(%i)\n", val); fflush(stdout);
-	
 }
 
-long map(int x, int in_min, int in_max, int out_min, int out_max) {
-	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
 void SetRawVolume(int val) { // 0 - 20
-	char cmd[256];	
-	int rawval = map(val, 0, 20, 0, 237);
-	if (access("/dev/input/by-path/platform-fdd40000.i2c-platform-rk805-pwrkey-event",F_OK)==0) {
-		//is the rk3566 based rg353v/353p/rgb30
-		//if (access("/dev/input/by-path/platform-fe5b0000.i2c-event",F_OK)==0) {
-			//is the rg353v
-		//	sprintf(cmd, "amixer sset 'Master' %d", rawval);
-		//} else {
-			//is the rgb30
-		sprintf(cmd, "amixer sset 'Master' %d", rawval);
-	} else {
-		//is the r36s
-		sprintf(cmd, "amixer sset 'Playback' %d", rawval);
+	char cmd[256];
+	int rawval = 0;	
+	if (val > 0) {
+		rawval = map(val, 0, 20, min_volume, max_volume);
 	}
+	sprintf(cmd, "amixer sset \"%s\"  %d", channel, rawval);
 	system(cmd);
 	printf("SetRawVolume(%i->%i) \"%s\"\n", val,rawval,cmd); fflush(stdout);
 }
@@ -191,16 +202,6 @@ void SetJack(int value) {
 	// printf("SetJack(%i)\n", value); fflush(stdout);
 	settings->jack = value;
 	SetVolume(GetVolume());
-}
-
-int getInt(char* path) {
-	int i = 0;
-	FILE *file = fopen(path, "r");
-	if (file!=NULL) {
-		fscanf(file, "%i", &i);
-		fclose(file);
-	}
-	return i;
 }
 
 

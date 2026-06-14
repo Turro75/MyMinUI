@@ -50,6 +50,7 @@ sudo sh -c "echo -n ${CPU_SPEED_PERF} > ${GOVERNOR_CPUSPEED_PATH}"
 
 #######################################
 
+export MIN_VOLUME_VALUE=0  #minimum 0 max 237, sets the value when volume bar is zero.
 keymon.elf & #> $LOGS_PATH/keymon.txt 2>&1 &
 
 #######################################

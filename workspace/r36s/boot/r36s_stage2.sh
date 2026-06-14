@@ -61,6 +61,9 @@ if [ -e "$UPDATE_PATH" ]; then
 	# the updated system finishes the install/update
 	sudo rm -rf ${UPDATE_PATH}
 	sudo $SYSTEM_PATH/$PLATFORM/bin/install.sh
+	if [ -e $SDCARD_PATH/.userdata/$PLATFORM/msettings.bin ]; then
+		rm $SDCARD_PATH/.userdata/$PLATFORM/msettings.bin
+	fi
 else
 	echo "No update file found on $UPDATE_PATH" >> $LOGFILE
 fi
