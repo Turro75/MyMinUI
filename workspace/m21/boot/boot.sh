@@ -72,6 +72,9 @@ if [ -f "$UPDATE_PATH" ]; then
 	# the updated system finishes the install/update
 	rm -rf ${UPDATE_PATH}
 	$SYSTEM_PATH/$PLATFORM/bin/install.sh
+	if [ -e $SDCARD_PATH/.userdata/$PLATFORM/msettings.bin ]; then
+		rm $SDCARD_PATH/.userdata/$PLATFORM/msettings.bin
+	fi
 fi
 
 if [ $PID -ne -1 ];then

@@ -135,6 +135,9 @@ if [ -f $UPDATE_PATH ]; then
 	if [ $UPDATED -eq 1 ]; then
 		${SYSTEM_PATH}/bin/install.sh  #&>> $LOGFILE
 	fi
+	if [ -e $SDCARD_PATH/.userdata/$PLATFORM/msettings.bin ]; then
+		rm $SDCARD_PATH/.userdata/$PLATFORM/msettings.bin
+	fi
 	
 fi
 

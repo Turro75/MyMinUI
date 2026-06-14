@@ -61,6 +61,9 @@ if [ -f "$UPDATE_PATH" ]; then
 
 	# the updated system finishes the install/update
 	$SYSTEM_PATH/$PLATFORM/bin/install.sh
+	if [ -e $SDCARD_PATH/.userdata/$PLATFORM/msettings.bin ]; then
+		rm $SDCARD_PATH/.userdata/$PLATFORM/msettings.bin
+	fi
 	./show.elf ./done.png
 	sync
 	poweroff -nf

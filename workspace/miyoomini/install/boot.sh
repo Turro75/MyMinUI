@@ -83,6 +83,9 @@ if [ -f "$UPDATE_PATH" ]; then
 	
 	# the updated system finishes the install/update
 	$SYSTEM_PATH/$PLATFORM/bin/install.sh
+	if [ -e $SDCARD_PATH/.userdata/$PLATFORM/msettings.bin ]; then
+		rm $SDCARD_PATH/.userdata/$PLATFORM/msettings.bin
+	fi
 	sync	
 	if [ -f ${SWAPFILE}.gz ]; then
 		#the swapfile does not exists, let's create it
