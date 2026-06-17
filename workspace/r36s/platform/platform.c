@@ -714,7 +714,7 @@ SDL_Surface* PLAT_initVideo(void) {
 					}
 				}
 			}
-			if ((conn->modes[c].vdisplay == 768) && (conn->modes[c].hdisplay == 1024) && (conn->modes[c].vrefresh == 61)) {
+			if ((conn->modes[c].vdisplay == 768) && (conn->modes[c].hdisplay == 1024) && ((conn->modes[c].vrefresh == 61) || (conn->modes[c].vrefresh == 60) )) {
 				LOG_info("This is an r40xx pro max (4:3 4\"screen)\n");fflush(stdout);
 				DEVICE_WIDTH=1024; //better menu scaling on large 4:3 screen
 				DEVICE_HEIGHT=768; //better menu scaling on large 4:3 screen
@@ -726,7 +726,7 @@ SDL_Surface* PLAT_initVideo(void) {
 				w = 1024;
 				h = 768;
 				p = 2048;
-				hz = 61;
+				hz = conn->modes[c].vrefresh;
 				isr40xx=1;
 				FIXED_SCALE = 3;
 				LOG_info("Detected R40XX PRO MAX\n");fflush(stdout);
