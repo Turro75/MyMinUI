@@ -1084,7 +1084,11 @@ static void SND_resizeBuffer(void) { // plat_sound_resize_buffer
 	if (snd.frame_count == 0)
 		return;
 
+#if defined (USE_SDL2)
+	SDL_LockAudioDevice(audioDeviceID);
+#else
 	SDL_LockAudio();
+#endif
 
 	int buffer_bytes = snd.frame_count * sizeof(SND_Frame);
 	snd.buffer = (SND_Frame*)realloc(snd.buffer, buffer_bytes);
@@ -1098,7 +1102,11 @@ static void SND_resizeBuffer(void) { // plat_sound_resize_buffer
 		snd.frame_filled = snd.frame_count - 1;
 	}
 
+#if defined (USE_SDL2)
+	SDL_UnlockAudioDevice(audioDeviceID);
+#else
 	SDL_UnlockAudio();
+#endif
 }
 
 static int SND_resampleNone(SND_Frame frame) { // audio_resample_passthrough
@@ -1287,8 +1295,11 @@ static double ratio = 1.0;
 
 size_t SND_batchSamplesNoFix(const SND_Frame* frames, size_t frame_count) { // plat_sound_write / plat_sound_write_resample
 	if (snd.frame_count==0) return 0;
-	
+#if defined (USE_SDL2)
+	SDL_LockAudioDevice(audioDeviceID);
+#else
 	SDL_LockAudio();
+#endif
 	int progress = 0;
 	int consumed = 0;
 	while (frame_count > 0) {
@@ -1297,9 +1308,17 @@ size_t SND_batchSamplesNoFix(const SND_Frame* frames, size_t frame_count) { // p
 
 		while (tries < 10 && snd.frame_in==snd.frame_filled) {
 			tries++;
+#if defined (USE_SDL2)
+			SDL_UnlockAudioDevice(audioDeviceID);
+#else
 			SDL_UnlockAudio();
+#endif
 			SDL_Delay(1);
+#if defined (USE_SDL2)
+			SDL_LockAudioDevice(audioDeviceID);
+#else
 			SDL_LockAudio();
+#endif
 		}
 
 		while (amount && snd.frame_in != snd.frame_filled) {
@@ -1310,7 +1329,11 @@ size_t SND_batchSamplesNoFix(const SND_Frame* frames, size_t frame_count) { // p
 			progress += consumed;
 		}
 	}
+#if defined (USE_SDL2)
+	SDL_UnlockAudioDevice(audioDeviceID);
+#else
 	SDL_UnlockAudio();
+#endif
 	return progress;
 }
 
@@ -1515,7 +1538,7 @@ void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 #if defined(USE_SDL2)
 	audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, 0);
 #else
-	audioDevideID = SDL_OpenAudio(&spec_in, &spec_out);
+	audioDeviceID = SDL_OpenAudio(&spec_in, &spec_out);
 #endif
 	if (audioDeviceID<=0) LOG_info("SDL_OpenAudio error: %s\n", SDL_GetError());
 	
@@ -1553,6 +1576,7 @@ void SND_quit(void) { // plat_sound_finish
 		free(snd.buffer);
 		snd.buffer = NULL;
 	}
+	snd.initialized = 0;
 }
 
 void SND_resetAudio(double sample_rate, double frame_rate) {
@@ -2218,10 +2242,9 @@ static void PWR_enterSleep(void) {
 	
 	// Entering Sleep Mode: Cleanly destroy the thread
 #if defined(USE_SDL2)
-	if (audioDeviceID != 0) {
+	if (audioDeviceID > 0) {
 		SDL_PauseAudioDevice(audioDeviceID, 1); // Pause
     	SDL_CloseAudioDevice(audioDeviceID);
-    	audioDeviceID = 0; // CPU drops to 0%
 	}
 #else
 	SDL_PauseAudio(1);
@@ -2250,7 +2273,7 @@ static void PWR_exitSleep(void) {
 #if defined(USE_SDL2)
 	// Exiting Sleep Mode: Safely open whatever the current default device is
 	audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, 0);
-	if (audioDeviceID != 0) {
+	if (audioDeviceID > 0) {
 		SDL_PauseAudioDevice(audioDeviceID, 0); // Resume
 	}
 #else

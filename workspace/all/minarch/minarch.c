@@ -3441,7 +3441,7 @@ static uint64_t microsvalue = 0;
 static uint32_t frame_period_usecs = 0;
 static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) { 
 	if (fast_forward) return frames;
-	if (waiting_for_thread_stop){
+	if (waiting_for_thread_stop == 1){
 		return frames;
 	}
 //	struct timeval now;
