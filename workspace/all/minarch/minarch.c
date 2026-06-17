@@ -2767,19 +2767,14 @@ int gamerotate = 0;
 
 static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int x, int y, int width, int height) {
 
-    if (surface == NULL || text == NULL) return;
+    if (surface == NULL || text == NULL || text[0] == '\0') return;
 
-    // 1. Configurazione dinamica delle dimensioni basata sulla larghezza della superficie
-    int _CHAR_WIDTH;
-    int _CHAR_HEIGHT;
-    int _LETTERSPACING;
+    int _CHAR_WIDTH, _CHAR_HEIGHT, _LETTERSPACING;
     int _oy = oy;
-
-    // Puntatore generico al font selezionato e flag per il tipo di dato
     const void* font_ptr = NULL;
-    int font_type = 0; // 0 = uint8_t (9x5), 1 = uint16_t (16x10), 2 = uint16_t (24x15)
-	int targetscreenwidth = surface->w;
-	if (targetscreenwidth <= surface->h) targetscreenwidth = surface->h;
+    int font_type = 0; 
+
+    int targetscreenwidth = surface->w > surface->h ? surface->w : surface->h;
     if (targetscreenwidth <= 480) {
         _CHAR_WIDTH     = 5;
         _CHAR_HEIGHT    = 9;
@@ -2793,7 +2788,7 @@ static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int
         _LETTERSPACING  = 2;
         font_ptr = bitmap_font_16x10;
         font_type = 1;
-    } else { // > 720
+    } else { 
         _CHAR_WIDTH     = 15;
         _CHAR_HEIGHT    = 24;
         _LETTERSPACING  = 3;
@@ -2805,118 +2800,116 @@ static void blitBitmapText(char* text, int ox, int oy, SDL_Surface *surface, int
     int len = strlen(text);
     int w = ((_CHAR_WIDTH + _LETTERSPACING) * len) - _LETTERSPACING;
     int h = _CHAR_HEIGHT;
-    
-    // Superficie a 32-bit fissa: garantisce la compatibilità con rotozoom su SDL 1.2 e SDL2
-    SDL_Surface *temp = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-        0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff
-#else
-        0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000
-#endif
-    );
-    
-    if (temp == NULL) return;
 
-    // Sfondo nero opaco (Alpha impostato a 255/massimo, così non è trasparente)
-    SDL_FillRect(temp, NULL, black_pixel);
+    // Calcolo esatto delle coordinate di origine del testo
+    int base_x = 0, base_y = 0;
+    switch (gamerotate) {
+        case 0:
+            base_x = (ox < 0) ? (width + x - w + ox) : (x + ox);
+            base_y = (_oy < 0) ? (height + y - h + _oy) : (y + _oy);
+            break;
+        case 1:
+            base_x = (_oy >= 0) ? (x + _oy) : (width + x - h + _oy);
+            base_y = (ox >= 0) ? (height + y - w - ox) : (y - ox);
+            break;
+        case 2:
+            base_x = (ox < 0) ? (x - ox) : (width + x - ox - w);
+            base_y = (_oy < 0) ? (y - _oy) : (height + y - _oy - h);
+            break;
+        case 3:
+            base_x = (_oy >= 0) ? (width + x - h - _oy) : (x - _oy);
+            base_y = (ox >= 0) ? (y + ox) : (height + y - w + ox);
+            break;
+    }
 
-    // Gestione sicura del Lock per SDL 1.2 e SDL2
+    // Genera i colori nativi corretti per evitare che lo sfondo diventi giallo o alterato
+    uint32_t native_white = SDL_MapRGB(surface->format, 255, 255, 255);
+    uint32_t native_black = SDL_MapRGB(surface->format, 0, 0, 0);
+
+    // Blocco della superficie nativa
 #if SDL_MAJOR_VERSION >= 2
-    if (SDL_MUSTLOCK(temp)) SDL_LockSurface(temp);
+    if (SDL_MUSTLOCK(surface)) SDL_LockSurface(surface);
 #else
-    if ((temp->flags & SDL_HWSURFACE) || (temp->flags & SDL_RLEACCEL)) SDL_LockSurface(temp);
+    if ((surface->flags & SDL_HWSURFACE) || (surface->flags & SDL_RLEACCEL)) SDL_LockSurface(surface);
 #endif
 
-    // 2. Rendering diretto senza riscalamento a runtime
+    // Gestione dinamica del formato pixel (Supporta sia schermi a 16-bit che a 32-bit)
+    int bpp = surface->format->BytesPerPixel;
+    uint8_t* surf_pixels = (uint8_t*)surface->pixels;
+    int surf_pitch = surface->pitch;
+
     for (int y_idx = 0; y_idx < h; y_idx++) {
-        uint32_t* row_ptr = (uint32_t*)((uint8_t*)temp->pixels + (y_idx * temp->pitch));
         int current_pixel_x = 0;
 
         for (int i = 0; i < len; i++) {
             unsigned char char_code = (unsigned char)text[i];
             uint16_t row_bits = 0;
-            int shift_base = 15; // I font a 16 bit (16x10 e 24x15) partono dal bit 15
+            int shift_base = 15;
 
-            // Estrazione esatta dei bit in base al font selezionato senza calcoli di scaling
+            // RIPRISTINATI I CAST ORIGINALI CORRETTI
             if (font_type == 0) {
-                // Font 9x5: array di uint8_t [256][9]
                 row_bits = ((const uint8_t(*)[9])font_ptr)[char_code][y_idx];
-                shift_base = 7; // Il font a 8 bit parte dal bit 7
+                shift_base = 7;
             } else if (font_type == 1) {
-                // Font 16x10: array di uint16_t [256][16]
                 row_bits = ((const uint16_t(*)[16])font_ptr)[char_code][y_idx];
             } else {
-                // Font 24x15: array di uint16_t [256][24]
                 row_bits = ((const uint16_t(*)[24])font_ptr)[char_code][y_idx];
             }
-            
+
+            // Rendering dei singoli pixel del carattere
             for (int x_idx = 0; x_idx < _CHAR_WIDTH; x_idx++) {
-                // Controlla se il bit è attivo usando la base di shift corretta (7 o 15)
-                if (row_bits & (1 << (shift_base - x_idx))) {
-                    row_ptr[current_pixel_x] = white_pixel;
+                uint32_t color = (row_bits & (1 << (shift_base - x_idx))) ? native_white : native_black;
+                
+                int target_x = 0, target_y = 0;
+                switch (gamerotate) {
+                    case 0: target_x = base_x + current_pixel_x; target_y = base_y + y_idx; break;
+					case 1: target_x = base_x + y_idx; target_y = base_y + (w - 1 - current_pixel_x); break;
+                    case 2: target_x = base_x + (w - 1 - current_pixel_x); target_y = base_y + (h - 1 - y_idx); break;
+					case 3: target_x = base_x + (h - 1 - y_idx); target_y = base_y + current_pixel_x; break;
+                }
+
+                // Scrittura diretta in memoria pixel in base ai bit del formato
+                if (target_x >= 0 && target_x < surface->w && target_y >= 0 && target_y < surface->h) {
+                    uint8_t* p = surf_pixels + target_y * surf_pitch + target_x * bpp;
+                    if (bpp == 4) {
+                        *(uint32_t*)p = color;
+                    } else if (bpp == 2) {
+                        *(uint16_t*)p = (uint16_t)color;
+                    }
                 }
                 current_pixel_x++;
             }
-            current_pixel_x += _LETTERSPACING;
+            
+            // Rendering dello spazio tra le lettere (LETTERSPACING)
+            for (int s = 0; s < _LETTERSPACING; s++) {
+                int target_x = 0, target_y = 0;
+                switch (gamerotate) {
+                    case 0: target_x = base_x + current_pixel_x; target_y = base_y + y_idx; break;
+					case 1: target_x = base_x + y_idx; target_y = base_y + (w - 1 - current_pixel_x); break;
+					case 2: target_x = base_x + (w - 1 - current_pixel_x); target_y = base_y + (h - 1 - y_idx); break;
+                    case 3: target_x = base_x + (h - 1 - y_idx); target_y = base_y + current_pixel_x; break;                    
+                }
+                if (target_x >= 0 && target_x < surface->w && target_y >= 0 && target_y < surface->h) {
+                    uint8_t* p = surf_pixels + target_y * surf_pitch + target_x * bpp;
+                    if (bpp == 4) {
+                        *(uint32_t*)p = native_black;
+                    } else if (bpp == 2) {
+                        *(uint16_t*)p = (uint16_t)native_black;
+                    }
+                }
+                current_pixel_x++;
+            }
         }
     }
 
 #if SDL_MAJOR_VERSION >= 2
-    if (SDL_MUSTLOCK(temp)) SDL_UnlockSurface(temp);
+    if (SDL_MUSTLOCK(surface)) SDL_UnlockSurface(surface);
 #else
-    if ((temp->flags & SDL_HWSURFACE) || (temp->flags & SDL_RLEACCEL)) SDL_UnlockSurface(temp);
+    if ((surface->flags & SDL_HWSURFACE) || (surface->flags & SDL_RLEACCEL)) SDL_UnlockSurface(surface);
 #endif
-
-	SDL_Surface* rotated;
-	
-//	int screenrotate = PLAT_getScreenRotation(0);
-//	LOG_info("systemrotate:%d system rotate game:%d Screen rotate:%d Game rotate:%d\n", renderer.rotate, renderer.rotategame, screenrotate, gamerotate);fflush(stdout);
-	switch (gamerotate) {
-
-		case 0:	//r36s/rg35xx
-		//		LOG_info("blitBitmapText180 rot0 Text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d \n", text, ox, oy, x, y, w, h, width, height);fflush(stdout);
-
-				if (ox<0) {ox = width+x-w+ox;} else { ox = x + ox; }
-				if (_oy<0) {_oy = height+y-h+_oy;} else { _oy = y + _oy; }
-				SDL_BlitSurface(temp, NULL, surface, &(SDL_Rect){ox, _oy});
-				break;
-			
-		case 1: //my282
-				rotated = rotateSurface90Degrees(temp, 3);
-		//		LOG_info("blitBitmapText180 rot1 text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d rotated_w:%d rotated_h:%d\n", text, ox, oy, x, y, w, h, width, height, rotated->w, rotated->h);fflush(stdout);
-
-				int fx = ox;
-				int fy = _oy;
-
-				if (ox >= 0) { fy = height + y - w - ox; } else {fy = y - ox ; }
-				if (_oy >= 0) { fx = x + _oy; } else {fx = width + x - h + _oy; }
-				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){fx,fy});
-				SDL_FreeSurface(rotated);
-				break;
-		case 2: //miyoomini
-				rotated = rotateSurface90Degrees(temp, 2);
-			//	LOG_info("blitBitmapText180 rot2 Text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d rotated_w:%d rotated_h:%d\n", text, ox, oy, x, y, w, h, width, height, rotated->w, rotated->h);fflush(stdout);
-
-				if (ox<0) {ox = x - ox;} else { ox = width  + x - ox - w; }
-				if (_oy<0) {_oy = y - _oy;} else { _oy = height + y - _oy - h; }
-				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){ox,_oy});
-				SDL_FreeSurface(rotated);
-				break;
-		case 3: //m22pro
-				rotated = rotateSurface90Degrees(temp, 1);
-			//	LOG_info("blitBitmapText180 rot3 Text:%s ox:%d oy:%d x:%d y:%d w:%d h:%d width:%d height:%d rotated_w:%d rotated_h:%d\n", text, ox, oy, x, y, w, h, width, height, rotated->w, rotated->h);fflush(stdout);
-				int fax = ox;
-				int fay = _oy;
-
-				if (ox >= 0) {fay = y + ox ; } else { fay = height + y - w + ox; }
-				if (_oy >= 0) {fax = width + x - h  - _oy; } else { fax = x - _oy; }
-				SDL_BlitSurface(rotated, NULL, surface, &(SDL_Rect){fax,fay});
-				SDL_FreeSurface(rotated);
-				break;			
-	}
-	
-	SDL_FreeSurface(temp);
 }
+
+
 ///////////////////////////////
 
 //static int cpu_ticks = 0;
@@ -3258,7 +3251,9 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	}
 //	gettimeofday(&now2,NULL);
 	GFX_blitRenderer(&renderer);
-//	gettimeofday(&now3,NULL);
+	//unsigned long long now_usec = 0;
+	//unsigned long long now_usec2 = 0;
+	//gettimeofday(&now3,NULL);	
 	// debug
 	if (show_debug) {
 		char debug_text[128];
@@ -3268,6 +3263,9 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.dst_w,renderer.dst_h);
 		blitBitmapText(debug_text,-2,2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
+		//gettimeofday(&now4,NULL);
+		//now_usec2 = (now4.tv_sec * 1000000 + now4.tv_usec) - (now3.tv_sec * 1000000 + now3.tv_usec);
+	
 		sprintf(debug_text, "BAT:%02i%%", PWR_getBattery());
 		blitBitmapText(debug_text,-2,22,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
@@ -3283,10 +3281,11 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		blitBitmapText(cpuload,2,-2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
 		sprintf(debug_text, "%s %ic", effect_str,renderer.rotategame*90);
-		blitBitmapText(debug_text,-2,-2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
+		blitBitmapText(debug_text,-2,-2,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);	
 	}
-
-//	gettimeofday(&now4,NULL);
+	//gettimeofday(&now5,NULL);
+	//now_usec = (now5.tv_sec * 1000000 + now5.tv_usec) - (now3.tv_sec * 1000000 + now3.tv_usec);
+	
 	if (use_nofix) {
 		GFX_flipNoFix(screen);
 	} else {
@@ -3304,6 +3303,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	if (!thread_video) render = 0;
 
 	//LOG_info("videorefreshcallbackmain took %dusec - rotate took %dusec - resize took %dusec - flip took %dusec - wait pan for %dusec\n", now6.tv_usec - now.tv_usec, now1.tv_usec - now.tv_usec, now3.tv_usec - now2.tv_usec, now5.tv_usec - now4.tv_usec, now6.tv_usec - now5.tv_usec);
+	//LOG_info("BLIT debug took %lluusec - 1/2BLIT took %lluusec\n",  now_usec, now_usec2);fflush(stdout);
 
 }
 
