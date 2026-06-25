@@ -25,7 +25,10 @@ export CPU_SPEED_GAME=1200
 export CPU_SPEED_PERF=1344
 export CPU_SPEED_MAX=1512
 
-
+POWEROFF_DELAY_PATH="$SHARED_USERDATA_PATH/poweroff-delay-sec"
+if [ ! -f $POWEROFF_DELAY_PATH ]; then
+	echo 120 > $POWEROFF_DELAY_PATH
+fi
 
 echo 0 > /sys/class/leds/led1/brightness
 overclock.elf userspace 4 $CPU_SPEED_PERF 384 1080 0

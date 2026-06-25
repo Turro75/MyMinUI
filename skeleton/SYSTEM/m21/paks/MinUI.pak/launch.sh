@@ -55,6 +55,11 @@ export GOVERNOR_CPUSPEED_PATH="/sys/devices/system/cpu/cpu0/cpufreq/scaling_sets
 echo userspace > "${GOVERNOR_PATH}"
 echo $CPU_SPEED_PERF > "${GOVERNOR_CPUSPEED_PATH}"
 
+
+POWEROFF_DELAY_PATH="$SHARED_USERDATA_PATH/poweroff-delay-sec"
+if [ ! -f $POWEROFF_DELAY_PATH ]; then
+	echo 120 > $POWEROFF_DELAY_PATH
+fi
 #######################################
 
 keymon.elf & #> $LOGS_PATH/keymon.txt 2>&1 &

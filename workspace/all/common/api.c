@@ -201,6 +201,7 @@ static struct PWR_Context {
 	int can_sleep;
 	int can_poweroff;
 	int can_autosleep;
+	int sleep_delay;
 	
 	pthread_t battery_pt;
 	int is_charging;
@@ -2079,7 +2080,11 @@ void PWR_init(void) {
 	pwr.can_autosleep = 1;
 	pwr.should_warn = 0;
 	pwr.charge = PWR_LOW_CHARGE;
-	
+	pwr.sleep_delay = 120;
+	if (exists(PWR_SLEEP_DELAY)){
+		pwr.sleep_delay = getInt(PWR_SLEEP_DELAY);
+		if (pwr.sleep_delay < 15) pwr.sleep_delay=0; //disables auto poweroff
+	}
 	//PWR_initOverlay();
 
 	PWR_updateBatteryStatus();
@@ -2286,12 +2291,14 @@ static void PWR_waitForWake(void) {
 	uint32_t sleep_ticks = SDL_GetTicks();
 	while (!PAD_wake()) {
 		SDL_Delay(200);
-		if (pwr.can_poweroff && SDL_GetTicks()-sleep_ticks>=120000) { // increased to two minutes
-			if (pwr.is_charging) sleep_ticks += 60000; // check again in a minute
-			else PWR_powerOff();
+		if (pwr.can_poweroff && SDL_GetTicks()-sleep_ticks>=(pwr.sleep_delay*1000)) { // increased to two minutes
+			if (pwr.is_charging) {
+				sleep_ticks += 60000; // check again in a minute
+			} else {
+				PWR_powerOff();
+			}
 		}
-	}
-	
+	}	
 	return;
 }
 void PWR_fauxSleep(void) {

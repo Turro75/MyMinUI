@@ -45,6 +45,11 @@ export CPU_SPEED_MAX=$(cat /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_f
 export GOVERNOR_PATH="/sys/devices/system/cpu/cpufreq/policy0/scaling_governor"
 export GOVERNOR_CPUSPEED_PATH="/sys/devices/system/cpu/cpufreq/policy0/scaling_setspeed"
 
+POWEROFF_DELAY_PATH="$SHARED_USERDATA_PATH/poweroff-delay-sec"
+if [ ! -f $POWEROFF_DELAY_PATH ]; then
+	echo 120 > $POWEROFF_DELAY_PATH
+fi
+
 sudo sh -c "echo -n userspace > ${GOVERNOR_PATH}"
 sudo sh -c "echo -n ${CPU_SPEED_PERF} > ${GOVERNOR_CPUSPEED_PATH}"
 

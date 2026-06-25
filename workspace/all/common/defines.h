@@ -25,6 +25,7 @@
 #define SIMPLE_MODE_PATH SHARED_USERDATA_PATH "/enable-simple-mode"
 #define FANCY_MODE_PATH SHARED_USERDATA_PATH "/enable-fancy-mode"
 #define PWR_SLEEP_PATH SHARED_USERDATA_PATH "/enable-sleep-mode"
+#define PWR_SLEEP_DELAY SHARED_USERDATA_PATH "/poweroff-delay-sec"
 #define HIDE_STATE_PATH SHARED_USERDATA_PATH "/hide-state"
 #define PAGE_SEEK_TRIGGERS SHARED_USERDATA_PATH "/enable-seek-triggers"
 #define IS_RG353P USERDATA_PATH "/is-rg353p"

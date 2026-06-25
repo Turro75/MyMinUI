@@ -50,6 +50,10 @@ mkdir -p "$LOGS_PATH"
 mkdir -p "$SHARED_USERDATA_PATH/.minui"
 
 #######################################
+POWEROFF_DELAY_PATH="$SHARED_USERDATA_PATH/poweroff-delay-sec"
+if [ ! -f $POWEROFF_DELAY_PATH ]; then
+	echo 120 > $POWEROFF_DELAY_PATH
+fi
 
 export CPU_SPEED_MENU=840000
 export CPU_SPEED_POWERSAVE=1008000
