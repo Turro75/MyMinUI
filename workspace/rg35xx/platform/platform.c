@@ -279,7 +279,7 @@ void SetHDMI(int value) {
 }
 
 
-int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max;
+int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max,cpufreq_sleep;
 
 SDL_Surface* PLAT_initVideo(void) {
 
@@ -296,6 +296,8 @@ SDL_Surface* PLAT_initVideo(void) {
 		LOG_info("CPU_SPEED_PERF = %d\n", cpufreq_perf);
 		cpufreq_max = atoi(getenv("CPU_SPEED_MAX"));
 		LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
+		cpufreq_sleep = atoi(getenv("CPU_SPEED_SLEEP"));
+		LOG_info("CPU_SPEED_SLEEP = %d\n", cpufreq_sleep);
 	} 
 
 	int w,p,h,hz = 0;
@@ -603,6 +605,7 @@ void PLAT_setCPUSpeed(int speed) {
 		case CPU_SPEED_NORMAL: 		freq = cpufreq_game ; break;
 		case CPU_SPEED_PERFORMANCE: freq = cpufreq_perf ; break;
 		case CPU_SPEED_MAX:			freq = cpufreq_max ; break;	
+		case CPU_SPEED_SLEEP:		freq = cpufreq_sleep; break;
 	}
 	
 	char cmd[32];

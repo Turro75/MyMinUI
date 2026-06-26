@@ -1186,6 +1186,7 @@ void PLAT_setCPUSpeed(int speed) {
 		case CPU_SPEED_NORMAL: 		freq = cpufreq_game ; break;
 		case CPU_SPEED_PERFORMANCE: freq = cpufreq_perf ; break;
 		case CPU_SPEED_MAX:			freq = cpufreq_max ; break;	
+		case CPU_SPEED_SLEEP:		freq = cpufreq_menu; break; // already set to the minimum
 	}
 	char cmd[512];
 	//sudo sh -c "echo -n 1512000 > /sys/devices/system/cpu/cpufreq/policy0/scaling_setspeed"

@@ -74,6 +74,7 @@ static void* flipThread(void *arg);
 char pwractionstr[256];
 
 int fancy_mode;
+extern int overclock; // normal
 
 enum {
 	SYNC_SRC_NOFIX,
@@ -93,7 +94,6 @@ static int sync_ref = SYNC_SRC_AUTO;
 static int show_debug = 0;
 static int max_ff_speed = 3; // 4x
 static int fast_forward = 0;
-static int overclock = 1; // normal
 static int has_custom_controllers = 0;
 static int gamepad_type = 0; // index in gamepad_labels/gamepad_values
 static int downsample = 0; // set to 1 to convert from 8888 to 565, set to 2 to convert from 1555 to 565
@@ -1408,10 +1408,12 @@ static int Config_getValue(char* cfg, const char* key, char* out_value, int* loc
 static void setOverclock(int i) {
 	overclock = i;
 	switch (i) {
-		case 0: PWR_setCPUSpeed(CPU_SPEED_POWERSAVE); break;
-		case 1: PWR_setCPUSpeed(CPU_SPEED_NORMAL); break;
-		case 2: PWR_setCPUSpeed(CPU_SPEED_PERFORMANCE); break;
-		case 3: PWR_setCPUSpeed(CPU_SPEED_MAX); break;
+		case CPU_SPEED_POWERSAVE: PWR_setCPUSpeed(CPU_SPEED_POWERSAVE); break;
+		case CPU_SPEED_NORMAL: PWR_setCPUSpeed(CPU_SPEED_NORMAL); break;
+		case CPU_SPEED_PERFORMANCE: PWR_setCPUSpeed(CPU_SPEED_PERFORMANCE); break;
+		case CPU_SPEED_MAX: PWR_setCPUSpeed(CPU_SPEED_MAX); break;
+		case CPU_SPEED_MENU: PWR_setCPUSpeed(CPU_SPEED_MENU); break;
+		case CPU_SPEED_SLEEP: PWR_setCPUSpeed(CPU_SPEED_SLEEP); break;
 	}
 	processors = PLAT_getNumProcessors();
 }
@@ -3916,11 +3918,11 @@ void Menu_beforeSleep(void) {
 	} else	{
 		putFile(AUTO_RESUME_PATH, game.path + strlen(SDCARD_PATH));
 	}
-	PWR_setCPUSpeed(CPU_SPEED_MENU);
+	//PWR_setCPUSpeed(CPU_SPEED_SLEEP);
 }
 void Menu_afterSleep(void) {
 	unlink(AUTO_RESUME_PATH);
-	setOverclock(overclock);
+	//setOverclock(overclock);
 }
 
 typedef struct MenuList MenuList;
@@ -5598,8 +5600,6 @@ static void resetFPSCounter() {
 int main(int argc , char* argv[]) {
 	LOG_info("MinArch Date:%s Commit:%s\n", BUILD_DATE, BUILD_HASH);
 	cpu_set_t maint;
-
-	setOverclock(overclock); // default to normal
 	// force a stack overflow to ensure asan is linked and actually working
 	// char tmp[2];
 	// tmp[2] = 'a';
@@ -5683,6 +5683,7 @@ int main(int argc , char* argv[]) {
 	screen = GFX_init(MODE_MENU);
 	screengame = PLAT_getScreenGame();
 	renderer.rotate = (renderer.rotate + PLAT_getScreenRotation(1)) & 3;
+	overclock = CPU_SPEED_NORMAL;
 	setOverclock(overclock); // default to normal
 	PAD_init();
 

@@ -802,7 +802,7 @@ int swap_buffers(int page){
 }
 
 
-int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max;
+int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max,cpufreq_sleep;
 int isnewdtb;
 //SDL_Surface * page[2];
 
@@ -823,6 +823,8 @@ SDL_Surface* PLAT_initVideo(void) {
 		LOG_info("CPU_SPEED_PERF = %d\n", cpufreq_perf);
 		cpufreq_max = atoi(getenv("CPU_SPEED_MAX"));
 		LOG_info("CPU_SPEED_MAX = %d\n", cpufreq_max);
+		cpufreq_sleep = atoi(getenv("CPU_SPEED_SLEEP"));
+		LOG_info("CPU_SPEED_SLEEP = %d\n", cpufreq_sleep);
 	} 
 
 	ism22 = 0;
@@ -1387,6 +1389,7 @@ Available frequency
 		case CPU_SPEED_NORMAL: 		freq = cpufreq_game ; break;
 		case CPU_SPEED_PERFORMANCE: freq = cpufreq_perf ; break;
 		case CPU_SPEED_MAX:			freq = cpufreq_max ; break;	
+		case CPU_SPEED_SLEEP:		freq = cpufreq_sleep ; break;	
 	}
 	if (freq) {
 		putFile(GOVERNOR_PATH, "userspace");

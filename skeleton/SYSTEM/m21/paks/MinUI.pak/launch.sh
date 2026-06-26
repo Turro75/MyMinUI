@@ -49,6 +49,7 @@ export CPU_SPEED_POWERSAVE=912000
 export CPU_SPEED_GAME=1008000
 export CPU_SPEED_PERF=1104000
 export CPU_SPEED_MAX=1200000
+export CPU_SPEED_SLEEP=480000
 
 export GOVERNOR_PATH="/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
 export GOVERNOR_CPUSPEED_PATH="/sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed"

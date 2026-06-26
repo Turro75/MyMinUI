@@ -21,6 +21,7 @@
 ///////////////////////////////
 
 extern int fancy_mode;
+int overclock = CPU_SPEED_NORMAL;
 int PWR_isSleeping = 0;
 #if defined(USE_SDL2)
 SDL_AudioDeviceID audioDeviceID;
@@ -2262,12 +2263,25 @@ static void PWR_enterSleep(void) {
 		SetRawVolume(MUTE_VOLUME_RAW);
 		PLAT_enableBacklight(0);
 	}
+	PWR_setCPUSpeed(CPU_SPEED_SLEEP); //set the cpu clock to the minimun allowed
 	system("killall -STOP keymon.elf");
 	
 	sync();
 }
 static void PWR_exitSleep(void) {
+	PWR_setCPUSpeed(overclock); //restore previous cpu clock
 	system("killall -CONT keymon.elf");
+	if (snd.initialized) {
+#if defined(USE_SDL2)
+		// Exiting Sleep Mode: Safely open whatever the current default device is
+		audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, 0);
+		if (audioDeviceID > 0) {
+			SDL_PauseAudioDevice(audioDeviceID, 0); // Resume
+		}
+#else
+		SDL_PauseAudio(0);
+#endif	
+	}
 	if (GetHDMI()) {
 		// buh
 	}
@@ -2275,15 +2289,6 @@ static void PWR_exitSleep(void) {
 		PLAT_enableBacklight(1);
 		SetVolume(GetVolume());
 	}
-#if defined(USE_SDL2)
-	// Exiting Sleep Mode: Safely open whatever the current default device is
-	audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, 0);
-	if (audioDeviceID > 0) {
-		SDL_PauseAudioDevice(audioDeviceID, 0); // Resume
-	}
-#else
-	SDL_PauseAudio(0);
-#endif	
 	sync();
 }
 

@@ -25,6 +25,7 @@ typedef struct Array {
 } Array;
 
 static int selected_modifier;
+extern int overclock; // normal
 
 static Array* Array_new(void) {
 	Array* self = malloc(sizeof(Array));
@@ -1751,6 +1752,8 @@ int main (int argc, char *argv[]) {
 	InitSettings();
 	
 	SDL_Surface* screen = GFX_init(MODE_MAIN);
+	overclock = CPU_SPEED_MENU;
+	PWR_setCPUSpeed(overclock);
 	PAD_init();
 	PWR_init();
 	if (!HAS_POWER_BUTTON && !simple_mode) PWR_disableSleep();
@@ -1760,7 +1763,6 @@ int main (int argc, char *argv[]) {
 	Menu_init();
 	
 	// now that (most of) the heavy lifting is done, take a load off
-	PWR_setCPUSpeed(CPU_SPEED_MENU);
 	GFX_setVsync(VSYNC_STRICT);
 
 	PAD_reset();
