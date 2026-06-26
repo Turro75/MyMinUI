@@ -2084,7 +2084,8 @@ void PWR_init(void) {
 	pwr.sleep_delay = 120;
 	if (exists(PWR_SLEEP_DELAY)){
 		pwr.sleep_delay = getInt(PWR_SLEEP_DELAY);
-		if (pwr.sleep_delay < 15) pwr.sleep_delay=0; //disables auto poweroff
+		if (pwr.sleep_delay<0) pwr.sleep_delay = 0; //disables power off
+		if (pwr.sleep_delay>7200) pwr.sleep_delay = 7200; //max 2 hrs
 	}
 	//PWR_initOverlay();
 
@@ -2296,7 +2297,7 @@ static void PWR_waitForWake(void) {
 	uint32_t sleep_ticks = SDL_GetTicks();
 	while (!PAD_wake()) {
 		SDL_Delay(200);
-		if (pwr.can_poweroff && SDL_GetTicks()-sleep_ticks>=(pwr.sleep_delay*1000)) { // increased to two minutes
+		if ((pwr.sleep_delay != 0) && pwr.can_poweroff && SDL_GetTicks()-sleep_ticks>=(pwr.sleep_delay*1000)) { // increased to two minutes
 			if (pwr.is_charging) {
 				sleep_ticks += 60000; // check again in a minute
 			} else {
