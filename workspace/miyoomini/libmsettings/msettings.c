@@ -92,19 +92,26 @@ int axp_read(unsigned char address) {
 
 ///////////////////////////////////////
 
+#define SETTINGS_VERSION 2
 typedef struct Settings {
 	int version; // future proofing
 	int brightness;
-	int unused1;
+	int headphones; // available?
 	int speaker;
-	int unused[4]; // for future use
+	int jack;
+	int hdmi;
+	int unused[2]; // for future use
 } Settings;
 static Settings DefaultSettings = {
-	.version = 1,
+	.version = SETTINGS_VERSION,
 	.brightness = 3,
-	.speaker = 20,
+	.headphones = 4,
+	.speaker = 8,
+	.jack = 0,
+	.hdmi = 0,
+	.unused = {0,0}
 };
-static Settings* settings;
+static Settings *settings;
 
 #define SHM_KEY "/SharedSettings"
 static char SettingsPath[256];

@@ -16,15 +16,15 @@
 
 ///////////////////////////////////////
 
-#define SETTINGS_VERSION 1
+#define SETTINGS_VERSION 2
 typedef struct Settings {
 	int version; // future proofing
 	int brightness;
 	int headphones; // available?
 	int speaker;
+	int jack;
+	int hdmi;
 	int unused[2]; // for future use
-	// NOTE: doesn't really need to be persisted but still needs to be shared
-	int jack; 
 } Settings;
 static Settings DefaultSettings = {
 	.version = SETTINGS_VERSION,
@@ -32,6 +32,8 @@ static Settings DefaultSettings = {
 	.headphones = 4,
 	.speaker = 8,
 	.jack = 0,
+	.hdmi = 0,
+	.unused = {0,0}
 };
 static Settings *settings;
 
