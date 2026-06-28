@@ -2231,26 +2231,20 @@ void PWR_disablePowerOff(void) {
 void PWR_powerOff(void) {
 	if (pwr.can_poweroff) {
 		
-		int w = DEVICE_WIDTH;
-		int h = DEVICE_HEIGHT;
-		int p = DEVICE_PITCH;
-		if (GetHDMI()) {
-			w = HDMI_WIDTH;
-			h = HDMI_HEIGHT;
-			p = HDMI_PITCH;
-		}
-		gfx.screen = GFX_resize(w,h,p);
-		
 		char* msg;
-		if (HAS_POWER_BUTTON || HAS_POWEROFF_BUTTON) msg = exists(AUTO_RESUME_PATH) ? "Quicksave created,\npowering off" : "Powering off";
-		else msg = exists(AUTO_RESUME_PATH) ? "Quicksave created,\npower off now" : "Power off now";
+		if (HAS_POWER_BUTTON || HAS_POWEROFF_BUTTON) {
+			msg = exists(AUTO_RESUME_PATH) ? "Quicksave created,\npowering off" : "Powering off";
+		} else {
+			msg = exists(AUTO_RESUME_PATH) ? "Quicksave created,\npower off now" : "Power off now";
+		}
 		
 		// LOG_info("PWR_powerOff %s (%ix%i)\n", gfx.screen, gfx.screen->w, gfx.screen->h);
 		
 		// TODO: for some reason screen's dimensions end up being 0x0 in GFX_blitMessage...
-		PLAT_clearVideo(gfx.screen);
-		GFX_blitMessage(font.large, msg, gfx.screen,&(SDL_Rect){0,0,gfx.screen->w,gfx.screen->h}); //, NULL);
-		PLAT_flip(NULL,0);
+		PLAT_clearVideo(NULL);
+		GFX_blitMessage(font.large, msg, gfx.screen, NULL); //, NULL);
+		PLAT_flip(NULL,1);
+		usleep(100000);
 		PLAT_powerOff();
 	}
 }
