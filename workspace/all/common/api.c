@@ -1508,15 +1508,23 @@ size_t SND_batchSamples_fixed_rate(const SND_Frame *frames, size_t frame_count) 
 
 SDL_AudioSpec spec_in;
 SDL_AudioSpec spec_out;
-
+double sample_rate_bak = 0;
+double frame_rate_bak = 0;
+int starting = 1;
 void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 	LOG_info("SND_init\n");
+	frame_rate_bak = frame_rate;
+	sample_rate_bak = sample_rate;
 	currentreqfps = frame_rate;
 	if (SCREEN_FPS != frame_rate) {
 		LOG_info("SND_init: target fps %g != %g\n", SCREEN_FPS, frame_rate);
 		//SCREEN_FPS = frame_rate;
 	}
-	SDL_InitSubSystem(SDL_INIT_AUDIO);
+#ifdef MIYOOMINI
+	usleep(500000*(1-is_plus)*starting); // wait for audio to start at boot on Miyoo Mini (not the plus), otherwise it will be muted after a state resume
+	starting = 0;
+#endif
+	if (SDL_InitSubSystem(SDL_INIT_AUDIO)<0) LOG_info("SDL_InitSubSystem(SDL_INIT_AUDIO) error: %s\n", SDL_GetError());
 
 	fps_counter = 0;
 	fps_buffer_index = 0;
@@ -1578,6 +1586,8 @@ void SND_quit(void) { // plat_sound_finish
 		free(snd.buffer);
 		snd.buffer = NULL;
 	}
+	SDL_QuitSubSystem(SDL_INIT_AUDIO);
+	SDL_Quit();
 	snd.initialized = 0;
 }
 
@@ -2240,7 +2250,7 @@ void PWR_powerOff(void) {
 		// TODO: for some reason screen's dimensions end up being 0x0 in GFX_blitMessage...
 		PLAT_clearVideo(gfx.screen);
 		GFX_blitMessage(font.large, msg, gfx.screen,&(SDL_Rect){0,0,gfx.screen->w,gfx.screen->h}); //, NULL);
-		GFX_flip(gfx.screen);
+		PLAT_flip(NULL,0);
 		PLAT_powerOff();
 	}
 }
@@ -2248,14 +2258,14 @@ void PWR_powerOff(void) {
 static void PWR_enterSleep(void) {
 	
 	// Entering Sleep Mode: Cleanly destroy the thread
-#if defined(USE_SDL2)
-	if (audioDeviceID > 0) {
-		SDL_PauseAudioDevice(audioDeviceID, 1); // Pause
-    	SDL_CloseAudioDevice(audioDeviceID);
-	}
-#else
-	SDL_PauseAudio(1);
-#endif
+//#if defined(USE_SDL2)
+//	if (audioDeviceID > 0) {
+//		SDL_PauseAudioDevice(audioDeviceID, 1); // Pause
+//    	SDL_CloseAudioDevice(audioDeviceID);
+//	}
+//#else
+//	SDL_PauseAudio(1);
+//#endif
 	if (GetHDMI()) {
 		PLAT_clearVideo(gfx.screen);
 		PLAT_flip(gfx.screen, 0);
@@ -2264,6 +2274,7 @@ static void PWR_enterSleep(void) {
 		SetRawVolume(MUTE_VOLUME_RAW);
 		PLAT_enableBacklight(0);
 	}
+	SND_quit();
 	PWR_setCPUSpeed(CPU_SPEED_SLEEP); //set the cpu clock to the minimun allowed
 	system("killall -STOP keymon.elf");
 	
@@ -2272,22 +2283,24 @@ static void PWR_enterSleep(void) {
 static void PWR_exitSleep(void) {
 	PWR_setCPUSpeed(overclock); //restore previous cpu clock
 	system("killall -CONT keymon.elf");
-	if (snd.initialized) {
-#if defined(USE_SDL2)
-		// Exiting Sleep Mode: Safely open whatever the current default device is
-		audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, 0);
-		if (audioDeviceID > 0) {
-			SDL_PauseAudioDevice(audioDeviceID, 0); // Resume
-		}
-#else
-		SDL_PauseAudio(0);
-#endif	
-	}
+//	if (snd.initialized) {
+//#if defined(USE_SDL2)
+//		// Exiting Sleep Mode: Safely open whatever the current default device is
+//		audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, 0);
+//		if (audioDeviceID > 0) {
+//			SDL_PauseAudioDevice(audioDeviceID, 0); // Resume
+//		}
+//#else
+//		SDL_PauseAudio(0);
+//#endif	
+//	}
+	SND_init(sample_rate_bak, frame_rate_bak);
 	if (GetHDMI()) {
 		// buh
 	}
 	else {
 		PLAT_enableBacklight(1);
+		SetBrightness(GetBrightness());
 		SetVolume(GetVolume());
 	}
 	sync();
@@ -2295,9 +2308,10 @@ static void PWR_exitSleep(void) {
 
 static void PWR_waitForWake(void) {
 	uint32_t sleep_ticks = SDL_GetTicks();
+	uint32_t sleep_delay_ms = pwr.sleep_delay*1000;
 	while (!PAD_wake()) {
 		SDL_Delay(200);
-		if ((pwr.sleep_delay != 0) && pwr.can_poweroff && SDL_GetTicks()-sleep_ticks>=(pwr.sleep_delay*1000)) { // increased to two minutes
+		if ((sleep_delay_ms!=0) && pwr.can_poweroff && ((SDL_GetTicks()-sleep_ticks)>=sleep_delay_ms)) { // increased to two minutes
 			if (pwr.is_charging) {
 				sleep_ticks += 60000; // check again in a minute
 			} else {
