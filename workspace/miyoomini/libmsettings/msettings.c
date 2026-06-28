@@ -173,7 +173,7 @@ int GetBrightness(void) { // 0-10
 	return settings->brightness;
 }
 void SetBrightness(int value) {
-	SetRawBrightness(value==0?6:value*10);
+	SetRawBrightness(value*10);
 	settings->brightness = value;
 	SaveSettings();
 }

@@ -659,6 +659,7 @@ void PLAT_enableBacklight(int enable) {
 		putInt("/sys/class/gpio/export", 4);
 		putFile("/sys/class/gpio/gpio4/direction", "out");
 		putInt("/sys/class/gpio/gpio4/value", 0);
+		SetRawBrightness(0);
 	}
 }
 void PLAT_powerOff(void) {
