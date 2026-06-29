@@ -116,7 +116,7 @@ specialpackage: tidy
 	# zip up build
 		
 	# move formatted readmes from workspace to build
-	cp ./workspace/readmes/BASE-out.txt ./build/BASE/README.txt
+	cp ./workspace/readmes/BASE-out.txt ./build/BASE/MANUAL.txt
 	# cp ./workspace/readmes/EXTRAS-out.txt ./build/EXTRAS/README_EXTRAS.txt
 	rm -rf ./workspace/readmes
 	
@@ -145,7 +145,7 @@ specialpackage: tidy
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
 	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
-	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Cheats Saves Tools miyoo miyoo354 miyoo285 trimui rg35xxplus r36s m21 gkdpixel em_ui.sh MinUI.zip README.txt
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Cheats Saves Tools miyoo miyoo354 miyoo285 trimui rg35xxplus r36s m21 gkdpixel em_ui.sh MinUI.zip MANUAL.txt
 	
 	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt
@@ -165,7 +165,7 @@ package: tidy
 	# zip up build
 		
 	# move formatted readmes from workspace to build
-	cp ./workspace/readmes/BASE-out.txt ./build/BASE/README.txt
+	cp ./workspace/readmes/BASE-out.txt ./build/BASE/MANUAL.txt
 	# cp ./workspace/readmes/EXTRAS-out.txt ./build/EXTRAS/README_EXTRAS.txt
 	rm -rf ./workspace/readmes
 	
@@ -193,7 +193,7 @@ package: tidy
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
 	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
-	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Cheats Tools miyoo miyoo354 m21 r36s rg35xx MinUI.zip README.txt
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Cheats Tools miyoo miyoo354 m21 r36s rg35xx MinUI.zip MANUAL.txt
 	
 	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt
