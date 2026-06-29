@@ -481,6 +481,12 @@ Quicksave & auto-resume
 MyMinUI will create a quicksave when powering off in-game. The next time you power on the device it will automatically resume from where you left off. A quicksave is created when powering off manually or automatically after a short sleep. On devices without a POWER button (M21) press the MENU button twice to put the device to sleep before flipping the POWER switch.
 
 ----------------------------------------
+Auto sleep and auto power off delays
+
+MyMinUI activates the sleep mode after 30sec of inactivity while in the menus (main and game) and poweroff after 2 minutes. these delays are adjustable by editing 2 txt files created by the system .userdata/shared/sleep-delay-sec and .userdata/shared/poweroff-delay-sec.
+setting the content of the file to 0 disables the related function. Both are limited to 7200 (2 hours).
+
+----------------------------------------
 Roms
 
 Included in this zip is a "Roms" folder containing folders for each console MinUI currently supports. You can rename these folders but you must keep the uppercase tag name in parentheses in order to retain the mapping to the correct emulator (eg. "Nintendo Entertainment System (FC)" could be renamed to "Nintendo (FC)", "NES (FC)", or "Famicom (FC)"). 
@@ -648,6 +654,14 @@ There are 3 working modes Standard, Simple and Fancy, to select the mode press m
 Standard mode (Default)
  
 Same look & feel of MinUI keeping additional MyMinUI features.
+
+----------------------------------------
+Cheats
+
+Copy Your cheats file to the Cheats/System folders, the cht file must match the rom name including brackets in the file name.
+As an example for the NES "1942 (Japan, USA).nes" You can download the cheat file from https://github.com/libretro/libretro-database/blob/master/cht/Nintendo%20-%20Nintendo%20Entertainment%20System/1942%20(Japan,%20USA).cht, and place in the /Cheats/FC/ directory.
+Then a new menu Cheats is available in minarch in game menu where You can activate the cheats You like.
+Cheats are not saved in the setting file so every time a game starts it must be manually activated the desired cheat.
 
 ----------------------------------------
 Fancy mode

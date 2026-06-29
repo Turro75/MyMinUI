@@ -93,7 +93,7 @@ setup:
 	
 	# copy readmes to workspace so we can use Linux fmt instead of host's
 	mkdir -p ./workspace/readmes
-	cp ./skeleton/BASE/README.txt ./workspace/readmes/BASE-in.txt
+	cp ./MANUAL.md ./workspace/readmes/BASE-in.txt
 #	cp ./skeleton/EXTRAS/README.txt ./workspace/readmes/EXTRAS-in.txt
 	
 done:
