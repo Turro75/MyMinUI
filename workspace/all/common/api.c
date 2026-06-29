@@ -203,6 +203,7 @@ static struct PWR_Context {
 	int can_poweroff;
 	int can_autosleep;
 	int sleep_delay;
+	int poweroff_delay;
 	
 	pthread_t battery_pt;
 	int is_charging;
@@ -2091,12 +2092,22 @@ void PWR_init(void) {
 	pwr.can_autosleep = 1;
 	pwr.should_warn = 0;
 	pwr.charge = PWR_LOW_CHARGE;
-	pwr.sleep_delay = 120;
-	if (exists(PWR_SLEEP_DELAY)){
-		pwr.sleep_delay = getInt(PWR_SLEEP_DELAY);
-		if (pwr.sleep_delay<0) pwr.sleep_delay = 0; //disables power off
+	pwr.sleep_delay = 30; // default to 30 seconds after last input
+	pwr.poweroff_delay = 120; // default to 120 seconds after sleep
+	if (exists(PWR_SLEEP_DELAY_PATH)){
+		pwr.sleep_delay = getInt(PWR_SLEEP_DELAY_PATH);
+		if (pwr.sleep_delay<0) pwr.sleep_delay = 0; //disables autosleep mode
 		if (pwr.sleep_delay>7200) pwr.sleep_delay = 7200; //max 2 hrs
 	}
+	putInt(PWR_SLEEP_DELAY_PATH, pwr.sleep_delay); 
+	
+	if (exists(PWR_POWEROFF_DELAY_PATH)){
+		pwr.poweroff_delay = getInt(PWR_POWEROFF_DELAY_PATH);
+		if (pwr.poweroff_delay<0) pwr.poweroff_delay = 0; //disables autopower off
+		if (pwr.poweroff_delay>7200) pwr.poweroff_delay = 7200; //max 2 hrs
+	} 
+	putInt(PWR_POWEROFF_DELAY_PATH, pwr.poweroff_delay); 
+	
 	//PWR_initOverlay();
 
 	PWR_updateBatteryStatus();
@@ -2163,11 +2174,10 @@ void PWR_update(int* _dirty, int* _show_setting, PWR_callback_t before_sleep, PW
 		power_pressed_at = now;
 	}
 	
-	#define SLEEP_DELAY 30000 // 30 seconds
-	if (now-last_input_at>=SLEEP_DELAY && PWR_preventAutosleep()) last_input_at = now;
+	if (now-last_input_at>=(pwr.sleep_delay*1000) && PWR_preventAutosleep()) last_input_at = now;
 	
 	if (
-		now-last_input_at>=SLEEP_DELAY || // autosleep
+		now-last_input_at>=(pwr.sleep_delay*1000) || // autosleep
 		(pwr.can_sleep && (PAD_justReleased(BTN_SLEEP) || PAD_justReleasedShort(BTN_SLEEP))) // manual sleep
 	) {
 		if (before_sleep) before_sleep();
@@ -2302,7 +2312,7 @@ static void PWR_exitSleep(void) {
 
 static void PWR_waitForWake(void) {
 	uint32_t sleep_ticks = SDL_GetTicks();
-	uint32_t sleep_delay_ms = pwr.sleep_delay*1000;
+	uint32_t sleep_delay_ms = pwr.poweroff_delay*1000;
 	while (!PAD_wake()) {
 		SDL_Delay(200);
 		if ((sleep_delay_ms!=0) && pwr.can_poweroff && ((SDL_GetTicks()-sleep_ticks)>=sleep_delay_ms)) { // increased to two minutes
