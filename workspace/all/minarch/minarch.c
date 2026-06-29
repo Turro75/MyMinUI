@@ -3121,7 +3121,7 @@ SDL_Rect video_refresh_callback_resize_custom(int use_screen_rotation, int aspec
 
 void video_refresh_callback_resize(void) {
 	LOG_info("RESIZE IN\n");fflush(stdout);
-	uint32_t now = SDL_GetTicks();
+	uint32_t now = MY_GetTicks();
 	LOG_info(" VideoResize IN %d %d %d ABS:%d\n", renderer.src_surface->w, renderer.src_surface->h, renderer.src_surface->pitch, now);fflush(stdout);
 	SDL_Rect targetarea = {0,0,GAME_WIDTH,GAME_HEIGHT};
 	switch(screen_scaling) {
@@ -3179,7 +3179,7 @@ void video_refresh_callback_resize(void) {
 		renderer.screenscaling = screen_scaling;
 	} 
 	
-	LOG_info("VideoResize OUT %d %d %d %d TOOK %dms ABS:%d\n", renderer.dst_w , renderer.dst_h, renderer.dst_x , renderer.dst_y ,  SDL_GetTicks()-now, SDL_GetTicks());fflush(stdout);
+	LOG_info("VideoResize OUT %d %d %d %d TOOK %dms ABS:%d\n", renderer.dst_w , renderer.dst_h, renderer.dst_x , renderer.dst_y ,  MY_GetTicks()-now, MY_GetTicks());fflush(stdout);
 }
 
 
@@ -3210,19 +3210,19 @@ static uint32_t _now = 0;
 static uint32_t sec_start2 = 0;
 static uint32_t last_flip_time = 0;
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
-//	uint32_t now = SDL_GetTicks();
+//	uint32_t now = MY_GetTicks();
  	if (!data) return;
 	if (waiting_for_thread_stop == 1){
 		return;
 	}
 	if (!thread_video) rendering = 0;
 	fps_ticks += 1;
-//	LOG_info("Video_refresh_callback_main IN ABS:%d\n", SDL_GetTicks());fflush(stdout);
+//	LOG_info("Video_refresh_callback_main IN ABS:%d\n", MY_GetTicks());fflush(stdout);
 	// 10 seems to be the sweet spot that allows 2x in NES and SNES and 8x in GB at 60fps
 	// 14 will let GB hit 10x but NES and SNES will drop to 1.5x at 30fps (not sure why)
 	// but 10 hurts PS...
 	// TODO: 10 was based on rg35xx, probably different results on other supported platforms
-	if (fast_forward && SDL_GetTicks()-last_flip_time<17) return;
+	if (fast_forward && MY_GetTicks()-last_flip_time<17) return;
 	
 	// FFVII menus 
 	// 16: 30/200
@@ -3274,7 +3274,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		sprintf(debug_text, "%.0f/%.0f", fps_double,fps2_double);
 		blitBitmapText(debug_text,2,-22,screengame, renderer.dst_x, renderer.dst_y, renderer.dst_w,renderer.dst_h);
 
-		_now = SDL_GetTicks();
+		_now = MY_GetTicks();
 
 		if ((_now - sec_start2 ) >=1000) {
 			sec_start2 = _now;
@@ -3301,7 +3301,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 //	gettimeofday(&now5,NULL);
 	GFX_pan();
 //	gettimeofday(&now6,NULL);
-	last_flip_time = SDL_GetTicks();
+	last_flip_time = MY_GetTicks();
 	if (!thread_video) render = 0;
 
 	//LOG_info("videorefreshcallbackmain took %dusec - rotate took %dusec - resize took %dusec - flip took %dusec - wait pan for %dusec\n", now6.tv_usec - now.tv_usec, now1.tv_usec - now.tv_usec, now3.tv_usec - now2.tv_usec, now5.tv_usec - now4.tv_usec, now6.tv_usec - now5.tv_usec);
@@ -3323,7 +3323,7 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 //	LOG_info("FRAME: %d (Video)             %05lluusec elasped, %lluusec absolute\n\n", currentframenum++,now_usec - last_video_time, now_usec);fflush(stdout); //LOG_info("Audio sample batch callback %d frames\n", frames);fflush(stdout);
 //	last_video_time = now_usec;
 
-	int callback_time = SDL_GetTicks();
+	int callback_time = MY_GetTicks();
 //	storage_audio_timing[_x][2] = callback_time;
 	//LOG_info("video_refresh_callback IN elapsed %lums width:%i height:%i pitch:%i ABS:%i\n", callback_time-last_callback_time ,width,height,pitch, callback_time);fflush(stdout);
 	if (!data) {
@@ -3402,12 +3402,12 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 		rendering = 1;
 		video_refresh_callback_main(backbuffer.pixels,width,height,pitch);	
 	}
-	//uint32_t cur = SDL_GetTicks() - last_callback_time;
+	//uint32_t cur = MY_GetTicks() - last_callback_time;
 	//if ( cur < 16) SDL_Delay(16 - cur);
-	//LOG_info("Video_refresh_callback OUT: waitforthread:%i thread_video:%i config_done = %i %ix%i_%i took:%lums ABS %lu tmptime=%d\n",waitforthread,thread_video,config_load_done,width,height,pitch, SDL_GetTicks()-callback_time, callback_time,cur);fflush(stdout);
+	//LOG_info("Video_refresh_callback OUT: waitforthread:%i thread_video:%i config_done = %i %ix%i_%i took:%lums ABS %lu tmptime=%d\n",waitforthread,thread_video,config_load_done,width,height,pitch, MY_GetTicks()-callback_time, callback_time,cur);fflush(stdout);
 	
 
-//	LOG_info("videorefreshcallback took %dmsec elapsed %dmsec\n", SDL_GetTicks() - callback_time, callback_time - last_callback_time);fflush(stdout);
+//	LOG_info("videorefreshcallback took %dmsec elapsed %dmsec\n", MY_GetTicks() - callback_time, callback_time - last_callback_time);fflush(stdout);
 	last_callback_time = callback_time;
 }
 ///////////////////////////////
@@ -3452,7 +3452,7 @@ static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) {
 //	LOG_info("FRAME: %d (Audio )%d frames, %05lluusec elasped, %lluusec absolute\n", currentframenum, frames, now_usec - last_audio_time, now_usec);fflush(stdout); //LOG_info("Audio sample batch callback %d frames\n", frames);fflush(stdout);
 //	last_audio_time = now_usec;
 
-//	storage_audio_timing[_x][0] = SDL_GetTicks();
+//	storage_audio_timing[_x][0] = MY_GetTicks();
 //	storage_audio_timing[_x][3] = frames;
 	int retvalue;
 	SND_Frame *tmpdata = (SND_Frame *)data;
@@ -3470,7 +3470,7 @@ if (use_nofix) {
 	}
 }
 
-//	storage_audio_timing[_x++][1] = SDL_GetTicks();
+//	storage_audio_timing[_x++][1] = MY_GetTicks();
 //	if (_x == 60*60*10) _x=0;
 //	gettimeofday(&tv,NULL);
 //	microsvalue = 1000000 * tv.tv_sec + tv.tv_usec;
@@ -4657,7 +4657,7 @@ static int Menu_options(MenuList* list) {
 			}
 		}
 		
-		// uint32_t now = SDL_GetTicks();
+		// uint32_t now = MY_GetTicks();
 		if (PAD_justPressed(BTN_B)) { // || PAD_tappedMenu(now)
 			show_options = 0;
 		}
@@ -5165,7 +5165,7 @@ static void Menu_loop(void) {
 	
 	while (show_menu) {
 		GFX_startFrame();
-		uint32_t now = SDL_GetTicks();
+		uint32_t now = MY_GetTicks();
 
 		PAD_poll();
 		
@@ -5487,7 +5487,7 @@ static void Menu_loop(void) {
 static void trackFPS(void) {
 	if (!show_debug) return;
 
-	uint32_t now = SDL_GetTicks();
+	uint32_t now = MY_GetTicks();
 	if (now - sec_start>=1000) {
 		double last_time = (double)(now - sec_start) / 1000;
 		fps_double = fps_ticks / last_time;
@@ -5518,7 +5518,7 @@ static void limitFF(void) {
 			if (elapsed<ff_frame_time) {
 				int delay = (ff_frame_time - elapsed) / 1000;
 				if (delay>0 && delay<17) { // don't allow a delay any greater than a frame
-					SDL_Delay(delay);
+					usleep(delay*1000);
 				}
 			}
 			last_time += ff_frame_time;
@@ -5591,7 +5591,7 @@ static void* coreThread(void *arg) {
 
 
 static void resetFPSCounter() {
-	sec_start = SDL_GetTicks();
+	sec_start = MY_GetTicks();
 	fps_ticks = 0;
 	fps2_ticks = 0;
 }
@@ -5760,7 +5760,7 @@ int main(int argc , char* argv[]) {
 	//GFX_flip(screen);
 	//GFX_pan();
 
-	sec_start = SDL_GetTicks();
+	sec_start = MY_GetTicks();
 
 	if ((renderer.rotate % 2) == 1 ) {
 		core.aspect_ratio = 1.0 / core.aspect_ratio;

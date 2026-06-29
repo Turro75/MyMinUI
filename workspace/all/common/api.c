@@ -359,7 +359,7 @@ static double fps_buffer[FPS_BUFFER_SIZE] = {60.1};
 static int fps_buffer_index = 0;
 
 void GFX_startFrame(void) {
-	frame_start = SDL_GetTicks();
+	frame_start = MY_GetTicks();
 }
 
 void GFX_pan(void) {
@@ -367,7 +367,7 @@ void GFX_pan(void) {
 }
 
 void GFX_flipNoFix(SDL_Surface* screen) {
-	int should_vsync = (gfx.vsync!=VSYNC_OFF && (gfx.vsync==VSYNC_STRICT || frame_start==0 || SDL_GetTicks()-frame_start<FRAME_BUDGET));
+	int should_vsync = (gfx.vsync!=VSYNC_OFF && (gfx.vsync==VSYNC_STRICT || frame_start==0 || MY_GetTicks()-frame_start<FRAME_BUDGET));
 	PLAT_flip(screen, should_vsync);
 }
 
@@ -379,9 +379,18 @@ uint64_t MY_GetPerformanceCounter(void) {
 }
 
 
+uint64_t MY_GetTicks(void) {
+    struct timespec ts;
+    // CLOCK_MONOTONIC guarantees time only moves forward
+    clock_gettime(CLOCK_MONOTONIC, &ts); 
+    
+    // Convert seconds and nanoseconds to total milliseconds
+    return (uint64_t)(ts.tv_sec * 1000) + (uint64_t)(ts.tv_nsec / 1000000);
+}
+
 void GFX_flip(SDL_Surface* screen) {
 	
-	int should_vsync = (gfx.vsync!=VSYNC_OFF && (gfx.vsync==VSYNC_STRICT || frame_start==0 || SDL_GetTicks()-frame_start<FRAME_BUDGET));
+	int should_vsync = (gfx.vsync!=VSYNC_OFF && (gfx.vsync==VSYNC_STRICT || frame_start==0 || MY_GetTicks()-frame_start<FRAME_BUDGET));
 	PLAT_flip(screen, should_vsync);
 
 	currentfps = current_fps;
@@ -413,7 +422,7 @@ void GFX_flip(SDL_Surface* screen) {
 }
 // eventually this function should be removed as its only here because of all the audio buffer based delay stuff
 void GFX_sync(void) {
-	uint32_t frame_duration = SDL_GetTicks() - frame_start;
+	uint32_t frame_duration = MY_GetTicks() - frame_start;
 	if (gfx.vsync!=VSYNC_OFF) {
 		// this limiting condition helps SuperFX chip games
 		if (gfx.vsync==VSYNC_STRICT || frame_start==0 || frame_duration<FRAME_BUDGET) { // only wait if we're under frame budget
@@ -421,7 +430,7 @@ void GFX_sync(void) {
 		}
 	}
 	else {
-		if (frame_duration<FRAME_BUDGET) SDL_Delay(FRAME_BUDGET-frame_duration);
+		if (frame_duration<FRAME_BUDGET) usleep((FRAME_BUDGET-frame_duration) * 1000);
 	}
 }
 
@@ -484,7 +493,7 @@ void GFX_flip_fixed_rate(SDL_Surface* screen, double target_fps) {
 			}
 	}	
 	}
-	int should_vsync = (gfx.vsync!=VSYNC_OFF && (gfx.vsync==VSYNC_STRICT || frame_start==0 || SDL_GetTicks()-frame_start<FRAME_BUDGET));
+	int should_vsync = (gfx.vsync!=VSYNC_OFF && (gfx.vsync==VSYNC_STRICT || frame_start==0 || MY_GetTicks()-frame_start<FRAME_BUDGET));
 	PLAT_flip(screen, should_vsync);
 
 	double elapsed_time_s = (double)(MY_GetPerformanceCounter() - per_frame_start) / perf_freq;
@@ -512,7 +521,7 @@ void GFX_flip_fixed_rate(SDL_Surface* screen, double target_fps) {
 void GFX_sync_fixed_rate(double target_fps) {
 	if (target_fps == 0.0) target_fps = SCREEN_FPS;
 	int frame_budget = (int) lrint(1000.0 / target_fps);
-	uint32_t frame_duration = SDL_GetTicks() - frame_start;
+	uint32_t frame_duration = MY_GetTicks() - frame_start;
 	if (gfx.vsync!=VSYNC_OFF) {
 		// this limiting condition helps SuperFX chip games
 		if (gfx.vsync==VSYNC_STRICT || frame_start==0 || frame_duration<frame_budget) { // only wait if we're under frame budget
@@ -520,13 +529,13 @@ void GFX_sync_fixed_rate(double target_fps) {
 		}
 	}
 	else {
-		if (frame_duration<frame_budget) SDL_Delay(frame_budget-frame_duration);
+		if (frame_duration<frame_budget) usleep((frame_budget-frame_duration) * 1000);
 	}
 }
 // if a fake vsycn delay is really needed 
 void GFX_delay(void) {
-	uint32_t frame_duration = SDL_GetTicks() - frame_start;
-	if (frame_duration<((1/SCREEN_FPS) * 1000)) SDL_Delay(((1/SCREEN_FPS) * 1000)-frame_duration);
+	uint32_t frame_duration = MY_GetTicks() - frame_start;
+	if (frame_duration<((1/SCREEN_FPS) * 1000)) usleep((((1/SCREEN_FPS) * 1000)-frame_duration) *1000);
 }
 
 int GFX_truncateText(TTF_Font* font, const char* in_name, char* out_name, int max_width, int padding) {
@@ -1316,7 +1325,7 @@ size_t SND_batchSamplesNoFix(const SND_Frame* frames, size_t frame_count) { // p
 #else
 			SDL_UnlockAudio();
 #endif
-			SDL_Delay(1);
+			usleep(1000);
 #if defined (USE_SDL2)
 			SDL_LockAudioDevice(audioDeviceID);
 #else
@@ -1661,7 +1670,7 @@ void PAD_poll_SDL(void) {
 	pad.just_released = BTN_NONE;
 	pad.just_repeated = BTN_NONE;
 
-	uint32_t tick = SDL_GetTicks();
+	uint32_t tick = MY_GetTicks();
 	for (int i=0; i<BTN_ID_COUNT; i++) {
 		int btn = 1 << i;
 		if ((pad.is_pressed & btn) && (tick>=pad.repeat_at[i])) {
@@ -2010,7 +2019,7 @@ static void* VIB_thread(void *arg) {
 #define DEFER_FRAMES 3
 	static int defer = 0;
 	while(1) {
-		SDL_Delay(17);
+		usleep(16667);
 		if (vib.queued_strength[0]!=vib.strength) {
 			if (defer<DEFER_FRAMES && vib.queued_strength[0]==0) { // minimize vacillation between 0 and some number (which this motor doesn't like)
 				defer += 1;
@@ -2146,7 +2155,7 @@ void PWR_update(int* _dirty, int* _show_setting, PWR_callback_t before_sleep, PW
 	static int was_charging = -1;
 	if (was_charging==-1) was_charging = pwr.is_charging;
 
-	uint32_t now = SDL_GetTicks();
+	uint32_t now = MY_GetTicks();
 	if (was_charging || PAD_anyPressed() || last_input_at==0) last_input_at = now;
 	
 	#define CHARGE_DELAY 1000
@@ -2185,7 +2194,7 @@ void PWR_update(int* _dirty, int* _show_setting, PWR_callback_t before_sleep, PW
 		PWR_isSleeping = 1;
 		if (after_sleep) after_sleep();
 		
-		last_input_at = now = SDL_GetTicks();
+		last_input_at = now = MY_GetTicks();
 		power_pressed_at = 0;
 		dirty = 1;
 	}
@@ -2311,11 +2320,11 @@ static void PWR_exitSleep(void) {
 }
 
 static void PWR_waitForWake(void) {
-	uint32_t sleep_ticks = SDL_GetTicks();
+	uint32_t sleep_ticks = MY_GetTicks();
 	uint32_t sleep_delay_ms = pwr.poweroff_delay*1000;
 	while (!PAD_wake()) {
-		SDL_Delay(200);
-		if ((sleep_delay_ms!=0) && pwr.can_poweroff && ((SDL_GetTicks()-sleep_ticks)>=sleep_delay_ms)) { // increased to two minutes
+		usleep(200000);
+		if ((sleep_delay_ms!=0) && pwr.can_poweroff && ((MY_GetTicks()-sleep_ticks)>=sleep_delay_ms)) { // increased to two minutes
 			if (pwr.is_charging) {
 				sleep_ticks += 60000; // check again in a minute
 			} else {

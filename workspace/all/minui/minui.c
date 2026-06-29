@@ -1773,7 +1773,7 @@ int main (int argc, char *argv[]) {
 	int was_online = PLAT_isOnline();
 	while (!quit) {
 		GFX_startFrame();
-		unsigned long now = SDL_GetTicks();
+		unsigned long now = MY_GetTicks();
 	//	LOG_info("START PAD_poll\n");
 		PAD_poll();
 	//	LOG_info("END PAD_poll\n");
