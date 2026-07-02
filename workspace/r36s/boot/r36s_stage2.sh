@@ -37,7 +37,11 @@ if [ -e ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	rm -rf $NEWFILE
 	sync
 	echo "End phase 1" >> $LOGFILE
-	
+	if [ $PID -ne -1 ]; then
+		kill -3 $PID
+		PID=-1
+	# just updated, reboot here to prevent black screen on some device 
+	fi
 else
 	echo "No release file found on ${SDCARD_PATH}/My${FWNAME}" >> $LOGFILE
 fi
