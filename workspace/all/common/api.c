@@ -2186,7 +2186,7 @@ void PWR_update(int* _dirty, int* _show_setting, PWR_callback_t before_sleep, PW
 	if (now-last_input_at>=(pwr.sleep_delay*1000) && PWR_preventAutosleep()) last_input_at = now;
 	
 	if (
-		now-last_input_at>=(pwr.sleep_delay*1000) || // autosleep
+		((now-last_input_at>=(pwr.sleep_delay*1000)) && (pwr.sleep_delay>0)) || // autosleep //only if sleep_delay is not 0.
 		(pwr.can_sleep && (PAD_justReleased(BTN_SLEEP) || PAD_justReleasedShort(BTN_SLEEP))) // manual sleep
 	) {
 		if (before_sleep) before_sleep();
