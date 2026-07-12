@@ -1,0 +1,22 @@
+$(PLATFORM):
+	# $@
+	cp ./workspace/$@/show/show.elf ./build/SYSTEM/$@/bin
+	cp ./workspace/$@/audioserver/audioserver.elf ./build/SYSTEM/$@/bin
+	cp ./workspace/$@/audioserver/libredirect_dsp.so ./build/SYSTEM/$@/lib
+
+	cp ./workspace/$@/overclock/overclock.elf ./build/SYSTEM/$@/bin
+	# installer
+	mkdir -p ./build/BASE/$@
+	cp ./workspace/$@/boot/boot.sh ./build/BASE/$@/dmenu.bin
+	cp ./workspace/$@/boot/h700_stage2.sh ./build/BASE/$@/h700_stage2.sh
+	cp ./workspace/$@/boot/*bmp ./build/BASE/$@/
+	cp ./workspace/$@/libmsettings/libmsettings.so ./build/BASE/$@/libmsettings.so
+	cp ./workspace/$@/boot/*.png ./build/BASE/$@/
+	cp ./workspace/$@/show/show.elf ./build/BASE/$@/
+	cp ./workspace/$@/other/libs/* ./build/BASE/$@/
+	cp ./workspace/$@/other/libs/* ./build/SYSTEM/$@/lib/
+	cp ./workspace/$@/boot/update.sh ./build/SYSTEM/$@/bin/install.sh
+#	mkdir -p ./build/BOOT/common/$@/
+#	# extras
+#	cp ./workspace/$@/other/DinguxCommander/output/DinguxCommander ./build/EXTRAS/Tools/$@/Files.pak/
+#	cp -r ./workspace/$@/other/DinguxCommander/res ./build/EXTRAS/Tools/$@/Files.pak/

@@ -1,0 +1,34 @@
+diff --git a/src/burner/libretro/Makefile b/src/burner/libretro/Makefile
+index 0b7d646..cda6694 100644
+--- a/src/burner/libretro/Makefile
++++ b/src/burner/libretro/Makefile
+@@ -363,6 +363,29 @@ else ifeq ($(platform), classic_armv8_a35)
+ 	CXXFLAGS += $(PLATFORM_FLAGS)
+ #######################################
+ 
++# miyoo a30
++else ifeq ($(platform), h700)
++	TARGET := $(TARGET_NAME)_libretro.so
++   CC = $(CROSS_COMPILE)gcc
++   CXX = $(CROSS_COMPILE)g++
++   AR = $(CROSS_COMPILE)ar
++   SHARED := -shared  -Wl,-z,noexecstack -Wl,--version-script=link.T -Wl,-no-undefined
++	fpic := -fPIC
++	PLATFORM_FLAGS = -s -Ofast $(MYARCH) -fomit-frame-pointer -flto
++	USE_EXPERIMENTAL_FLAGS = 1
++	HAVE_NEON = 1
++	USE_CYCLONE = 1
++	INCLUDE_7Z_SUPPORT = 0
++	ARCH = arm
++	ENDIANNESS_DEFINES := -DLSB_FIRST
++	LDFLAGS += -lrt -lm -lpthread
++	CFLAGS += $(PLATFORM_FLAGS)
++	CXXFLAGS += $(PLATFORM_FLAGS)
++#######################################
++
++
++
++
+ # Nintendo Game Cube / Wii / WiiU
+ else ifneq (,$(filter $(platform), ngc wii wiiu))
+ 	TARGET := $(TARGET_NAME)_libretro_$(platform).a
