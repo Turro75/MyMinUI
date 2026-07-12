@@ -4,8 +4,7 @@ TARGET=$1
 
 TOOLCHAIN_GLIBC="h700_toolchain_glibc.tar.gz"
 #TOOLCHAIN_GLIBC="h700_toolchain_aarch64.tar.gz"
-
-TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/h700_rg353_toolchain/h700_toolchain_glibc.tar.gz"
+TOOLCHAIN_URL="https://github.com/Turro75/MyMinUI_Toolchains/releases/download/anbernic_h700(rg35xxplus)_toolchain/h700_toolchain_glibc.tar.gz"
 TOOLCHAIN_TAR=$TOOLCHAIN_GLIBC
 
 if [ -f "./$TOOLCHAIN_TAR" ]; then
