@@ -1750,7 +1750,7 @@ int main (int argc, char *argv[]) {
 	}
 	LOG_info("MyMinUI\n");
 	InitSettings();
-	
+	PLAT_enableBacklight(1);
 	SDL_Surface* screen = GFX_init(MODE_MAIN);
 	overclock = CPU_SPEED_MENU;
 	PWR_setCPUSpeed(overclock);
