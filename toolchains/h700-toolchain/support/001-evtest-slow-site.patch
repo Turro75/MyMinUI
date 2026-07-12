@@ -1,0 +1,14 @@
+diff --git a/./evtest.mk b/./evtest.mk
+index d00d4cb..761f338 100644
+--- a/package/evtest/evtest.mk
++++ b/package/evtest/evtest.mk
+@@ -5,7 +5,8 @@
+ ################################################################################
+ 
+ EVTEST_VERSION = 1.33
+-EVTEST_SITE = http://cgit.freedesktop.org/evtest/snapshot
++#EVTEST_SITE = http://cgit.freedesktop.org/evtest/snapshot
++EVTEST_SITE = https://sources.buildroot.net/evtest
+ EVTEST_LICENSE = GPL-2.0+
+ EVTEST_LICENSE_FILES = COPYING
+ EVTEST_DEPENDENCIES = host-pkgconf

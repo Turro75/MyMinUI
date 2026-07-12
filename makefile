@@ -5,7 +5,7 @@
 
 ifeq (,$(PLATFORMS))
 #PLATFORMS = tg5040 rgb30 miyoomini trimuismart m17 rg35xx rg35xxplus gkdpixel m21
-PLATFORMS = rg35xx miyoomini r36s my282
+PLATFORMS = rg35xx miyoomini r36s my282 h700
 endif
 
 ###########################################################
@@ -54,6 +54,7 @@ system:
 
 cores:
 	cp ./workspace/$(PLATFORM)/cores/output/* ./build/SYSTEM/$(PLATFORM)/cores/
+	cp ./workspace/$(PLATFORM)/cores/src/prboom/prboom.wad ./build/EXTRAS/Bios/DOOM/
 #    mv ./build/SYSTEM/$(PLATFORM)/cores/retroarch ./build/SYSTEM/$(PLATFORM)/bin/retroarch.elf
 #	mv ./build/SYSTEM/$(PLATFORM)/cores/bmp2png ./build/SYSTEM/$(PLATFORM)/bin/bmp2png.elf
 
@@ -193,7 +194,7 @@ package: tidy
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
 	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
-	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Cheats Tools miyoo miyoo354 m21 r36s rg35xx MinUI.zip MANUAL.txt
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Cheats Tools miyoo miyoo354 m21 r36s rg35xx h700 MinUI.zip MANUAL.txt
 	
 	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt
@@ -230,6 +231,10 @@ m21:
 	make clean setup common package PLATFORM=$@
 	# ----------------------------------------------------
 
+h700:
+	# ----------------------------------------------------
+	make clean setup build system cores  package PLATFORM=$@
+	# ----------------------------------------------------
 
 r36s:
 	# ----------------------------------------------------
