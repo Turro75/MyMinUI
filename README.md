@@ -30,6 +30,9 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
   - Powkiddy v10
   - Powkiddy rgb30
   - and potentially any arkos powered device
+- h700:
+  - Anbernic RG35XXSP (I can test only this)
+  - untested all anbernic h700 based devices
 
 
 ## Features from FinUI:
@@ -57,6 +60,9 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
   - reworked install/update process to let the user simply copying the release file to the sdcard
   - moved from libSDL to libSDL2
   - add 256MB of swapfile on miyoomini and rg35xx allowing neogeo games able to run.
+  - made autosleep delay adjustable (default 30sec) set to zero to disable, max allowed 7200 (2Hrs).
+  - made autopoweroff delay adjustable (default 120sec) set to zero to disable, max allowed 7200 (2Hrs).
+  - moved saves extension from .sav to .srm to let the save files interchangeable with retroarch.
   - added several emulators:
     - Prboom
     - native Pico8 support (needs purchased pico8 rpi binary)
@@ -72,6 +78,37 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 
 # New features of MyMinUI:
+
+# Release 12/07/2026
+
+### ALL:
+- changed default extension for saves from .sav to .srm to get the same as retroarch does, existing .sav files related to the current rom are automatically renamed to .srm
+- improved sleep mode reducing cpu load during sleep, it is not as a true hybernate/suspend but the battery level is kept much better over time, some platforms better than others.
+- made auto sleep delay adjustable (default 30sec), it creates the file .userdata/shared/sleep-delay-sec with the default value of 30. Set to 0 to disable, max allowed value 7200 (2Hrs)
+- made auto poweroff delay adjustable (default 120sec), it creates the file .userdata/shared/poweroff-delay-sec with the default value of 120. Set to 0 to disable, max allowed value 7200 (2Hrs)
+- align settings across all platforms
+- at every update the current setting of brightness and volume are deleted and the default restored to avoid conflicts
+- reworked debug HUD function to reduce impact on achievable fps, now the debug HUD on screen requires less that 1msec while it was 4-5msec time consuming.
+- Fixed some broken char shape in debug HUD
+- clean up of some unused functions
+- replaced SDL_GetTicks and SDL_Delay with native c functions
+- the README.txt is now called MANUAL.md and copied to the sdcard after installation as MANUAL.txt
+
+### H700:
+- added support for this platform, only rg35xxsp is tested for now, most of the family should work the same.
+- fixed the noise bump when starting a game by using an audioserver approach, same used in miyoomini. the bump is audible at boot and shutdown only.
+- hdmi out working at fixed res (720p)
+- at the moment the only installation process allowed is the 2 sdcard method.
+- this is the first release, at the moment extra paks such as psp, nds, n64 and dc are not included. the stock firmware is still there so anything can run in the stock can run in myminui, it is just a matter of creating a proper launch.sh.
+- to activate networking boot in stock os (just remove the tf2 sdcard then boot the device), connect to the wifi network. Once done, switchoff the device, insert again the tf2 sdcard then boot, after few seconds the wifi icon will appear, pressing menu button shows the version and the current ip address.
+- I made a lot of efforts to ensure the battery usage is the lowest even when paused (or closed in case of clamshells) 
+- external controllers are not ready to use, this feature is in the punch list.
+
+### R36S:
+- fix a bug that prevented the quicksave message shown during shutdown
+- this platform includes a lot of devices, it turned out that the real range for volume can vary a lot and, on some devices, the audio become audible over 40-50%, added the MIN_VOLUME_VALUE env variable in .system/r36s/paks/minui.pak/launch.sh before the launch of keymon.elf to set the minimum value, the default value is 0 (range 0-237), setting it 50 (just an example) change the range to 50-237.
+- improved the screen detection to allow the r40xx (4" 4:3 1024x768) detected in arkos4clone.
+
 
 # Release 06/06/2026
 

@@ -407,21 +407,61 @@ Once installation process is completed press the PWR button to shutdown the devi
 
 
 
-# Share sdcard across other devices:
+# H700 Single SDCard method:
 
-Well You can setup a single sdcard that can run on all 4 supported devices.
+This method in not supported at the moment, use the 2 sdcard setup described below 
 
-Only two requirements:
 
-1)  The shared sdcard must be formatted as FAT32.
-2)  In case one of the shared devices is an RG35XX OG or an ArkOS based device You must use Two sdcard method.
 
-There is no specific sequence to follow, You can add a device at any time, just follow the instructions provided for each device.
+# H700 Two SDCard method:
 
-The devices will share bios, roms and saves folders.
-Some saved state files may work across devices (i.e. doom), but not all so don't expect support on that in case. If I'll move to a single setup file device independent I'll keep them separated per device.
+Use the stock TF1 sdcard or create a new one by using stock images provided by anbernic support pages.
+in the "NO NAME" partition copy only the file dmenu.bin contained in the folder h700 included in the release zip file
 
-The pico8 native raspberry binary files  pico8.dat, pico8_dyn and pico8_64 must be copied under the Bios/P8 folder it will be the same for all devices.
+<pre>
+.
+├── anbernic
+├── Video 
+├── Ebook
+├── Emu
+├── EXE
+├── Music
+├── PDF
+├── Roms
+├── save
+└── dmenu.bin
+</pre>
+
+Format the SECOND sdcard as FAT32, it is also supported exFAT if You like.
+Copy the whole release zip file (leave it zipped) to the partition of the SECOND sdcard.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-h700.zip) there is a folder called "h700" copy that folder as is in the partition of the SECOND sdcard
+
+The SECOND sdcard file structure must be:
+<pre>
+├── MyMinUI-YYYYMMDDb-0-h700.zip
+└── h700
+    ├── bootlogo-ccw.bmp
+    ├── bootlogo-cw.bmp
+    ├── bootlogo-s.bmp
+    ├── bootlogo-w.bmp
+    ├── bootlogo.bmp
+    ├── bootlogo.png
+    ├── dmenu.bin
+    ├── h700_stage2.sh
+    ├── installing.png
+    ├── libmsettings.so
+    ├── libsamplerate.so.0
+    ├── libSDL2_image-2.0.so.0
+    ├── libSDL2-2.0.so.0
+    ├── show.elf
+    └── updating.png
+</pre>
+
+insert the second sdcard in the TF2 slot and boot the device.
+At boot the installation process will start showing the screen "installing MyMinUI..."
+Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
+
+
 
 # Share sdcard across other devices:
 
@@ -460,7 +500,7 @@ MIYOO MINI
   Volume: SELECT + L or R
   Brightness: START + L or R1
 
-MIYOO MINI (PLUS) / RG35XX 
+MIYOO MINI (PLUS) / RG35XX / H700
   
   Sleep: POWER
   Wake: POWER
