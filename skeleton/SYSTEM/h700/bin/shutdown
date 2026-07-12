@@ -1,0 +1,7 @@
+#!/bin/sh
+
+dd if=/dev/zero of=/dev/fb0 bs=1228800 count=1
+/usr/sbin/poweroff
+# echo s > /proc/sysrq-trigger
+# echo u > /proc/sysrq-trigger
+# echo o > /proc/sysrq-trigger

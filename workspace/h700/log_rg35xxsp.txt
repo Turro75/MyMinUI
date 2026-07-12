@@ -1,0 +1,849 @@
+Start MyMinUI
+Listing /dev/input/by-path/* devices:
+lrwxrwxrwx 1 root root 9  6月 29 18:03 /dev/input/by-path/platform-dierct-keys-polled-event -> ../event2
+lrwxrwxrwx 1 root root 9  6月 29 18:03 /dev/input/by-path/platform-soc@03000000:gpio_keys-event-joystick -> ../event1
+lrwxrwxrwx 1 root root 6  6月 29 18:03 /dev/input/by-path/platform-soc@03000000:gpio_keys-joystick -> ../js0
+lrwxrwxrwx 1 root root 9  6月 29 18:03 /dev/input/by-path/platform-twi5-platform-axp2101-pek.0-event -> ../event0
+Checking TF2 slot presence
+TF1 disk num is 0
+TF2 disk num is 1
+TF2 detected at /dev/mmcblk1p1
+listing mounts:
+none on /dev type devtmpfs (rw,relatime,size=463008k,nr_inodes=115752,mode=755)
+/dev/mmcblk0p5 on / type ext4 (rw,noatime,nodiratime,nobarrier,noauto_da_alloc,data=ordered)
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+securityfs on /sys/kernel/security type securityfs (rw,nosuid,nodev,noexec,relatime)
+tmpfs on /dev/shm type tmpfs (rw,nosuid,nodev)
+devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000)
+tmpfs on /run type tmpfs (rw,nosuid,nodev,size=199360k,nr_inodes=819200,mode=755)
+tmpfs on /run/lock type tmpfs (rw,nosuid,nodev,noexec,relatime,size=5120k)
+cgroup2 on /sys/fs/cgroup type cgroup2 (rw,nosuid,nodev,noexec,relatime)
+pstore on /sys/fs/pstore type pstore (rw,nosuid,nodev,noexec,relatime)
+bpf on /sys/fs/bpf type bpf (rw,nosuid,nodev,noexec,relatime)
+debugfs on /sys/kernel/debug type debugfs (rw,nosuid,nodev,noexec,relatime)
+ramfs on /run/credentials/systemd-sysusers.service type ramfs (ro,nosuid,nodev,noexec,relatime,mode=0700)
+fusectl on /sys/fs/fuse/connections type fusectl (rw,nosuid,nodev,noexec,relatime)
+configfs on /sys/kernel/config type configfs (rw,nosuid,nodev,noexec,relatime)
+/dev/mmcblk0p6 on /mnt/vendor type ext4 (rw,noatime,nodiratime,data=ordered)
+/dev/mmcblk0p7 on /mnt/data type ext4 (rw,noatime,nodiratime,data=ordered)
+/dev/mmcblk0p1 on /mnt/mmc type vfat (rw,noatime,nodiratime,fmask=0000,dmask=0000,allow_utime=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,utf8,errors=remount-ro)
+tmpfs on /run/user/0 type tmpfs (rw,nosuid,nodev,relatime,size=99676k,nr_inodes=24919,mode=700)
+/dev/mmcblk1p1 on /mnt/sdcard type vfat (rw,noatime,uid=1000,gid=1000,fmask=0000,dmask=0000,allow_utime=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,utf8,errors=remount-ro)
+Listing /dev/mmcblk* devices:
+brw-rw---- 1 root disk 179,  0  6月 29 18:03 /dev/mmcblk0
+brw-rw---- 1 root disk 179,  1  6月 29 18:03 /dev/mmcblk0p1
+brw-rw---- 1 root disk 179,  2  6月 29 18:03 /dev/mmcblk0p2
+brw-rw---- 1 root disk 179,  3  6月 29 18:03 /dev/mmcblk0p3
+brw-rw---- 1 root disk 179,  4  6月 29 18:03 /dev/mmcblk0p4
+brw-rw---- 1 root disk 179,  5  6月 29 18:03 /dev/mmcblk0p5
+brw-rw---- 1 root disk 179,  6  6月 29 18:03 /dev/mmcblk0p6
+brw-rw---- 1 root disk 179,  7  6月 29 18:03 /dev/mmcblk0p7
+brw-rw---- 1 root disk 179, 16  6月 29 18:24 /dev/mmcblk1
+brw-rw---- 1 root disk 179, 17  6月 29 18:24 /dev/mmcblk1p1
+No release file found on /MyMinUI/MyMinUI
+Checking for /MyMinUI/MinUI.zip update file
+No update file found on /MyMinUI/MinUI.zip
+-rwxrwxrwx 1 ark ark 3000 Dec 22 02:41 /MyMinUI/.system/r36s/paks/MinUI.pak/launch.sh
+-rwxrwxrwx 1 ark ark  352 Dec 15 21:11 /MyMinUI/.system/r36s/paks/MinUI.pak/log.txt
+Launching MyMinUI
+
+
+Sound:
+
+Simple mixer control 'LINEOUT',0
+  Capabilities: pswitch pswitch-joined
+  Playback channels: Mono
+  Mono: Playback [on]
+Simple mixer control 'OutputL Mixer DACL',0
+  Capabilities: pswitch pswitch-joined
+  Playback channels: Mono
+  Mono: Playback [on]
+Simple mixer control 'OutputL Mixer DACR',0
+  Capabilities: pswitch pswitch-joined
+  Playback channels: Mono
+  Mono: Playback [off]
+Simple mixer control 'OutputR Mixer DACL',0
+  Capabilities: pswitch pswitch-joined
+  Playback channels: Mono
+  Mono: Playback [off]
+Simple mixer control 'OutputR Mixer DACR',0
+  Capabilities: pswitch pswitch-joined
+  Playback channels: Mono
+  Mono: Playback [on]
+Simple mixer control 'SPK',0
+  Capabilities: pswitch pswitch-joined
+  Playback channels: Mono
+  Mono: Playback [on]
+Simple mixer control 'digital volume',0
+  Capabilities: volume volume-joined
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - 63
+  Mono: 63 [100%]
+Simple mixer control 'lineout volume',0
+  Capabilities: volume volume-joined
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - 31
+  Mono: 31 [100%]
+Simple mixer control 'tx hub mode',0
+  Capabilities: enum
+  Items: 'Off' 'On'
+  Item0: 'Off'
+
+ Buttons:
+[event0] 
+Input driver version is 1.0.1
+Input device ID: bus 0x0 vendor 0x0 product 0x0 version 0x0
+Input device name: "axp2202-pek"
+Supported events:
+  Event type 0 (EV_SYN)
+  Event type 1 (EV_KEY)
+    Event code 110 (KEY_INSERT)
+    Event code 111 (KEY_DELETE)
+    Event code 113 (KEY_MUTE)
+    Event code 116 (KEY_POWER)
+Key repeat handling:
+  Repeat type 20 (EV_REP)
+    Repeat code 0 (REP_DELAY)
+      Value    250
+    Repeat code 1 (REP_PERIOD)
+      Value     33
+Properties:
+Testing ... (interrupt to exit)
+
+evtest /dev/input/event1
+Input driver version is 1.0.1
+Input device ID: bus 0x19 vendor 0x1 product 0x1 version 0x100
+Input device name: "ANBERNIC-keys"
+Supported events:
+  Event type 0 (EV_SYN)
+  Event type 1 (EV_KEY)
+    Event code 1 (KEY_ESC)
+    Event code 114 (KEY_VOLUMEDOWN)
+    Event code 115 (KEY_VOLUMEUP)
+    Event code 304 (BTN_SOUTH)
+    Event code 305 (BTN_EAST)
+    Event code 306 (BTN_C)
+    Event code 307 (BTN_NORTH)
+    Event code 308 (BTN_WEST)
+    Event code 309 (BTN_Z)
+    Event code 310 (BTN_TL)
+    Event code 311 (BTN_TR)
+    Event code 312 (BTN_TL2)
+    Event code 314 (BTN_SELECT)
+    Event code 315 (BTN_START)
+    Event code 354 (KEY_GOTO)
+  Event type 3 (EV_ABS)
+    Event code 3 (ABS_RX)
+      Value      0
+      Min       -1
+      Max        1
+    Event code 4 (ABS_RY)
+      Value      0
+      Min       -1
+      Max        1
+    Event code 5 (ABS_RZ)
+      Value      0
+      Min       -1
+      Max        1
+    Event code 16 (ABS_HAT0X)
+      Value      0
+      Min       -1
+      Max        1
+    Event code 17 (ABS_HAT0Y)
+      Value      0
+      Min       -1
+      Max        1
+  Event type 21 (EV_FF)
+    Event code 80 (FF_RUMBLE)
+    Event code 81 (FF_PERIODIC)
+    Event code 88 (FF_SQUARE)
+    Event code 89 (FF_TRIANGLE)
+    Event code 90 (FF_SINE)
+    Event code 96 (FF_GAIN)
+Properties:
+Testing ... (interrupt to exit)
+
+
+processor	: 0
+BogoMIPS	: 48.00
+Features	: fp asimd aes pmull sha1 sha2 crc32
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x0
+CPU part	: 0xd03
+CPU revision	: 4
+
+processor	: 1
+BogoMIPS	: 48.00
+Features	: fp asimd aes pmull sha1 sha2 crc32
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x0
+CPU part	: 0xd03
+CPU revision	: 4
+
+processor	: 2
+BogoMIPS	: 48.00
+Features	: fp asimd aes pmull sha1 sha2 crc32
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x0
+CPU part	: 0xd03
+CPU revision	: 4
+
+processor	: 3
+BogoMIPS	: 48.00
+Features	: fp asimd aes pmull sha1 sha2 crc32
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x0
+CPU part	: 0xd03
+CPU revision	: 4
+
+
+Governors available:
+interactive conservative ondemand userspace powersave performance schedutil 
+Frequencyies available:
+480000 720000 936000 1008000 1104000 1200000 1320000 1416000 1512000 
+##############################
+Detecting framebuffer info...
+fb0 info:
+crw-rw---- 1 root video 29, 0 Feb 16 11:50 /dev/fb0
+fb virtual_size:
+1280,1024
+fb bits_per_pixel:
+16
+fb stride:
+2560
+fb modes:
+U:1280x1024p-59
+U:640x480p-59
+
+##############################
+Detecting loaded modules...
+Module                  Size  Used by
+mali_kbase            516096  0
+8821cs               2691072  0
+rtl_btlpm              16384  0
+System specs detection completed.
+
+
+
+ps ax
+root@ANBERNIC:/sys# ps ax
+    PID TTY      STAT   TIME COMMAND
+      1 ?        Ss     0:02 /init
+      2 ?        S      0:00 [kthreadd]
+      4 ?        S<     0:00 [kworker/0:0H]
+      6 ?        S      0:00 [ksoftirqd/0]
+      7 ?        S      0:07 [rcu_preempt]
+      8 ?        S      0:00 [rcu_sched]
+      9 ?        S      0:00 [rcu_bh]
+     10 ?        S      0:00 [migration/0]
+     11 ?        S<     0:00 [lru-add-drain]
+     12 ?        S      0:00 [cpuhp/0]
+     13 ?        S      0:00 [cpuhp/1]
+     14 ?        S      0:00 [migration/1]
+     15 ?        S      0:00 [ksoftirqd/1]
+     17 ?        S<     0:00 [kworker/1:0H]
+     18 ?        S      0:00 [cpuhp/2]
+     19 ?        S      0:00 [migration/2]
+     20 ?        S      0:00 [ksoftirqd/2]
+     22 ?        S<     0:00 [kworker/2:0H]
+     23 ?        S      0:00 [cpuhp/3]
+     24 ?        S      0:00 [migration/3]
+     25 ?        S      0:00 [ksoftirqd/3]
+     27 ?        S<     0:00 [kworker/3:0H]
+     28 ?        S      0:00 [kdevtmpfs]
+     29 ?        S<     0:00 [netns]
+    438 ?        S      0:00 [oom_reaper]
+    439 ?        S<     0:00 [writeback]
+    441 ?        S      0:00 [kcompactd0]
+    442 ?        S<     0:00 [crypto]
+    443 ?        S<     0:00 [bioset]
+    445 ?        S<     0:00 [kblockd]
+    500 ?        S      0:00 [sys_user]
+    503 ?        S<     0:00 [devfreq_wq]
+    515 ?        S<     0:00 [cfg80211]
+    529 ?        S      0:00 [irq/320-axp2202]
+    715 ?        S      0:00 [kswapd0]
+    716 ?        S<     0:00 [vmstat]
+    781 ?        S<     0:00 [kworker/u9:0]
+    794 ?        S<     0:00 [SquashFS read w]
+    874 ?        S<     0:00 [bioset]
+    875 ?        S<     0:00 [bioset]
+    876 ?        S<     0:00 [bioset]
+    877 ?        S<     0:00 [bioset]
+    878 ?        S<     0:00 [bioset]
+    879 ?        S<     0:00 [bioset]
+    880 ?        S<     0:00 [bioset]
+    881 ?        S<     0:00 [bioset]
+    882 ?        S<     0:00 [bioset]
+    883 ?        S<     0:00 [bioset]
+    884 ?        S<     0:00 [bioset]
+    885 ?        S<     0:00 [bioset]
+    886 ?        S<     0:00 [bioset]
+    887 ?        S<     0:00 [bioset]
+    888 ?        S<     0:00 [bioset]
+    889 ?        S<     0:00 [bioset]
+    923 ?        S<     0:00 [bioset]
+    926 ?        S<     0:00 [bioset]
+    929 ?        S<     0:00 [bioset]
+    932 ?        S<     0:00 [bioset]
+    935 ?        S<     0:00 [bioset]
+    938 ?        S<     0:00 [bioset]
+    941 ?        S<     0:00 [bioset]
+    944 ?        S<     0:00 [bioset]
+    947 ?        S<     0:00 [memory_wq]
+   1035 ?        S<     0:00 [dm_bufio_cache]
+   1037 ?        S      0:00 [cfinteractive]
+   1044 ?        S      0:01 [irq/294-sunxi-m]
+   1047 ?        S      0:00 [irq/295-sunxi-m]
+   1050 ?        S<     0:00 [bioset]
+   1051 ?        S      0:00 [mmcqd/0]
+   1062 ?        S      0:00 [irq/296-sunxi-m]
+   1111 ?        S      0:00 [kpktgend_0]
+   1162 ?        S      0:00 [kpktgend_1]
+   1163 ?        S      0:00 [kpktgend_2]
+   1164 ?        S      0:01 [kpktgend_3]
+   1184 ?        S<     0:00 [ipv6_addrconf]
+   1195 ?        S<     0:00 [krfcommd]
+   1204 ?        S<     0:00 [hdcp22_workqueu]
+   1212 ?        D      0:00 [usb_pmu_scan]
+   1259 ?        S<     0:00 [kworker/1:1H]
+   1261 ?        S      0:00 [jbd2/mmcblk0p5-]
+   1262 ?        S<     0:00 [ext4-rsv-conver]
+   1284 ?        S<     0:00 [kworker/2:1H]
+   1286 ?        S<s    0:00 /lib/systemd/systemd-journald
+   1293 ?        S      0:00 [kauditd]
+   1620 ?        Ss     0:03 /lib/systemd/systemd-udevd
+   2073 ?        Ss     0:00 /lib/systemd/systemd-resolved
+   2084 ?        Ss     0:00 /usr/sbin/cron -f -P
+   2087 ?        Ss     0:00 @dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+   2100 ?        Ss     0:00 /usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers
+   2105 ?        Ssl    0:00 /usr/sbin/rsyslogd -n -iNONE
+   2112 ?        Ss     0:00 /lib/systemd/systemd-logind
+   2114 ?        Ss     0:00 /sbin/wpa_supplicant -u -s -O /run/wpa_supplicant
+   2118 ?        S      0:00 [jbd2/mmcblk0p6-]
+   2119 ?        S<     0:00 [ext4-rsv-conver]
+   2120 ?        S      0:00 /mnt/vendor/bin/cexpert
+   2121 ?        S      0:00 /bin/bash /etc/init.d/launcher.sh start
+   2144 ?        S      0:00 /bin/bash /mnt/vendor/ctrl/loadapp.sh
+   2156 ?        S<     0:00 [kworker/0:1H]
+   2184 ?        S      0:00 [jbd2/mmcblk0p7-]
+   2185 ?        S<     0:00 [ext4-rsv-conver]
+   2310 ?        S<     0:00 [kbase_job_fault]
+   2314 tty1     Ss+    0:00 /sbin/agetty -o -p -- \u --noclear tty1 linux
+   2315 ttyS0    Ss+    0:00 /sbin/agetty -o -p -- \u --keep-baud 115200,57600,38400,9600 ttyS0 vt220
+   2365 ?        S      0:00 /usr/sbin/dnsmasq -x /run/dnsmasq/dnsmasq.pid -u dnsmasq -7 /etc/dnsmasq.d,.dpkg-dist,.dpkg-old,.dpkg-new --local-s
+   2378 ?        Ssl    0:02 /usr/sbin/NetworkManager --no-daemon
+   2403 ?        Ss     0:00 /usr/libexec/bluetooth/bluetoothd
+   2410 ?        S<     0:00 [kworker/3:1H]
+   2437 ?        S      0:00 /bin/bash /mnt/vendor/ctrl/dmenu_ln
+   2438 ?        Rl    37:13 /mnt/vendor/bin/dmenu.bin
+   2451 ?        S      0:00 rtk_hciattach -n -s 115200 ttyS1 rtk_h5
+   2456 ?        S<     0:00 [hci0]
+   2457 ?        S<     0:00 [hci0]
+   2460 ?        S<     0:00 [kworker/u9:2]
+   2665 ?        Ss     0:00 sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups
+   2718 ?        Ss     0:00 sshd: root@pts/0
+   2721 ?        Ss     0:00 /lib/systemd/systemd --user
+   2722 ?        S      0:00 (sd-pam)
+   2736 pts/0    Ss     0:00 -bash
+   2812 ?        S      0:07 [kworker/0:0]
+   3004 ?        S      0:00 [kworker/2:1]
+   3046 ?        S      0:00 [kworker/1:0]
+   3047 ?        S      0:00 [kworker/1:3]
+   3143 ?        S      0:04 [cec thread]
+   3144 ?        S      0:04 [ksdioirqd/mmc2]
+   3145 ?        S      0:02 [hdmi proc]
+   3146 ?        S      0:00 [RTW_XMIT_THREAD]
+   3147 ?        S      0:03 [RTW_RECV_THREAD]
+   3148 ?        S      0:01 [RTW_CMD_THREAD]
+   3149 ?        S      0:00 [RTWHALXT]
+   3150 ?        S      0:00 [RTWHALXT]
+   3151 ?        S      0:00 [kworker/2:3]
+   3152 ?        S      0:00 [mali-simple-pow]
+   3335 ?        S<     0:00 [bioset]
+   3337 ?        S      0:00 [mmcqd/1]
+   3472 ?        S      0:00 [kworker/3:0]
+   3544 ?        S      0:00 [kworker/3:1]
+   3547 ?        S      0:00 [kworker/u8:1]
+   3621 ?        S      0:00 [kworker/u8:2]
+   3739 ?        S      0:00 [kworker/0:2]
+   3801 ?        S      0:00 [kworker/u8:0]
+   3804 ?        S      0:00 [kworker/0:1]
+   3815 ?        S      0:00 [kworker/3:2]
+   3864 pts/0    R+     0:00 ps ax
+
+
+
+   ls -l /dev/*
+crw------- 1 root root     10,  57  6月 29 18:03 /dev/ashmem
+crw------- 1 root root     10, 235  6月 29 18:03 /dev/autofs
+crw------- 1 root root     10,  56  6月 29 18:03 /dev/binder
+crw-rw---- 1 root video   243,   0  6月 29 18:03 /dev/cec
+crw------- 1 root root    150,   0  6月 29 18:03 /dev/cedar_dev
+crw------- 1 root root      5,   1  6月 29 18:03 /dev/console
+crw------- 1 root root     10,  53  6月 29 18:03 /dev/cpu_dma_latency
+crw------- 1 root root     10, 203  6月 29 18:03 /dev/cuse
+crw------- 1 root root    242,   0  6月 29 18:03 /dev/deeplayer
+crw------- 1 root root    247,   0  6月 29 18:03 /dev/deinterlace
+crw------- 1 root root    250,   0  6月 29 18:03 /dev/disp
+crw-rw---- 1 root video    29,   0  6月 29 18:03 /dev/fb0
+lrwxrwxrwx 1 root root          13  6月 29 18:03 /dev/fd -> /proc/self/fd
+crw-rw-rw- 1 root root      1,   7  6月 29 18:03 /dev/full
+crw-rw-rw- 1 root root     10, 229  6月 29 18:03 /dev/fuse
+crw------- 1 root root    254,   0  6月 29 18:03 /dev/gpiochip0
+crw------- 1 root root    254,   1  6月 29 18:03 /dev/gpiochip1
+crw------- 1 root root    244,   0  6月 29 18:03 /dev/hdmi
+crw------- 1 root root     10,  55  6月 29 18:03 /dev/hwbinder
+crw------- 1 root root     89,   3  6月 29 18:03 /dev/i2c-3
+crw------- 1 root root     89,   5  6月 29 18:03 /dev/i2c-5
+lrwxrwxrwx 1 root root          12  6月 29 18:03 /dev/initctl -> /run/initctl
+crw------- 1 root root     10,  63  6月 29 18:03 /dev/ion
+crw-r----- 1 root kmem      1,   2  6月 29 18:03 /dev/kmem
+crw-r--r-- 1 root root      1,  11  6月 29 18:03 /dev/kmsg
+lrwxrwxrwx 1 root root          28  6月 29 18:03 /dev/log -> /run/systemd/journal/dev-log
+brw-rw---- 1 root disk      7,   0  6月 29 18:03 /dev/loop0
+brw-rw---- 1 root disk      7,   8  6月 29 18:03 /dev/loop1
+brw-rw---- 1 root disk      7,  16  6月 29 18:03 /dev/loop2
+brw-rw---- 1 root disk      7,  24  6月 29 18:03 /dev/loop3
+brw-rw---- 1 root disk      7,  32  6月 29 18:03 /dev/loop4
+brw-rw---- 1 root disk      7,  40  6月 29 18:03 /dev/loop5
+brw-rw---- 1 root disk      7,  48  6月 29 18:03 /dev/loop6
+brw-rw---- 1 root disk      7,  56  6月 29 18:03 /dev/loop7
+crw-rw---- 1 root disk     10, 237  6月 29 18:03 /dev/loop-control
+crw-rw-rw- 1 root root     10,  49  6月 29 18:03 /dev/mali0
+crw-rw---- 1 root video   252,   0  6月 29 18:03 /dev/media0
+crw-r----- 1 root kmem      1,   1  6月 29 18:03 /dev/mem
+crw------- 1 root root     10,  50  6月 29 18:03 /dev/memory_bandwidth
+brw-rw---- 1 root disk    179,   0  6月 29 18:03 /dev/mmcblk0
+brw-rw---- 1 root disk    179,   1  6月 29 18:03 /dev/mmcblk0p1
+brw-rw---- 1 root disk    179,   2  6月 29 18:03 /dev/mmcblk0p2
+brw-rw---- 1 root disk    179,   3  6月 29 18:03 /dev/mmcblk0p3
+brw-rw---- 1 root disk    179,   4  6月 29 18:03 /dev/mmcblk0p4
+brw-rw---- 1 root disk    179,   5  6月 29 18:03 /dev/mmcblk0p5
+brw-rw---- 1 root disk    179,   6  6月 29 18:03 /dev/mmcblk0p6
+brw-rw---- 1 root disk    179,   7  6月 29 18:03 /dev/mmcblk0p7
+brw-rw---- 1 root disk    179,  16  6月 29 18:24 /dev/mmcblk1
+brw-rw---- 1 root disk    179,  17  6月 29 18:24 /dev/mmcblk1p1
+crw------- 1 root root     10,  52  6月 29 18:03 /dev/network_latency
+crw------- 1 root root     10,  51  6月 29 18:03 /dev/network_throughput
+crw-rw-rw- 1 root root      1,   3  6月 29 18:03 /dev/null
+crw------- 1 root root    108,   0  6月 29 18:03 /dev/ppp
+crw-rw-rw- 1 root tty       5,   2  6月 29 19:04 /dev/ptmx
+brw-rw---- 1 root disk      1,   0  6月 29 18:03 /dev/ram0
+brw-rw---- 1 root disk      1,   1  6月 29 18:03 /dev/ram1
+brw-rw---- 1 root disk      1,  10  6月 29 18:03 /dev/ram10
+brw-rw---- 1 root disk      1,  11  6月 29 18:03 /dev/ram11
+brw-rw---- 1 root disk      1,  12  6月 29 18:03 /dev/ram12
+brw-rw---- 1 root disk      1,  13  6月 29 18:03 /dev/ram13
+brw-rw---- 1 root disk      1,  14  6月 29 18:03 /dev/ram14
+brw-rw---- 1 root disk      1,  15  6月 29 18:03 /dev/ram15
+brw-rw---- 1 root disk      1,   2  6月 29 18:03 /dev/ram2
+brw-rw---- 1 root disk      1,   3  6月 29 18:03 /dev/ram3
+brw-rw---- 1 root disk      1,   4  6月 29 18:03 /dev/ram4
+brw-rw---- 1 root disk      1,   5  6月 29 18:03 /dev/ram5
+brw-rw---- 1 root disk      1,   6  6月 29 18:03 /dev/ram6
+brw-rw---- 1 root disk      1,   7  6月 29 18:03 /dev/ram7
+brw-rw---- 1 root disk      1,   8  6月 29 18:03 /dev/ram8
+brw-rw---- 1 root disk      1,   9  6月 29 18:03 /dev/ram9
+crw-rw-rw- 1 root root      1,   8  6月 29 18:03 /dev/random
+crw-rw-r-- 1 root root     10,  62  6月 29 18:03 /dev/rfkill
+lrwxrwxrwx 1 root root           4  6月 29 18:03 /dev/rtc -> rtc0
+crw------- 1 root root    253,   0  6月 29 18:03 /dev/rtc0
+crw------- 1 root root    253,   1  6月 29 18:03 /dev/rtc1
+crw------- 1 root root     10,  59  6月 29 18:03 /dev/sst_storage
+lrwxrwxrwx 1 root root          15  6月 29 18:03 /dev/stderr -> /proc/self/fd/2
+lrwxrwxrwx 1 root root          15  6月 29 18:03 /dev/stdin -> /proc/self/fd/0
+lrwxrwxrwx 1 root root          15  6月 29 18:03 /dev/stdout -> /proc/self/fd/1
+crw------- 1 root root     10,  60  6月 29 18:03 /dev/sunxi-reg
+crw------- 1 root root     10,  61  6月 29 18:03 /dev/sunxi_soc_info
+crw------- 1 root root     10,  58  6月 29 18:03 /dev/sunxi-wlan
+crw-rw-rw- 1 root tty       5,   0  6月 29 18:03 /dev/tty
+crw--w---- 1 root tty       4,   0  6月 29 18:03 /dev/tty0
+crw--w---- 1 root tty       4,   1  6月 29 18:03 /dev/tty1
+crw--w---- 1 root tty       4,  10  6月 29 18:03 /dev/tty10
+crw--w---- 1 root tty       4,  11  6月 29 18:03 /dev/tty11
+crw--w---- 1 root tty       4,  12  6月 29 18:03 /dev/tty12
+crw--w---- 1 root tty       4,  13  6月 29 18:03 /dev/tty13
+crw--w---- 1 root tty       4,  14  6月 29 18:03 /dev/tty14
+crw--w---- 1 root tty       4,  15  6月 29 18:03 /dev/tty15
+crw--w---- 1 root tty       4,  16  6月 29 18:03 /dev/tty16
+crw--w---- 1 root tty       4,  17  6月 29 18:03 /dev/tty17
+crw--w---- 1 root tty       4,  18  6月 29 18:03 /dev/tty18
+crw--w---- 1 root tty       4,  19  6月 29 18:03 /dev/tty19
+crw--w---- 1 root tty       4,   2  6月 29 18:03 /dev/tty2
+crw--w---- 1 root tty       4,  20  6月 29 18:03 /dev/tty20
+crw--w---- 1 root tty       4,  21  6月 29 18:03 /dev/tty21
+crw--w---- 1 root tty       4,  22  6月 29 18:03 /dev/tty22
+crw--w---- 1 root tty       4,  23  6月 29 18:03 /dev/tty23
+crw--w---- 1 root tty       4,  24  6月 29 18:03 /dev/tty24
+crw--w---- 1 root tty       4,  25  6月 29 18:03 /dev/tty25
+crw--w---- 1 root tty       4,  26  6月 29 18:03 /dev/tty26
+crw--w---- 1 root tty       4,  27  6月 29 18:03 /dev/tty27
+crw--w---- 1 root tty       4,  28  6月 29 18:03 /dev/tty28
+crw--w---- 1 root tty       4,  29  6月 29 18:03 /dev/tty29
+crw--w---- 1 root tty       4,   3  6月 29 18:03 /dev/tty3
+crw--w---- 1 root tty       4,  30  6月 29 18:03 /dev/tty30
+crw--w---- 1 root tty       4,  31  6月 29 18:03 /dev/tty31
+crw--w---- 1 root tty       4,  32  6月 29 18:03 /dev/tty32
+crw--w---- 1 root tty       4,  33  6月 29 18:03 /dev/tty33
+crw--w---- 1 root tty       4,  34  6月 29 18:03 /dev/tty34
+crw--w---- 1 root tty       4,  35  6月 29 18:03 /dev/tty35
+crw--w---- 1 root tty       4,  36  6月 29 18:03 /dev/tty36
+crw--w---- 1 root tty       4,  37  6月 29 18:03 /dev/tty37
+crw--w---- 1 root tty       4,  38  6月 29 18:03 /dev/tty38
+crw--w---- 1 root tty       4,  39  6月 29 18:03 /dev/tty39
+crw--w---- 1 root tty       4,   4  6月 29 18:03 /dev/tty4
+crw--w---- 1 root tty       4,  40  6月 29 18:03 /dev/tty40
+crw--w---- 1 root tty       4,  41  6月 29 18:03 /dev/tty41
+crw--w---- 1 root tty       4,  42  6月 29 18:03 /dev/tty42
+crw--w---- 1 root tty       4,  43  6月 29 18:03 /dev/tty43
+crw--w---- 1 root tty       4,  44  6月 29 18:03 /dev/tty44
+crw--w---- 1 root tty       4,  45  6月 29 18:03 /dev/tty45
+crw--w---- 1 root tty       4,  46  6月 29 18:03 /dev/tty46
+crw--w---- 1 root tty       4,  47  6月 29 18:03 /dev/tty47
+crw--w---- 1 root tty       4,  48  6月 29 18:03 /dev/tty48
+crw--w---- 1 root tty       4,  49  6月 29 18:03 /dev/tty49
+crw--w---- 1 root tty       4,   5  6月 29 18:03 /dev/tty5
+crw--w---- 1 root tty       4,  50  6月 29 18:03 /dev/tty50
+crw--w---- 1 root tty       4,  51  6月 29 18:03 /dev/tty51
+crw--w---- 1 root tty       4,  52  6月 29 18:03 /dev/tty52
+crw--w---- 1 root tty       4,  53  6月 29 18:03 /dev/tty53
+crw--w---- 1 root tty       4,  54  6月 29 18:03 /dev/tty54
+crw--w---- 1 root tty       4,  55  6月 29 18:03 /dev/tty55
+crw--w---- 1 root tty       4,  56  6月 29 18:03 /dev/tty56
+crw--w---- 1 root tty       4,  57  6月 29 18:03 /dev/tty57
+crw--w---- 1 root tty       4,  58  6月 29 18:03 /dev/tty58
+crw--w---- 1 root tty       4,  59  6月 29 18:03 /dev/tty59
+crw--w---- 1 root tty       4,   6  6月 29 18:03 /dev/tty6
+crw--w---- 1 root tty       4,  60  6月 29 18:03 /dev/tty60
+crw--w---- 1 root tty       4,  61  6月 29 18:03 /dev/tty61
+crw--w---- 1 root tty       4,  62  6月 29 18:03 /dev/tty62
+crw--w---- 1 root tty       4,  63  6月 29 18:03 /dev/tty63
+crw--w---- 1 root tty       4,   7  6月 29 18:03 /dev/tty7
+crw--w---- 1 root tty       4,   8  6月 29 18:03 /dev/tty8
+crw--w---- 1 root tty       4,   9  6月 29 18:03 /dev/tty9
+crw--w---- 1 root tty     248,   0  6月 29 18:03 /dev/ttyS0
+crw-rw---- 1 root dialout 248,   1  6月 29 18:03 /dev/ttyS1
+crw------- 1 root root     10, 239  6月 29 18:03 /dev/uhid
+crw------- 1 root root     10, 223  6月 29 18:03 /dev/uinput
+crw-rw-rw- 1 root root      1,   9  6月 29 18:03 /dev/urandom
+crw-rw---- 1 root video    81,   0  6月 29 18:03 /dev/v4l-subdev0
+crw-rw---- 1 root video    81,   1  6月 29 18:03 /dev/v4l-subdev1
+crw-rw---- 1 root video    81,  10  6月 29 18:03 /dev/v4l-subdev10
+crw-rw---- 1 root video    81,  11  6月 29 18:03 /dev/v4l-subdev11
+crw-rw---- 1 root video    81,  12  6月 29 18:03 /dev/v4l-subdev12
+crw-rw---- 1 root video    81,   2  6月 29 18:03 /dev/v4l-subdev2
+crw-rw---- 1 root video    81,   3  6月 29 18:03 /dev/v4l-subdev3
+crw-rw---- 1 root video    81,   4  6月 29 18:03 /dev/v4l-subdev4
+crw-rw---- 1 root video    81,   5  6月 29 18:03 /dev/v4l-subdev5
+crw-rw---- 1 root video    81,   6  6月 29 18:03 /dev/v4l-subdev6
+crw-rw---- 1 root video    81,   7  6月 29 18:03 /dev/v4l-subdev7
+crw-rw---- 1 root video    81,   8  6月 29 18:03 /dev/v4l-subdev8
+crw-rw---- 1 root video    81,   9  6月 29 18:03 /dev/v4l-subdev9
+crw-rw---- 1 root tty       7,   0  6月 29 18:03 /dev/vcs
+crw-rw---- 1 root tty       7,   1  6月 29 18:03 /dev/vcs1
+crw-rw---- 1 root tty       7,   2  6月 29 18:03 /dev/vcs2
+crw-rw---- 1 root tty       7,   3  6月 29 18:03 /dev/vcs3
+crw-rw---- 1 root tty       7,   4  6月 29 18:03 /dev/vcs4
+crw-rw---- 1 root tty       7,   5  6月 29 18:03 /dev/vcs5
+crw-rw---- 1 root tty       7,   6  6月 29 18:03 /dev/vcs6
+crw-rw---- 1 root tty       7,  63  6月 29 18:08 /dev/vcs63
+crw-rw---- 1 root tty       7, 128  6月 29 18:03 /dev/vcsa
+crw-rw---- 1 root tty       7, 129  6月 29 18:03 /dev/vcsa1
+crw-rw---- 1 root tty       7, 130  6月 29 18:03 /dev/vcsa2
+crw-rw---- 1 root tty       7, 131  6月 29 18:03 /dev/vcsa3
+crw-rw---- 1 root tty       7, 132  6月 29 18:03 /dev/vcsa4
+crw-rw---- 1 root tty       7, 133  6月 29 18:03 /dev/vcsa5
+crw-rw---- 1 root tty       7, 134  6月 29 18:03 /dev/vcsa6
+crw-rw---- 1 root tty       7, 191  6月 29 18:08 /dev/vcsa63
+crw------- 1 root root     10,  54  6月 29 18:03 /dev/vndbinder
+crw-rw-rw- 1 root root      1,   5  6月 29 18:03 /dev/zero
+
+/dev/block:
+总用量 0
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:0 -> ../ram0
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:1 -> ../ram1
+lrwxrwxrwx 1 root root  8  6月 29 18:03 1:10 -> ../ram10
+lrwxrwxrwx 1 root root  8  6月 29 18:03 1:11 -> ../ram11
+lrwxrwxrwx 1 root root  8  6月 29 18:03 1:12 -> ../ram12
+lrwxrwxrwx 1 root root  8  6月 29 18:03 1:13 -> ../ram13
+lrwxrwxrwx 1 root root  8  6月 29 18:03 1:14 -> ../ram14
+lrwxrwxrwx 1 root root  8  6月 29 18:03 1:15 -> ../ram15
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:2 -> ../ram2
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:3 -> ../ram3
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:4 -> ../ram4
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:5 -> ../ram5
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:6 -> ../ram6
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:7 -> ../ram7
+lrwxrwxrwx 1 root root 10  6月 29 18:03 179:0 -> ../mmcblk0
+lrwxrwxrwx 1 root root 12  6月 29 18:03 179:1 -> ../mmcblk0p1
+lrwxrwxrwx 1 root root 10  6月 29 18:24 179:16 -> ../mmcblk1
+lrwxrwxrwx 1 root root 12  6月 29 18:24 179:17 -> ../mmcblk1p1
+lrwxrwxrwx 1 root root 12  6月 29 18:03 179:2 -> ../mmcblk0p2
+lrwxrwxrwx 1 root root 12  6月 29 18:03 179:3 -> ../mmcblk0p3
+lrwxrwxrwx 1 root root 12  6月 29 18:03 179:4 -> ../mmcblk0p4
+lrwxrwxrwx 1 root root 12  6月 29 18:03 179:5 -> ../mmcblk0p5
+lrwxrwxrwx 1 root root 12  6月 29 18:03 179:6 -> ../mmcblk0p6
+lrwxrwxrwx 1 root root 12  6月 29 18:03 179:7 -> ../mmcblk0p7
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:8 -> ../ram8
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:9 -> ../ram9
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:0 -> ../loop0
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:16 -> ../loop2
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:24 -> ../loop3
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:32 -> ../loop4
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:40 -> ../loop5
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:48 -> ../loop6
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:56 -> ../loop7
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:8 -> ../loop1
+
+/dev/bus:
+总用量 0
+drwxr-xr-x 8 root root 160  1月  1  1970 usb
+
+/dev/char:
+总用量 0
+lrwxrwxrwx 1 root root 10  6月 29 18:03 10:200 -> ../net/tun
+lrwxrwxrwx 1 root root  7  6月 29 18:03 10:203 -> ../cuse
+lrwxrwxrwx 1 root root  9  6月 29 18:03 10:223 -> ../uinput
+lrwxrwxrwx 1 root root  7  6月 29 18:03 10:229 -> ../fuse
+lrwxrwxrwx 1 root root  9  6月 29 18:03 10:235 -> ../autofs
+lrwxrwxrwx 1 root root 17  6月 29 18:03 10:236 -> ../mapper/control
+lrwxrwxrwx 1 root root 15  6月 29 18:03 10:237 -> ../loop-control
+lrwxrwxrwx 1 root root  7  6月 29 18:03 10:239 -> ../uhid
+lrwxrwxrwx 1 root root  8  6月 29 18:03 10:49 -> ../mali0
+lrwxrwxrwx 1 root root 19  6月 29 18:03 10:50 -> ../memory_bandwidth
+lrwxrwxrwx 1 root root 21  6月 29 18:03 10:51 -> ../network_throughput
+lrwxrwxrwx 1 root root 18  6月 29 18:03 10:52 -> ../network_latency
+lrwxrwxrwx 1 root root 18  6月 29 18:03 10:53 -> ../cpu_dma_latency
+lrwxrwxrwx 1 root root 12  6月 29 18:03 10:54 -> ../vndbinder
+lrwxrwxrwx 1 root root 11  6月 29 18:03 10:55 -> ../hwbinder
+lrwxrwxrwx 1 root root  9  6月 29 18:03 10:56 -> ../binder
+lrwxrwxrwx 1 root root  9  6月 29 18:03 10:57 -> ../ashmem
+lrwxrwxrwx 1 root root 13  6月 29 18:03 10:58 -> ../sunxi-wlan
+lrwxrwxrwx 1 root root 14  6月 29 18:03 10:59 -> ../sst_storage
+lrwxrwxrwx 1 root root 12  6月 29 18:03 10:60 -> ../sunxi-reg
+lrwxrwxrwx 1 root root 17  6月 29 18:03 10:61 -> ../sunxi_soc_info
+lrwxrwxrwx 1 root root  9  6月 29 18:03 10:62 -> ../rfkill
+lrwxrwxrwx 1 root root  6  6月 29 18:03 10:63 -> ../ion
+lrwxrwxrwx 1 root root  6  6月 29 18:03 108:0 -> ../ppp
+lrwxrwxrwx 1 root root  6  6月 29 18:03 1:1 -> ../mem
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:11 -> ../kmsg
+lrwxrwxrwx 1 root root 16  6月 29 18:03 116:0 -> ../snd/controlC0
+lrwxrwxrwx 1 root root 10  6月 29 18:03 116:1 -> ../snd/seq
+lrwxrwxrwx 1 root root 15  6月 29 18:03 116:16 -> ../snd/pcmC0D0p
+lrwxrwxrwx 1 root root 16  6月 29 18:03 116:32 -> ../snd/controlC1
+lrwxrwxrwx 1 root root 12  6月 29 18:03 116:33 -> ../snd/timer
+lrwxrwxrwx 1 root root 16  6月 29 18:03 116:64 -> ../snd/controlC2
+lrwxrwxrwx 1 root root 15  6月 29 18:03 116:80 -> ../snd/pcmC2D0p
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:2 -> ../kmem
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:3 -> ../null
+lrwxrwxrwx 1 root root 12  6月 29 18:03 13:0 -> ../input/js0
+lrwxrwxrwx 1 root root 15  6月 29 18:03 13:64 -> ../input/event0
+lrwxrwxrwx 1 root root 15  6月 29 18:03 13:65 -> ../input/event1
+lrwxrwxrwx 1 root root 15  6月 29 18:03 13:66 -> ../input/event2
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:5 -> ../zero
+lrwxrwxrwx 1 root root 12  6月 29 18:03 150:0 -> ../cedar_dev
+lrwxrwxrwx 1 root root  7  6月 29 18:03 1:7 -> ../full
+lrwxrwxrwx 1 root root  9  6月 29 18:03 1:8 -> ../random
+lrwxrwxrwx 1 root root 18  6月 29 18:03 189:0 -> ../bus/usb/001/001
+lrwxrwxrwx 1 root root 18  6月 29 18:03 189:128 -> ../bus/usb/002/001
+lrwxrwxrwx 1 root root 18  6月 29 18:03 189:256 -> ../bus/usb/003/001
+lrwxrwxrwx 1 root root 18  6月 29 18:03 189:384 -> ../bus/usb/004/001
+lrwxrwxrwx 1 root root 18  6月 29 18:03 189:512 -> ../bus/usb/005/001
+lrwxrwxrwx 1 root root 18  6月 29 18:03 189:640 -> ../bus/usb/006/001
+lrwxrwxrwx 1 root root 10  6月 29 18:03 1:9 -> ../urandom
+lrwxrwxrwx 1 root root 12  6月 29 18:03 242:0 -> ../deeplayer
+lrwxrwxrwx 1 root root  6  6月 29 18:03 243:0 -> ../cec
+lrwxrwxrwx 1 root root  7  6月 29 18:03 244:0 -> ../hdmi
+lrwxrwxrwx 1 root root 14  6月 29 18:03 247:0 -> ../deinterlace
+lrwxrwxrwx 1 root root  8  6月 29 18:03 248:0 -> ../ttyS0
+lrwxrwxrwx 1 root root  8  6月 29 18:03 248:1 -> ../ttyS1
+lrwxrwxrwx 1 root root  7  6月 29 18:03 250:0 -> ../disp
+lrwxrwxrwx 1 root root  9  6月 29 18:03 252:0 -> ../media0
+lrwxrwxrwx 1 root root  7  6月 29 18:03 253:0 -> ../rtc0
+lrwxrwxrwx 1 root root  7  6月 29 18:03 253:1 -> ../rtc1
+lrwxrwxrwx 1 root root 12  6月 29 18:03 254:0 -> ../gpiochip0
+lrwxrwxrwx 1 root root 12  6月 29 18:03 254:1 -> ../gpiochip1
+lrwxrwxrwx 1 root root  6  6月 29 18:03 29:0 -> ../fb0
+lrwxrwxrwx 1 root root  7  6月 29 18:03 4:0 -> ../tty0
+lrwxrwxrwx 1 root root  7  6月 29 18:03 4:1 -> ../tty1
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:10 -> ../tty10
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:11 -> ../tty11
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:12 -> ../tty12
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:13 -> ../tty13
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:14 -> ../tty14
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:15 -> ../tty15
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:16 -> ../tty16
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:17 -> ../tty17
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:18 -> ../tty18
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:19 -> ../tty19
+lrwxrwxrwx 1 root root  7  6月 29 18:03 4:2 -> ../tty2
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:20 -> ../tty20
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:21 -> ../tty21
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:22 -> ../tty22
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:23 -> ../tty23
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:24 -> ../tty24
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:25 -> ../tty25
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:26 -> ../tty26
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:27 -> ../tty27
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:28 -> ../tty28
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:29 -> ../tty29
+lrwxrwxrwx 1 root root  7  6月 29 18:03 4:3 -> ../tty3
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:30 -> ../tty30
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:31 -> ../tty31
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:32 -> ../tty32
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:33 -> ../tty33
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:34 -> ../tty34
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:35 -> ../tty35
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:36 -> ../tty36
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:37 -> ../tty37
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:38 -> ../tty38
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:39 -> ../tty39
+lrwxrwxrwx 1 root root  7  6月 29 18:03 4:4 -> ../tty4
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:40 -> ../tty40
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:41 -> ../tty41
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:42 -> ../tty42
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:43 -> ../tty43
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:44 -> ../tty44
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:45 -> ../tty45
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:46 -> ../tty46
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:47 -> ../tty47
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:48 -> ../tty48
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:49 -> ../tty49
+lrwxrwxrwx 1 root root  7  6月 29 18:03 4:5 -> ../tty5
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:50 -> ../tty50
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:51 -> ../tty51
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:52 -> ../tty52
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:53 -> ../tty53
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:54 -> ../tty54
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:55 -> ../tty55
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:56 -> ../tty56
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:57 -> ../tty57
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:58 -> ../tty58
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:59 -> ../tty59
+lrwxrwxrwx 1 root root  7  6月 29 18:03 4:6 -> ../tty6
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:60 -> ../tty60
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:61 -> ../tty61
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:62 -> ../tty62
+lrwxrwxrwx 1 root root  8  6月 29 18:03 4:63 -> ../tty63
+lrwxrwxrwx 1 root root  7  6月 29 18:03 4:7 -> ../tty7
+lrwxrwxrwx 1 root root  7  6月 29 18:03 4:8 -> ../tty8
+lrwxrwxrwx 1 root root  7  6月 29 18:03 4:9 -> ../tty9
+lrwxrwxrwx 1 root root  6  6月 29 18:03 5:0 -> ../tty
+lrwxrwxrwx 1 root root 10  6月 29 18:03 5:1 -> ../console
+lrwxrwxrwx 1 root root  7  6月 29 18:03 5:2 -> ../ptmx
+lrwxrwxrwx 1 root root  6  6月 29 18:03 7:0 -> ../vcs
+lrwxrwxrwx 1 root root  7  6月 29 18:03 7:1 -> ../vcs1
+lrwxrwxrwx 1 root root  7  6月 29 18:03 7:128 -> ../vcsa
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:129 -> ../vcsa1
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:130 -> ../vcsa2
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:131 -> ../vcsa3
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:132 -> ../vcsa4
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:133 -> ../vcsa5
+lrwxrwxrwx 1 root root  8  6月 29 18:03 7:134 -> ../vcsa6
+lrwxrwxrwx 1 root root  9  6月 29 18:08 7:191 -> ../vcsa63
+lrwxrwxrwx 1 root root  7  6月 29 18:03 7:2 -> ../vcs2
+lrwxrwxrwx 1 root root  7  6月 29 18:03 7:3 -> ../vcs3
+lrwxrwxrwx 1 root root  7  6月 29 18:03 7:4 -> ../vcs4
+lrwxrwxrwx 1 root root  7  6月 29 18:03 7:5 -> ../vcs5
+lrwxrwxrwx 1 root root  7  6月 29 18:03 7:6 -> ../vcs6
+lrwxrwxrwx 1 root root  8  6月 29 18:08 7:63 -> ../vcs63
+lrwxrwxrwx 1 root root 14  6月 29 18:03 81:0 -> ../v4l-subdev0
+lrwxrwxrwx 1 root root 14  6月 29 18:03 81:1 -> ../v4l-subdev1
+lrwxrwxrwx 1 root root 15  6月 29 18:03 81:10 -> ../v4l-subdev10
+lrwxrwxrwx 1 root root 15  6月 29 18:03 81:11 -> ../v4l-subdev11
+lrwxrwxrwx 1 root root 15  6月 29 18:03 81:12 -> ../v4l-subdev12
+lrwxrwxrwx 1 root root 14  6月 29 18:03 81:2 -> ../v4l-subdev2
+lrwxrwxrwx 1 root root 14  6月 29 18:03 81:3 -> ../v4l-subdev3
+lrwxrwxrwx 1 root root 14  6月 29 18:03 81:4 -> ../v4l-subdev4
+lrwxrwxrwx 1 root root 14  6月 29 18:03 81:5 -> ../v4l-subdev5
+lrwxrwxrwx 1 root root 14  6月 29 18:03 81:6 -> ../v4l-subdev6
+lrwxrwxrwx 1 root root 14  6月 29 18:03 81:7 -> ../v4l-subdev7
+lrwxrwxrwx 1 root root 14  6月 29 18:03 81:8 -> ../v4l-subdev8
+lrwxrwxrwx 1 root root 14  6月 29 18:03 81:9 -> ../v4l-subdev9
+lrwxrwxrwx 1 root root  8  6月 29 18:03 89:3 -> ../i2c-3
+lrwxrwxrwx 1 root root  8  6月 29 18:03 89:5 -> ../i2c-5
+
+/dev/disk:
+总用量 0
+drwxr-xr-x 2 root root 240  6月 29 18:24 by-id
+drwxr-xr-x 2 root root 100  6月 29 18:03 by-label
+drwxr-xr-x 2 root root 180  6月 29 18:03 by-partlabel
+drwxr-xr-x 2 root root 180  6月 29 18:03 by-partuuid
+drwxr-xr-x 2 root root 240  6月 29 18:24 by-path
+drwxr-xr-x 2 root root 140  6月 29 18:24 by-uuid
+
+/dev/input:
+总用量 0
+drwxr-xr-x 2 root root     120  6月 29 18:03 by-path
+crw-rw---- 1 root input 13, 64  6月 29 18:03 event0
+crw-rw---- 1 root input 13, 65  6月 29 18:03 event1
+crw-rw---- 1 root input 13, 66  6月 29 18:03 event2
+crw-rw-r-- 1 root input 13,  0  6月 29 18:03 js0
+
+/dev/mapper:
+总用量 0
+crw------- 1 root root 10, 236  6月 29 18:03 control
+
+/dev/net:
+总用量 0
+crw-rw-rw- 1 root root 10, 200  6月 29 18:03 tun
+
+/dev/pts:
+总用量 0
+crw------- 1 root tty  136, 0  6月 29 19:04 0
+c--------- 1 root root   5, 2  6月 29 18:03 ptmx
+
+/dev/shm:
+总用量 0
+
+/dev/snd:
+总用量 0
+drwxr-xr-x 2 root root      100  6月 29 18:03 by-path
+crw-rw---- 1 root audio 116,  0  6月 29 18:03 controlC0
+crw-rw---- 1 root audio 116, 32  6月 29 18:03 controlC1
+crw-rw---- 1 root audio 116, 64  6月 29 18:03 controlC2
+crw-rw---- 1 root audio 116, 16  6月 29 18:03 pcmC0D0p
+crw-rw---- 1 root audio 116, 80  6月 29 18:03 pcmC2D0p
+crw-rw---- 1 root audio 116,  1  6月 29 18:03 seq
+crw-rw---- 1 root audio 116, 33  6月 29 18:03 timer
+
+
+
+=== INTERACTIVE SDL CONTROLLER CALIBRATION TOOL ===
+Waiting for physical hardware detection...
+
+[SYSTEM] Joystick attached! Detected GUID: 19000000010000000100000000010000
+Starting calibration process. You have 3 seconds to press each requested input.
+-----------------------------------------------------------------
+
+>>> PHASE 1: DIRECTIONAL D-PAD CALIBRATION <<<
+Press now: D-PAD [ UP ] ... [OK] Hat index: h0, Value: 1
+Press now: D-PAD [ DOWN ] ... [OK] Hat index: h0, Value: 4
+Press now: D-PAD [ LEFT ] ... [OK] Hat index: h0, Value: 8
+Press now: D-PAD [ RIGHT ] ... [OK] Hat index: h0, Value: 2
+
+>>> PHASE 2: FACE BUTTONS & TRIGGERS CALIBRATION <<<
+Press now: Button [ A ] ... [OK] Registered Hardware ID: b3
+Press now: Button [ B ] ... [OK] Registered Hardware ID: b4
+Press now: Button [ X ] ... [OK] Registered Hardware ID: b6
+Press now: Button [ Y ] ... [OK] Registered Hardware ID: b5
+Press now: Button [ SELECT ] ... [OK] Registered Hardware ID: b9
+Press now: Button [ START ] ... [OK] Registered Hardware ID: b10
+Press now: Bumper [ L1 ] ... [OK] Registered Hardware ID: b7
+Press now: Bumper [ R1 ] ... [OK] Registered Hardware ID: b8
+Press now: Trigger [ L2 ] ... [OK] Registered Hardware ID: b12
+Press now: Trigger [ R2 ] ... [OK] Registered Hardware ID: b13
+Press now: Button [ MENU (Center) ] ... [OK] Registered Hardware ID: b11
+
+-----------------------------------------------------------------
+=== CALIBRATION SUCCESSFUL! COPY THE FULL STRING BELOW ===
+
+19000000010000000100000000010000,Anbernic RG35XXSP Mapped,platform:Linux,a:b3,b:b4,x:b6,y:b5,back:b9,start:b10,leftshoulder:b7,rightshoulder:b8,lefttrigger:b12,righttrigger:b13,guide:b11,dpup:h0.1,dpdown:h0.4,dpleft:h0.8,dpright:h0.2
