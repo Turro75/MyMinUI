@@ -51,6 +51,11 @@ void MaybeHeuristicAutoscale(const Config &cfg, int best_w, int best_h)
 
 } // namespace
 
+
+double MINARCH_getCoreSampleRate(void) {
+	return 0;
+}
+
 int Screen::init()
 {
     screen.surface = PLAT_initVideo();

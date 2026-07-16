@@ -1679,7 +1679,9 @@ int drawBoxart(SDL_Surface* _screen, char* bmpPath){
 	SDL_FreeSurface(boxart);
 	return 1;
 }
-
+double MINARCH_getCoreSampleRate(void) {
+	return 0;
+}
 
 /* end helper functions*/
 

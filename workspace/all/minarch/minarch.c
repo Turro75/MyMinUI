@@ -2312,6 +2312,15 @@ static void Input_init(const struct retro_input_descriptor *vars) {
 	input_initialized = 1;
 }
 
+/* 🎯 INTERFACCIA AUDIO EXPORT: Espone i dati del core senza duplicare la struct */
+double MINARCH_getCoreFps(void) {
+	return core.fps;
+}
+
+double MINARCH_getCoreSampleRate(void) {
+	return core.sample_rate;
+}
+
 static bool set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength) {
 	// TODO: handle other args? not sure I can
 //	LOG_info("set_rumble_state: port %u, effect %u, strength %u\n", port, effect, strength);
@@ -2476,18 +2485,26 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 	case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO: { /* 32 */
 		struct retro_system_av_info *info = (struct retro_system_av_info *)data;
 		if (info) {
-		/*	info->timing.fps = core.fps;
-			info->timing.sample_rate = core.sample_rate;
-			info->geometry.base_width = core.width;
-			info->geometry.base_height = core.height;
-			info->geometry.max_width = core.width;
-			info->geometry.max_height = core.height;
-			info->geometry.aspect_ratio = 1.0f; // TODO: aspect ratio*/
-			LOG_info("RETRO_ENVIRONMENT_GET_SYSTEM_AV_INFO fps:%f samplerate:%f width:%f height:%f aspectratio:%f\n", info->timing.fps, info->timing.sample_rate, info->geometry.base_width, info->geometry.base_height, info->geometry.aspect_ratio);
+			core.fps = info->timing.fps;
+			core.sample_rate = info->timing.sample_rate;
+
+			double frameperiod = 1000000.0 / core.fps;
+			uint32_t frame_period_usecs = (uint32_t)(frameperiod);
+
+			double a = info->geometry.aspect_ratio;
+			if (a <= 0) {
+				a = (double)info->geometry.base_width / info->geometry.base_height;
+			}
+			core.aspect_ratio = a;
+
+			LOG_info("[INFO] [minarch] SET_SYSTEM_AV_INFO Applied -> fps: %f | sample_rate: %f\n", core.fps, core.sample_rate);
+
+			/* Notifica immediatamente api.c */
+			extern void SND_selectResampler(void);
+			SND_selectResampler();
 		}
 		break;
 	}
-
 	case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO: { /* 35 */
 		// LOG_info("RETRO_ENVIRONMENT_SET_CONTROLLER_INFO\n");
 		const struct retro_controller_info *infos = (const struct retro_controller_info *)data;

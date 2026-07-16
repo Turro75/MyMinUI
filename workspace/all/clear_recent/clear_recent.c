@@ -15,6 +15,10 @@
 #include "utils.h"
 #include "api.h"
 
+double MINARCH_getCoreSampleRate(void) {
+	return 0;
+}
+
 int main(int argc, char* argv[]) {
 	PWR_setCPUSpeed(CPU_SPEED_MENU);
 	

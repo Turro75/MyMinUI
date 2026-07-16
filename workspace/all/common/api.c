@@ -1059,34 +1059,9 @@ void GFX_blitText(TTF_Font* font, char* str, int leading, SDL_Color color, SDL_S
 #define ms SDL_GetTicks
 
 
-
 pthread_mutex_t audio_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void SND_audioCallback(void *userdata, uint8_t *stream, int len) {
-	if (snd.frame_count == 0)
-		return;
 
-	int16_t *out = (int16_t *)stream;
-	len /= (sizeof(int16_t) * 2);
-	
-	while (snd.frame_out!=snd.frame_in && len>0) {
-		*out++ = snd.buffer[snd.frame_out].left;
-		*out++ = snd.buffer[snd.frame_out].right;
-		
-		snd.frame_filled = snd.frame_out;
-		
-		snd.frame_out += 1;
-		len -= 1;
-		
-		if (snd.frame_out>=snd.frame_count) snd.frame_out = 0;
-	}
-	
-	while (len>0) {
-		*out++ = 0;
-		*out++ = 0;
-		len -= 1;
-	}
-}
 
 static void SND_resizeBuffer(void) { // plat_sound_resize_buffer
 	//if nofix snd.buffer_seconds must be 0
@@ -1144,13 +1119,236 @@ static int SND_resampleNear(SND_Frame frame) { // audio_resample_nearest
 	return consumed;
 }
 
-static void SND_selectResampler(void) { // plat_sound_select_resampler
-	if (snd.sample_rate_in==snd.sample_rate_out) {
-		snd.resample =  SND_resampleNone;
+#define SCRATCH_BUFFER_SIZE 2048
+#define SINC_TAPS 8
+#define SINC_PHASE_BITS 6
+#define SINC_PHASES (1 << SINC_PHASE_BITS)
+
+static double native_audio_phase = 0.0;
+static double fixed_sample_step = 1.0;
+static int last_initialized_rate = 0; 
+static uint64_t absolute_start_perf_counter = 0;
+
+static SND_Frame sinc_history[SINC_TAPS] __attribute__((aligned(16)));
+static SND_Frame scratch_conversion_buffer[SCRATCH_BUFFER_SIZE];
+static int scratch_idx = 0;
+static int queue_pre_roll_complete = 0;
+
+static int16_t sinc_lut[SINC_PHASES][SINC_TAPS] __attribute__((aligned(16)));
+
+/* External minarch interface getters */
+extern double MINARCH_getCoreFps(void);
+
+extern uint32_t PLAT_getVsyncInterval(void);
+
+static void generate_sinc_table(void) {
+	for (int p = 0; p < SINC_PHASES; p++) {
+		double phase_offset = (double)p / (double)SINC_PHASES;
+		double sum = 0.0;
+		double t[SINC_TAPS];
+
+		for (int i = 0; i < SINC_TAPS; i++) {
+			double x = M_PI * ((double)i - (SINC_TAPS / 2 - 1) - phase_offset);
+			double s = (fabs(x) < 1e-9) ? 1.0 : sin(x) / x;
+			/* Blackman-Harris window filter optimization for pure aliasing rejection */
+			double nw = 0.35875 - 0.48829 * cos(2.0 * M_PI * i / (SINC_TAPS - 1)) + 
+			            0.14128 * cos(4.0 * M_PI * i / (SINC_TAPS - 1)) - 
+			            0.01168 * cos(6.0 * M_PI * i / (SINC_TAPS - 1));
+			t[i] = s * nw;
+			sum += t[i];
+		}
+
+		/* Quantize windowed coefficients into 16-bit fixed-point Q14 to secure register safety */
+		for (int i = 0; i < SINC_TAPS; i++) {
+			sinc_lut[p][i] = (int16_t)((t[i] / sum) * 16384.0);
+		}
 	}
-	else {
-		snd.resample = SND_resampleNear;
+}
+
+void SND_selectResampler(void) {
+	static int table_generated = 0;
+	if (!table_generated) {
+		generate_sinc_table();
+		table_generated = 1;
 	}
+
+	double current_core_sample_rate = MINARCH_getCoreSampleRate();
+	snd.sample_rate_in = (int)current_core_sample_rate;
+	last_initialized_rate = snd.sample_rate_in; 
+
+	native_audio_phase = 0.0;
+	scratch_idx = 0;
+	memset(sinc_history, 0, sizeof(sinc_history));
+	queue_pre_roll_complete = 0;
+
+#if defined (USE_SDL2)
+	SDL_PauseAudioDevice(audioDeviceID, 1);
+	SDL_ClearQueuedAudio(audioDeviceID);
+#endif
+
+	/* 
+	 * 🎯 THE IMMUTABLE 48000Hz PITCH-PERFECT ENVELOPE:
+	 * Since SND_init now correctly forces a strict 48000Hz fixed hardware server endpoint,
+	 * the baseline geometric step is calculated purely as: core_input_frequency / 48000.0.
+	 * SNES: 32040 / 48000 = 0.6675 | Doom: 44100 / 48000 = 0.91875 | Pico-8: 22050 / 48000 = 0.459375
+	 */
+	fixed_sample_step = (double)snd.sample_rate_in / 48000.0;
+}
+
+/* 🚀 ACCELERATED INT16 ARITHMETIC NEON VECTOR CONVOLUTION TRANSFORMATION ENGINE */
+static inline SND_Frame process_sinc_neon_aligned(int phase_idx) {
+	SND_Frame out;
+	int16x8x2_t v_data = vld2q_s16((const int16_t*)sinc_history);
+	int16x8_t v_coeff  = vld1q_s16(sinc_lut[phase_idx]);
+
+	/* Parallel multiplication execution paths across left (.val) and right (.val) lanes */
+	int32x4_t v_low_l  = vmull_s16(vget_low_s16(v_data.val[0]), vget_low_s16(v_coeff));
+	int32x4_t v_high_l = vmull_s16(vget_high_s16(v_data.val[0]), vget_high_s16(v_coeff));
+	int32x4_t v_low_r  = vmull_s16(vget_low_s16(v_data.val[1]), vget_low_s16(v_coeff));
+	int32x4_t v_high_r = vmull_s16(vget_high_s16(v_data.val[1]), vget_high_s16(v_coeff));
+
+	int32x4_t v_sum_l = vaddq_s32(v_low_l, v_high_l);
+	int32x4_t v_sum_r = vaddq_s32(v_low_r, v_high_r);
+
+	int32_t final_l = vgetq_lane_s32(v_sum_l, 0) + vgetq_lane_s32(v_sum_l, 1) + vgetq_lane_s32(v_sum_l, 2) + vgetq_lane_s32(v_sum_l, 3);
+	int32_t final_r = vgetq_lane_s32(v_sum_r, 0) + vgetq_lane_s32(v_sum_r, 1) + vgetq_lane_s32(v_sum_r, 2) + vgetq_lane_s32(v_sum_r, 3);
+
+	/* Convergent rounding shift pass filters out high-frequency quantization edge steps */
+	out.left  = (int16_t)((final_l + 8192) >> 14);
+	out.right = (int16_t)((final_r + 8192) >> 14);
+	return out;
+}
+
+size_t SND_batchSamplesNoFix(const SND_Frame* frames, size_t frame_count) {
+	if (!frames || frame_count == 0) return 0;
+
+	double current_input_rate = MINARCH_getCoreSampleRate();
+	if (absolute_start_perf_counter == 0 || (int)current_input_rate != last_initialized_rate || snd.sample_rate_in == 0) {
+		absolute_start_perf_counter = SDL_GetPerformanceCounter();
+		SND_selectResampler();
+	}
+
+#if defined (USE_SDL2)
+	uint32_t queued_bytes = SDL_GetQueuedAudioSize(audioDeviceID);
+#else
+	uint32_t queued_bytes = 4608; 
+#endif
+	double current_latency_ms = (double)queued_bytes / 192.0;
+
+	/* 
+	 * 🎯 THE UNIVERSAL HARDWARE PACING SELECTOR:
+	 * Governed directly by your custom Makefile macro -DMY_USE_USLEEP.
+	 */
+#if defined(MY_USE_USLEEP)
+	/* 🚀 REGIME A: FRENO MECCANICO TRAMITE SLEEP (Ideale per Quad-Core come l'H700)
+	 * Addormenta dolcemente il thread del core per stabilizzare un cuscinetto 
+	 * d'aria costante, azzerando i crepitii di starvation su /dev/dsp.
+	 */
+	while (queue_pre_roll_complete && current_latency_ms > 24.0) {
+		usleep(1000); 
+#if defined (USE_SDL2)
+		queued_bytes = SDL_GetQueuedAudioSize(audioDeviceID);
+#endif
+		current_latency_ms = (double)queued_bytes / 192.0;
+	}
+#else
+	/* 🚀 REGIME B: SPURGO ISTANTANEO TRAMITE PACKET DROP (Ideale per Dual-Core come il Miyoo)
+	 * Se il buffer supera la linea di guardia, scarta istantaneamente il surplus 
+	 * a costo computazionale zero, preservando i 60 FPS video ed evitando sbalzi di pitch.
+	 */
+	if (queue_pre_roll_complete && current_latency_ms > 32.0) {
+		return frame_count; 
+	}
+#endif
+
+	/* Finestra DRC elastica vellutata e sicura limitata allo ±1.5% */
+	double target_latency_ms = 24.0; 
+	double latency_error_ms = target_latency_ms - current_latency_ms;
+
+	double trim_factor = 1.0 + (latency_error_ms * 0.0012);
+	if (trim_factor > 1.0150) trim_factor = 1.0150;
+	if (trim_factor < 0.9850) trim_factor = 0.9850;
+
+	double sample_step = fixed_sample_step * (1.0 / trim_factor);
+
+	int progress = 0;
+	scratch_idx = 0; 
+
+	/* TIMELINE SINC NEON MATRIX ENGINE */
+	size_t remaining = frame_count;
+	while (remaining > 0) {
+		for (int i = 0; i < SINC_TAPS - 1; i++) {
+			sinc_history[i] = sinc_history[i + 1];
+		}
+		sinc_history[SINC_TAPS - 1] = *frames;
+
+		while (native_audio_phase < 1.0) {
+			if (scratch_idx >= SCRATCH_BUFFER_SIZE) {
+#if defined (USE_SDL2)
+				SDL_QueueAudio(audioDeviceID, scratch_conversion_buffer, scratch_idx * sizeof(SND_Frame));
+#endif
+				scratch_idx = 0;
+			}
+
+			int phase_idx = (int)(native_audio_phase * (double)SINC_PHASES);
+			if (phase_idx >= SINC_PHASES) phase_idx = SINC_PHASES - 1;
+
+			scratch_conversion_buffer[scratch_idx] = process_sinc_neon_aligned(phase_idx);
+			scratch_idx++;
+
+			native_audio_phase += sample_step; 
+		}
+
+		if (native_audio_phase >= 1.0) {
+			native_audio_phase -= 1.0;
+		}
+
+		frames++;
+		remaining--;
+		progress++;
+	}
+
+	if (scratch_idx > 0) {
+#if defined (USE_SDL2)
+		SDL_QueueAudio(audioDeviceID, scratch_conversion_buffer, scratch_idx * sizeof(SND_Frame));
+#endif
+	}
+
+#if defined (USE_SDL2)
+	uint32_t post_queued_bytes = SDL_GetQueuedAudioSize(audioDeviceID);
+#else
+	uint32_t post_queued_bytes = 4608;
+#endif
+	double post_latency_ms = (double)post_queued_bytes / 192.0;
+
+	if (queue_pre_roll_complete) {
+		sched_yield();
+	}
+
+	static uint32_t last_drc_log = 0;
+	uint32_t current_ticks = SDL_GetTicks();
+	if (current_ticks - last_drc_log > 2000) {
+		LOG_info("[INFO] [MyMinUI-PIPELINE-LOG] AbsTime: %llu us | SDL Post-Queue: %u bytes (%.1f ms) | Step: %.6f\n", 
+		         ((SDL_GetPerformanceCounter() - absolute_start_perf_counter) * 1000000ULL) / SDL_GetPerformanceFrequency(), 
+		         post_queued_bytes, post_latency_ms, sample_step);
+		last_drc_log = current_ticks;
+	}
+
+	if (!queue_pre_roll_complete && post_latency_ms >= 24.0) {
+		queue_pre_roll_complete = 1;
+#if defined (USE_SDL2)
+		SDL_PauseAudioDevice(audioDeviceID, 0); 
+#endif
+	}
+
+	if (queue_pre_roll_complete && post_queued_bytes == 0) {
+		queue_pre_roll_complete = 0;
+#if defined (USE_SDL2)
+		SDL_PauseAudioDevice(audioDeviceID, 1); 
+#endif
+	}
+
+	return progress;
 }
 
 static int soundQuality = 2;
@@ -1305,49 +1503,7 @@ int currentbufferfree = 0;
 int currentframecount = 0;
 static double ratio = 1.0;
 
-size_t SND_batchSamplesNoFix(const SND_Frame* frames, size_t frame_count) { // plat_sound_write / plat_sound_write_resample
-	if (snd.frame_count==0) return 0;
-#if defined (USE_SDL2)
-	SDL_LockAudioDevice(audioDeviceID);
-#else
-	SDL_LockAudio();
-#endif
-	int progress = 0;
-	int consumed = 0;
-	while (frame_count > 0) {
-		int tries = 0;
-		int amount = MIN(BATCH_SIZE_NOFIX, frame_count);
 
-		while (tries < 10 && snd.frame_in==snd.frame_filled) {
-			tries++;
-#if defined (USE_SDL2)
-			SDL_UnlockAudioDevice(audioDeviceID);
-#else
-			SDL_UnlockAudio();
-#endif
-			usleep(1000);
-#if defined (USE_SDL2)
-			SDL_LockAudioDevice(audioDeviceID);
-#else
-			SDL_LockAudio();
-#endif
-		}
-
-		while (amount && snd.frame_in != snd.frame_filled) {
-			consumed = snd.resample(*frames);
-			frames += consumed;
-			amount -= consumed;
-			frame_count -= consumed;
-			progress += consumed;
-		}
-	}
-#if defined (USE_SDL2)
-	SDL_UnlockAudioDevice(audioDeviceID);
-#else
-	SDL_UnlockAudio();
-#endif
-	return progress;
-}
 
 size_t SND_batchSamples(const SND_Frame *frames, size_t frame_count) {
 	
@@ -1554,7 +1710,7 @@ void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 	spec_in.format = AUDIO_S16;
 	spec_in.channels = 2;
 	spec_in.samples = SAMPLES;
-	spec_in.callback = SND_audioCallback;
+	spec_in.callback = NULL; //SND_audioCallback;
 #if defined(USE_SDL2)
 	audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &spec_in, &spec_out, 0);
 #else

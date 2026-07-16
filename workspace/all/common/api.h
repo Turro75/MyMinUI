@@ -352,6 +352,8 @@ size_t SND_batchSamples_fixed_rate(const SND_Frame* frames, size_t frame_count);
 void SND_quit(void);
 void SND_resetAudio(double sample_rate, double frame_rate);
 void SND_setQuality(int quality);
+void SND_selectResampler(void);
+double MINARCH_getCoreSampleRate(void);
 
 ///////////////////////////////
 
@@ -502,6 +504,7 @@ void PLAT_powerOff(void);
 void PLAT_setCPUSpeed(int speed); // enum
 void PLAT_setRumble(int effect, int strength);
 int PLAT_pickSampleRate(int requested, int max);
+uint32_t PLAT_getVsyncInterval(void);
 
 char* PLAT_getModel(void);
 int PLAT_isOnline(void);

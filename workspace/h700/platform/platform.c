@@ -1268,7 +1268,7 @@ void PLAT_setRumble(int effect, int strength) {
 }
 
 int PLAT_pickSampleRate(int requested, int max) {
-	return MIN(requested, max);
+	return MAX(requested, max);
 }
 
 char* PLAT_getModel(void) {
@@ -1351,4 +1351,8 @@ int PLAT_getScreenRotation(int game) {
 
 SDL_Surface* PLAT_getScreenGame(void) {
 	return vid.screengame;
+}
+
+uint32_t PLAT_getVsyncInterval(void){
+	return vid.vsync_refresh;
 }

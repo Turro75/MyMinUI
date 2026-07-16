@@ -20,6 +20,7 @@
 #include "platform.h"
 #include "api.h"
 #include "utils.h"
+#include <time.h>
 
 ///////////////////////////////
 // based on eggs GFXSample_rev15
@@ -192,10 +193,52 @@ static struct VID_Context {
 	int rotategame;
 	int page;
 	int numpages;
+	uint64_t vsync_refresh;
 	uint32_t offset;
 	SDL_Rect targetRect;
 	int renderingGame;	
 } vid;
+
+uint64_t measureAverageVsyncNs(void) {
+    struct timespec start_time, end_time;
+    uint32_t res = 0;
+    const int target_iterations = 20;
+
+    // 🎯 Step 1: Capture the baseline high-resolution absolute monotonic timestamp
+    if (clock_gettime(CLOCK_MONOTONIC, &start_time) != 0) {
+        return 0; // Kernel clock subsystem error fallback
+    }
+
+    // 🎯 Step 2: Loop exactly 20 times directly hitting the kernel ioctl layer
+    for (int i = 0; i < target_iterations; i++) {
+        /* 
+         * This ioctl call yields the thread context directly to the Allwinner hardware IRQ handler, 
+         * blocking execution cleanly until the LCD panel raster beam returns to line zero.
+         */
+        ioctl(vid.fdfb, FBIO_WAITFORVSYNC, &res);
+    }
+
+    // 🎯 Step 3: Capture the terminal high-resolution absolute timestamp
+    if (clock_gettime(CLOCK_MONOTONIC, &end_time) != 0) {
+        return 0; 
+    }
+
+    // 🎯 Step 4: Calculate total elapsed delta time converted completely to nanoseconds
+    uint64_t total_elapsed_ns = (uint64_t)(end_time.tv_sec - start_time.tv_sec) * 1000000000ULL;
+    
+    if (end_time.tv_nsec >= start_time.tv_nsec) {
+        total_elapsed_ns += (uint64_t)(end_time.tv_nsec - start_time.tv_nsec);
+    } else {
+        total_elapsed_ns -= (uint64_t)(start_time.tv_nsec - end_time.tv_nsec);
+    }
+
+    // 🎯 Step 5: Extract the exact arithmetic mean duration per interval step pass
+    uint64_t average_vsync_ns = total_elapsed_ns / (uint64_t)target_iterations;
+
+    return average_vsync_ns;
+}
+
+
 
 void pan_display(int page){
 	vid.vinfo.yoffset = (vid.vinfo.yres_virtual/2) * page;
@@ -342,6 +385,8 @@ SDL_Surface* PLAT_initVideo(void) {
     set_fbinfo();
 	get_fbinfo();
 	
+	vid.vsync_refresh = measureAverageVsyncNs();
+
 	InitAssetRects();
 	LOG_info("DEVICE_WIDTH=%d, DEVICE_HEIGHT=%d\n", DEVICE_WIDTH, DEVICE_HEIGHT);fflush(stdout);
 
@@ -803,4 +848,8 @@ int PLAT_getScreenRotation(int game) {
 
 SDL_Surface* PLAT_getScreenGame(void) {
 	return vid.screengame;
+}
+
+uint32_t PLAT_getVsyncInterval(void){
+	return vid.vsync_refresh;
 }
