@@ -21,10 +21,6 @@ static int getButtonWidth(char* label) {
 	return w;
 }
 
-double MINARCH_getCoreSampleRate(void) {
-	return 0;
-}
-
 static void blitButton(char* label, SDL_Surface* dst, int pressed, int x, int y, int w) {
 	SDL_Rect point = {x,y};
 	SDL_Surface* text;

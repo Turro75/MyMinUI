@@ -28,10 +28,6 @@ void killHandler(int retvalue)
 	exit(retvalue);
 }
 
-double MINARCH_getCoreSampleRate(void) {
-	return 0;
-}
-
 int main(int argc , char* argv[]) {
 	if (argc<2) {
 		fprintf(stdout,"Usage: show image.png delay");
