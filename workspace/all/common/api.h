@@ -89,16 +89,7 @@ extern uint32_t RGB_BLACK;
 extern uint32_t RGB_LIGHT_GRAY;
 extern uint32_t RGB_GRAY;
 extern uint32_t RGB_DARK_GRAY;
-extern float currentratio;
-extern int currentbufferfree;
-extern int currentframecount;
-extern double currentfps;
-extern double currentreqfps;
-extern float currentbufferms;
-extern int currentbuffersize;
-extern int currentsampleratein;
-extern int currentsamplerateout;
-extern int use_nofix;
+
 extern int PWR_isSleeping;
 #if defined(USE_SDL2)
 extern SDL_AudioDeviceID audioDeviceID;
@@ -150,12 +141,6 @@ typedef struct GFX_Fonts {
 	TTF_Font* largeoutline; // for fancy mode
 } GFX_Fonts;
 extern GFX_Fonts font;
-
-enum {
-	SHARPNESS_SHARP,
-	SHARPNESS_CRISP,
-	SHARPNESS_SOFT,
-};
 
 enum {
 	EFFECT_NONE,
@@ -239,7 +224,6 @@ SDL_Surface* GFX_init(int mode);
 #define GFX_resize PLAT_resizeVideo // (int w, int h, int pitch);
 #define GFX_setScaleClip PLAT_setVideoScaleClip // (int x, int y, int width, int height)
 #define GFX_setNearestNeighbor PLAT_setNearestNeighbor // (int enabled)
-#define GFX_setSharpness PLAT_setSharpness // (int sharpness)
 #define GFX_setEffect PLAT_setEffect // (int effect)
 void GFX_setMode(int mode);
 int GFX_hdmiChanged(void);
@@ -250,12 +234,11 @@ int GFX_hdmiChanged(void);
 void GFX_startFrame(void);
 void audioFPS(void);
 void GFX_flip(SDL_Surface* screen);
-void GFX_flipNoFix(SDL_Surface* screen);
-void PLAT_flipHidden();
-void GFX_flip_fixed_rate(SDL_Surface* screen, double target_fps); // if target_fps is 0, then use the native screen FPS
+
+
+
 #define GFX_supportsOverscan PLAT_supportsOverscan // (void)
 void GFX_sync(void); // call this to maintain 60fps when not calling GFX_flip() this frame
-void GFX_sync_fixed_rate(double target_fps);
 void GFX_delay(void); // gfx_sync() is only for everywhere where there is no audio buffer to rely on for delaying, stupid so doing gfx_delay() for like waiting for input loop in binding menu. Need to remove gfx_sync() everwhere eventually
 void GFX_quit(void);
 void GFX_pan(void);
@@ -346,14 +329,10 @@ typedef struct {
 } ResampledFrames;
 
 void SND_init(double sample_rate, double frame_rate);
-size_t SND_batchSamplesNoFix(const SND_Frame* frames, size_t frame_count);
 size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count);
-size_t SND_batchSamples_fixed_rate(const SND_Frame* frames, size_t frame_count);
 void SND_quit(void);
 void SND_resetAudio(double sample_rate, double frame_rate);
-void SND_setQuality(int quality);
 void SND_selectResampler(void);
-double MINARCH_getCoreSampleRate(void);
 
 ///////////////////////////////
 
@@ -484,7 +463,6 @@ void PLAT_setVsync(int vsync);
 SDL_Surface* PLAT_resizeVideo(int w, int h, int pitch);
 void PLAT_setVideoScaleClip(int x, int y, int width, int height);
 void PLAT_setNearestNeighbor(int enabled);
-void PLAT_setSharpness(int sharpness);
 void PLAT_setEffect(int effect);
 void PLAT_vsync(int remaining);
 //scaler_t PLAT_getScaler(GFX_Renderer* renderer);

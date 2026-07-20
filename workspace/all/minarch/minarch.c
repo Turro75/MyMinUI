@@ -76,21 +76,13 @@ char pwractionstr[256];
 int fancy_mode;
 extern int overclock; // normal
 
-enum {
-	SYNC_SRC_NOFIX,
-	SYNC_SRC_AUTO,
-	SYNC_SRC_SCREEN,
-	SYNC_SRC_CORE
-};
 
 
 // default frontend options
 static int screen_scaling = SCALE_ASPECT;
 //static int screen_max_scale = 5; //6x
 static int screen_effect = EFFECT_NONE;
-static int screen_sharpness = SHARPNESS_SOFT;
 static int prevent_tearing = 1; // lenient
-static int sync_ref = SYNC_SRC_AUTO;
 static int show_debug = 0;
 static int max_ff_speed = 3; // 4x
 static int fast_forward = 0;
@@ -1031,25 +1023,14 @@ static char* effect_labels[] = {
 	"Grid",
 	NULL
 };
-static char* sharpness_labels[] = {
-	"Sharp",
-	"Crisp",
-	"Soft",
-	NULL
-};
+
 static char* tearing_labels[] = {
 	"Off",
 	"Lenient",
 	"Strict",
 	NULL
 };
-static char* sync_ref_labels[] = {
-	"NoFix",
-	"Auto",
-	"Screen",
-	"Core",
-	NULL
-};
+
 static char* max_ff_labels[] = {
 	"None",
 	"2x",
@@ -1075,9 +1056,7 @@ enum {
 	FE_OPT_SCALING,
 //	FE_OPT_MAX_SCALE,
 	FE_OPT_EFFECT,
-	FE_OPT_SHARPNESS,
 	FE_OPT_TEARING,
-	FE_OPT_SYNC_REFERENCE,
 	FE_OPT_OVERCLOCK,
 	FE_OPT_THREAD,
 	FE_OPT_DEBUG,
@@ -1281,16 +1260,6 @@ static struct Config {
 				.values = effect_labels,
 				.labels = effect_labels,
 			},
-			[FE_OPT_SHARPNESS] = {
-				.key	= "minarch_screen_sharpness",
-				.name	= "Screen Sharpness",
-				.desc	= "Sharp uses nearest neighbor sampling.\nCrisp integer upscales before linear sampling.\nSoft uses linear sampling.",
-				.default_value = 2,
-				.value = 2,
-				.count = 3,
-				.values = sharpness_labels,
-				.labels = sharpness_labels,
-			},
 			[FE_OPT_TEARING] = {
 				.key	= "minarch_prevent_tearing",
 				.name	= "Prevent Tearing",
@@ -1300,16 +1269,6 @@ static struct Config {
 				.count = 3,
 				.values = tearing_labels,
 				.labels = tearing_labels,
-			},
-			[FE_OPT_SYNC_REFERENCE] = {
-				.key	= "minarch_sync_reference",
-				.name	= "Core Sync",
-				.desc	= "Choose what should be used as a\nreference for the frame rate.\n\"Native\" uses the emulator frame rate,\n\"Screen\" uses the frame rate of the screen.",
-				.default_value = SYNC_SRC_AUTO,
-				.value = SYNC_SRC_AUTO,
-				.count = 4,
-				.values = sync_ref_labels,
-				.labels = sync_ref_labels,
 			},
 			[FE_OPT_OVERCLOCK] = {
 				.key	= "minarch_cpu_speed",
@@ -1424,9 +1383,6 @@ static void Config_syncFrontend(char* key, int value) {
 	if (exactMatch(key,config.frontend.options[FE_OPT_SCALING].key)) {
 		screen_scaling 	= value;
 		
-		if (screen_scaling==SCALE_NATIVE) GFX_setSharpness(SHARPNESS_SHARP);
-		else GFX_setSharpness(screen_sharpness);
-		
 		renderer.dst_p = 0;
 		i = FE_OPT_SCALING;
 	}
@@ -1449,19 +1405,9 @@ static void Config_syncFrontend(char* key, int value) {
 		renderer.dst_p = 0;
 		i = FE_OPT_EFFECT;
 	}
-	else if (exactMatch(key,config.frontend.options[FE_OPT_SHARPNESS].key)) {
-		screen_sharpness = value;
-		GFX_setSharpness(value);
-		renderer.dst_p = 0;
-		i = FE_OPT_SHARPNESS;
-	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_TEARING].key)) {
 		prevent_tearing = value;
 		i = FE_OPT_TEARING;
-	}
-	else if (exactMatch(key,config.frontend.options[FE_OPT_SYNC_REFERENCE].key)) {
-		sync_ref = value;
-		i = FE_OPT_SYNC_REFERENCE;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_THREAD].key)) {
 		int old_value = thread_video;
@@ -2312,14 +2258,7 @@ static void Input_init(const struct retro_input_descriptor *vars) {
 	input_initialized = 1;
 }
 
-/* 🎯 INTERFACCIA AUDIO EXPORT: Espone i dati del core senza duplicare la struct */
-double MINARCH_getCoreFps(void) {
-	return core.fps;
-}
-
-double MINARCH_getCoreSampleRate(void) {
-	return core.sample_rate;
-}
+int Core_updateAVInfo(struct retro_system_av_info ** av_infonew);
 
 static bool set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength) {
 	// TODO: handle other args? not sure I can
@@ -3578,6 +3517,10 @@ void Core_open(const char* core_path, const char* tag_name) {
 		//detected core pcsx_rearmed, at the moment it seems that duplicated frames can be omitted.
 		//can_dupe = true;
 	}
+	if (strcmp(core.name, "prboom") == 0) {
+		//detected core pcsx_rearmed, at the moment it seems that duplicated frames can be omitted.
+		//is_prboom = 1;
+	}
 	sprintf((char*)core.version, "%s (%s)", info.library_name, info.library_version);
 	strcpy((char*)core.tag, tag_name);
 	strcpy((char*)core.extensions, info.valid_extensions);
@@ -3707,8 +3650,8 @@ void Core_load(void) {
 	}
 
 	LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);fflush(stdout);
-	Core_updateAVInfo();
-	chooseSyncRef();
+	Core_updateAVInfo(NULL);
+	//chooseSyncRef();
 }
 void Core_reset(void) {
 	core.reset();
@@ -5799,7 +5742,7 @@ int main(int argc , char* argv[]) {
 				SND_resetAudio(core.sample_rate, core.fps);
 			}
 			resetFPSCounter();
-			chooseSyncRef();
+			//chooseSyncRef();
 		}
 		if ((!thread_video)&&(config_load_done)&&(!waitforthread)) {
 			core.run();
@@ -5830,7 +5773,7 @@ int main(int argc , char* argv[]) {
 			Menu_loop();
 			has_pending_opt_change = config.core.changed;
 			resetFPSCounter();
-			chooseSyncRef();
+			//chooseSyncRef();
 		}
 		
 		//trackFPS();

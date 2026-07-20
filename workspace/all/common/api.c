@@ -13,7 +13,6 @@
 #include <stdint.h>
 
 #include <msettings.h>
-#include <samplerate.h>
 #include "defines.h"
 #include "api.h"
 #include "utils.h"
@@ -213,8 +212,6 @@ static struct PWR_Context {
 	SDL_Surface* overlay;
 } pwr = {0};
 
-#define BATCH_SIZE_NOFIX 400
-
 typedef int (*SND_Resampler)(const SND_Frame frame);
 
 static struct SND_Context {
@@ -224,7 +221,6 @@ static struct SND_Context {
 	int sample_rate_in;
 	int sample_rate_out;
 	
-	int buffer_seconds;     // current_audio_buffer_size
 	SND_Frame* buffer;		// buf
 	size_t frame_count; 	// buf_len
 	
@@ -249,17 +245,9 @@ FALLBACK_IMPLEMENTATION int PLAT_lidChanged(int* state) { return 0; }
 ///////////////////////////////
 
 static int _;
-static double current_fps = SCREEN_FPS;
-static int fps_counter = 0;
-double currentfps = 0.0;
-double currentreqfps = 0.0;
 
-int currentbuffersize = 0;
-int currentsampleratein = 0;
-int currentsamplerateout = 0;
 int should_rotate = 0;
 int currentcputemp = 0;
-int use_nofix = 0;
 
 SDL_Surface* GFX_init(int mode) {
 	PLAT_initLid();
@@ -353,10 +341,6 @@ int GFX_hdmiChanged(void) {
 uint32_t frame_start = 0;
 
 static uint64_t per_frame_start = 0;
-#define FPS_BUFFER_SIZE 50
-// filling with  60.1 cause i'd rather underrun than overflow in start phase
-static double fps_buffer[FPS_BUFFER_SIZE] = {60.1};
-static int fps_buffer_index = 0;
 
 void GFX_startFrame(void) {
 	frame_start = MY_GetTicks();
@@ -366,7 +350,20 @@ void GFX_pan(void) {
 	PLAT_pan();
 }
 
-void GFX_flipNoFix(SDL_Surface* screen) {
+void GFX_sync(void) {
+	uint32_t frame_duration = MY_GetTicks() - frame_start;
+	if (gfx.vsync!=VSYNC_OFF) {
+		// this limiting condition helps SuperFX chip games
+		if (gfx.vsync==VSYNC_STRICT || frame_start==0 || frame_duration<FRAME_BUDGET) { // only wait if we're under frame budget
+			PLAT_vsync(FRAME_BUDGET-frame_duration);
+		}
+	}
+	else {
+		if (frame_duration<FRAME_BUDGET) usleep((FRAME_BUDGET-frame_duration) * 1000);
+	}
+}
+
+void GFX_flip(SDL_Surface* screen) {
 	int should_vsync = (gfx.vsync!=VSYNC_OFF && (gfx.vsync==VSYNC_STRICT || frame_start==0 || MY_GetTicks()-frame_start<FRAME_BUDGET));
 	PLAT_flip(screen, should_vsync);
 }
@@ -1136,11 +1133,6 @@ static int queue_pre_roll_complete = 0;
 
 static int16_t sinc_lut[SINC_PHASES][SINC_TAPS] __attribute__((aligned(16)));
 
-/* External minarch interface getters */
-extern double MINARCH_getCoreFps(void);
-
-extern uint32_t PLAT_getVsyncInterval(void);
-
 static void generate_sinc_table(void) {
 	for (int p = 0; p < SINC_PHASES; p++) {
 		double phase_offset = (double)p / (double)SINC_PHASES;
@@ -1172,8 +1164,6 @@ void SND_selectResampler(void) {
 		table_generated = 1;
 	}
 
-	double current_core_sample_rate = MINARCH_getCoreSampleRate();
-	snd.sample_rate_in = (int)current_core_sample_rate;
 	last_initialized_rate = snd.sample_rate_in; 
 
 	native_audio_phase = 0.0;
