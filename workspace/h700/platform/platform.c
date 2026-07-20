@@ -610,7 +610,7 @@ uint32_t get_hardware_irq_atomic(void) {
 }
 
 #define NUM_SAMPLES 20
-uint32_t calibrateVsync(void) {
+uint32_t measureAverageVsyncNs(void) {
     struct timespec t_start, t_end;
     uint32_t last_irq = get_hardware_irq_atomic();
     uint32_t current_irq_val = 0;
@@ -878,7 +878,10 @@ SDL_Surface* PLAT_initVideo(void) {
 	trigger_audio_server_route(on_hdmi);
 	switch_to_hdmi_output(on_hdmi); 
 	clean_layer();
-	vid.vsync_refresh=calibrateVsync(); //calibration of virtual vsync after hdmi/lcd out selected
+	vid.vsync_refresh = 16666700; //virtual 60Hz
+	if (is_minarch!=0){
+		vid.vsync_refresh=measureAverageVsyncNs(); //calibration of virtual vsync after hdmi/lcd out selected
+	}
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
 	DEVICE_PITCH = p;

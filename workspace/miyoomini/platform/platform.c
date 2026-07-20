@@ -386,7 +386,10 @@ SDL_Surface* PLAT_initVideo(void) {
     set_fbinfo();
 	get_fbinfo();
 	
-	vid.vsync_refresh = measureAverageVsyncNs();
+	vid.vsync_refresh = 16666700; //virtual 60Hz
+	if (is_minarch!=0){
+		vid.vsync_refresh=measureAverageVsyncNs(); //calibration of virtual vsync after hdmi/lcd out selected
+	} 
 
 	InitAssetRects();
 	LOG_info("DEVICE_WIDTH=%d, DEVICE_HEIGHT=%d\n", DEVICE_WIDTH, DEVICE_HEIGHT);fflush(stdout);

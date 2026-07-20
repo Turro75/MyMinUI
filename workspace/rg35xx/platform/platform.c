@@ -406,7 +406,10 @@ SDL_Surface* PLAT_initVideo(void) {
 	sinfo.enabled = 1;
 	sinfo.disp_id = 2;
 	if (ioctl(vid.fdfb, OWLFB_VSYNC_EVENT_EN, &sinfo)<0) LOG_error("VSYNC_EVENT_EN failed %s\n",strerror(errno));
-	vid.vsync_refresh = measureAverageVsyncNs();
+	vid.vsync_refresh = 16666700; //virtual 60Hz
+	if (is_minarch!=0){
+		vid.vsync_refresh=measureAverageVsyncNs(); //calibration of virtual vsync after hdmi/lcd out selected
+	} 
 	vid.vinfo.xoffset=0;
 	vid.vinfo.yoffset=0;
 	vid.page = 0;

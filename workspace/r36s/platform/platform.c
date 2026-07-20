@@ -887,7 +887,10 @@ SDL_Surface* PLAT_initVideo(void) {
 	}
 
 	InitAssetRects();
-	vid.vsync_refresh = measureAverageVsyncNs();
+	vid.vsync_refresh = 16666700; //virtual 60Hz
+	if (is_minarch!=0){
+		vid.vsync_refresh=measureAverageVsyncNs(); //calibration of virtual vsync after hdmi/lcd out selected
+	} 
 	vid.page = 0;
 	vid.renderingGame = 0;
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);

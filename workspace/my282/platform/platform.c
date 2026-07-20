@@ -450,7 +450,10 @@ SDL_Surface* PLAT_initVideo(void) {
 	vid.rotategame = 2;
 
 */	
-	vid.vsync_refresh = measureAverageVsyncNs();
+	vid.vsync_refresh = 16666700; //virtual 60Hz
+	if (is_minarch!=0){
+		vid.vsync_refresh=measureAverageVsyncNs(); //calibration of virtual vsync after hdmi/lcd out selected
+	} 
 	vid.vinfo.xres=GAME_WIDTH;
 	vid.vinfo.yres=GAME_HEIGHT;
 	vid.vinfo.xoffset=0;
