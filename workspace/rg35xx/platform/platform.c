@@ -16,6 +16,7 @@
 #include "platform.h"
 #include "api.h"
 #include "utils.h"
+#include <time.h>
 
 ////////////////////////////////
 //test for vsync
@@ -187,6 +188,7 @@ static struct VID_Context {
 	int page;
 	int numpages;
 	uint32_t offset;
+	uint64_t vsync_refresh;
 	SDL_Rect targetRect;
 	int renderingGame;
 } vid;
@@ -195,6 +197,46 @@ static struct VID_Context {
 void pan_display(int page){
 	vid.vinfo.yoffset = (vid.vinfo.yres_virtual/2) * page;
 	ioctl(vid.fdfb, FBIOPAN_DISPLAY, &vid.vinfo);
+}
+
+uint64_t measureAverageVsyncNs(void) {
+    struct timespec start_time, end_time;
+    uint32_t res = 0;
+    const int target_iterations = 20;
+
+	ioctl(vid.fdfb, OWLFB_WAITFORVSYNC, &res);
+    // 🎯 Step 1: Capture the baseline high-resolution absolute monotonic timestamp
+    if (clock_gettime(CLOCK_MONOTONIC, &start_time) != 0) {
+        return 0; // Kernel clock subsystem error fallback
+    }
+
+    // 🎯 Step 2: Loop exactly 20 times directly hitting the kernel ioctl layer
+    for (int i = 0; i < target_iterations; i++) {
+        /* 
+         * This ioctl call yields the thread context directly to the Allwinner hardware IRQ handler, 
+         * blocking execution cleanly until the LCD panel raster beam returns to line zero.
+         */
+        ioctl(vid.fdfb, OWLFB_WAITFORVSYNC, &res);
+    }
+
+    // 🎯 Step 3: Capture the terminal high-resolution absolute timestamp
+    if (clock_gettime(CLOCK_MONOTONIC, &end_time) != 0) {
+        return 0; 
+    }
+
+    // 🎯 Step 4: Calculate total elapsed delta time converted completely to nanoseconds
+    uint64_t total_elapsed_ns = (uint64_t)(end_time.tv_sec - start_time.tv_sec) * 1000000000ULL;
+    
+    if (end_time.tv_nsec >= start_time.tv_nsec) {
+        total_elapsed_ns += (uint64_t)(end_time.tv_nsec - start_time.tv_nsec);
+    } else {
+        total_elapsed_ns -= (uint64_t)(start_time.tv_nsec - end_time.tv_nsec);
+    }
+
+    // 🎯 Step 5: Extract the exact arithmetic mean duration per interval step pass
+    uint64_t average_vsync_ns = total_elapsed_ns / (uint64_t)target_iterations;
+
+    return average_vsync_ns;
 }
 
 void get_fbinfo(void){
@@ -364,7 +406,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	sinfo.enabled = 1;
 	sinfo.disp_id = 2;
 	if (ioctl(vid.fdfb, OWLFB_VSYNC_EVENT_EN, &sinfo)<0) LOG_error("VSYNC_EVENT_EN failed %s\n",strerror(errno));
-	
+	vid.vsync_refresh = measureAverageVsyncNs();
 	vid.vinfo.xoffset=0;
 	vid.vinfo.yoffset=0;
 	vid.page = 0;
@@ -677,4 +719,8 @@ int PLAT_getScreenRotation(int game) {
 
 SDL_Surface* PLAT_getScreenGame(void) {
 	return vid.screengame;
+}
+
+uint32_t PLAT_getVsyncInterval(void){
+	return vid.vsync_refresh;
 }

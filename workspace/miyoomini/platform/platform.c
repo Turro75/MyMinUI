@@ -204,6 +204,7 @@ uint64_t measureAverageVsyncNs(void) {
     uint32_t res = 0;
     const int target_iterations = 20;
 
+	ioctl(vid.fdfb, FBIO_WAITFORVSYNC, &res);
     // 🎯 Step 1: Capture the baseline high-resolution absolute monotonic timestamp
     if (clock_gettime(CLOCK_MONOTONIC, &start_time) != 0) {
         return 0; // Kernel clock subsystem error fallback
@@ -515,8 +516,10 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 void PLAT_pan(void) {
 	
 }
+int lastpage = 0;
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
-	vid.page ^= 1;
+	
+	if (sync==1) {vid.page ^= 1;} else {vid.page=lastpage;}
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
@@ -547,12 +550,13 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 	} else {
 		//the image must be rotated by 180° 
 		//pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset*sync, vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
-		neon_convert_565_to_8888(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset*sync, vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
+		neon_convert_565_to_8888(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
 		//FlipRotate000(vid.screengame, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
 		
 	}
 	vid.renderingGame = 0;	
-	pan_display(vid.page); 	
+	lastpage = vid.page;
+	if (sync==1) pan_display(vid.page); 	
 }
 
 // TODO:
@@ -783,7 +787,7 @@ void PLAT_setRumble(int effect, int strength) {
 }
 
 int PLAT_pickSampleRate(int requested, int max) {
-	return max;
+	return MAX(requested,max);
 }
 
 char* PLAT_getModel(void) {
