@@ -63,6 +63,8 @@ extern int DEVICE_PITCH;
 extern uint32_t frame_start;
 extern int TARGET_FPS;
 extern uint32_t cur_cpu_freq;
+extern int is_minarch;
+
 
 //////////////////////////////
 // TODO: these only seem to be used by a tmp.pak in trimui (model s)

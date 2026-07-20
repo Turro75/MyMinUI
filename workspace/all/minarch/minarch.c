@@ -2424,23 +2424,11 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 	case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO: { /* 32 */
 		struct retro_system_av_info *info = (struct retro_system_av_info *)data;
 		if (info) {
-			core.fps = info->timing.fps;
-			core.sample_rate = info->timing.sample_rate;
-
-			double frameperiod = 1000000.0 / core.fps;
-			uint32_t frame_period_usecs = (uint32_t)(frameperiod);
-
-			double a = info->geometry.aspect_ratio;
-			if (a <= 0) {
-				a = (double)info->geometry.base_width / info->geometry.base_height;
+			if (Core_updateAVInfo(&info)){
+				LOG_info("[INFO] [minarch] SET_SYSTEM_AV_INFO Applied -> fps: %f | sample_rate: %f\n", core.fps, core.sample_rate);
+				/* Notifica immediatamente api.c */
+				SND_resetAudio(core.sample_rate, core.fps);
 			}
-			core.aspect_ratio = a;
-
-			LOG_info("[INFO] [minarch] SET_SYSTEM_AV_INFO Applied -> fps: %f | sample_rate: %f\n", core.fps, core.sample_rate);
-
-			/* Notifica immediatamente api.c */
-			extern void SND_selectResampler(void);
-			SND_selectResampler();
 		}
 		break;
 	}
@@ -3139,29 +3127,6 @@ void video_refresh_callback_resize(void) {
 }
 
 
-static int use_core_fps = 1;
-
-static void chooseSyncRef(void) {
-#if defined(NO_VSYNC)
-	use_core_fps = 0;
-	use_nofix = 1;
-#else
-	switch (sync_ref) {
-		case SYNC_SRC_AUTO:   use_core_fps = (core.get_region() == RETRO_REGION_PAL); use_nofix = 0; break;
-		case SYNC_SRC_SCREEN:   use_core_fps = 0; use_nofix = 0; break;
-		case SYNC_SRC_CORE:     use_core_fps = 1; use_nofix = 0; break;
-		case SYNC_SRC_NOFIX:    use_core_fps = 0; use_nofix = 1; break;
-	}
-#endif
-	LOG_info("%s: sync_ref is set to %s, game region is %s, use core fps = %s, use_nofix = %s\n",
-		  __FUNCTION__,
-		  sync_ref_labels[sync_ref],
-		  core.get_region() == RETRO_REGION_NTSC ? "NTSC" : "PAL",
-		  use_core_fps ? "yes" : "no",
-		  use_nofix ? "yes" : "no"
-		  );
-}
-
 static uint32_t _now = 0;
 static uint32_t sec_start2 = 0;
 static uint32_t last_flip_time = 0;
@@ -3244,16 +3209,9 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	//gettimeofday(&now5,NULL);
 	//now_usec = (now5.tv_sec * 1000000 + now5.tv_usec) - (now3.tv_sec * 1000000 + now3.tv_usec);
 	
-	if (use_nofix) {
-		GFX_flipNoFix(screen);
-	} else {
-		if (use_core_fps) {
-			GFX_flip_fixed_rate(screen, core.fps);
-		}
-		else {
-		  	GFX_flip(screen);
-		}
-	}
+
+	GFX_flip(screen);
+
 //	gettimeofday(&now5,NULL);
 	GFX_pan();
 //	gettimeofday(&now6,NULL);
@@ -3271,6 +3229,11 @@ static uint32_t currentframenum = 0;
 static uint32_t firstframe = 1;
 static uint32_t last_callback_time = 0;
 static unsigned long long last_video_time = 0;
+
+extern uint64_t global_telemetry_start_perf;
+extern uint32_t global_audio_frame_counter;
+extern uint32_t global_video_frame_counter;
+
 static void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
 
 //	struct timeval now;
@@ -3278,7 +3241,19 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 //	unsigned long long now_usec = now.tv_sec * 1000000 + now.tv_usec;
 //	LOG_info("FRAME: %d (Video)             %05lluusec elasped, %lluusec absolute\n\n", currentframenum++,now_usec - last_video_time, now_usec);fflush(stdout); //LOG_info("Audio sample batch callback %d frames\n", frames);fflush(stdout);
 //	last_video_time = now_usec;
-
+	global_video_frame_counter++;
+	if (global_telemetry_start_perf == 0) {
+		global_telemetry_start_perf = SDL_GetPerformanceCounter();
+	}
+//	if (global_telemetry_start_perf > 0) {
+//		uint64_t current_perf = SDL_GetPerformanceCounter();
+//		uint64_t abs_time_us = ((current_perf - global_telemetry_start_perf) * 1000000ULL) / SDL_GetPerformanceFrequency();
+//	/* Stampiamo a log l'evento video nei primi 2 secondi di boot */
+	//	if (abs_time_us < 2000000ULL) {
+//		LOG_info("[CROSS-LOG][VIDEO] TS: %llu us | AudioSeq: #%u | VideoSeq: #%u | Res: %ux%u\n", 
+//			         abs_time_us, global_audio_frame_counter, global_video_frame_counter, width, height);
+	//	}
+//	}
 	int callback_time = MY_GetTicks();
 //	storage_audio_timing[_x][2] = callback_time;
 	//LOG_info("video_refresh_callback IN elapsed %lums width:%i height:%i pitch:%i ABS:%i\n", callback_time-last_callback_time ,width,height,pitch, callback_time);fflush(stdout);
@@ -3382,15 +3357,7 @@ static void audio_sample_callback(int16_t left, int16_t right) {
 #ifdef M21
 	if (!GetVolume()) {frame.left = 0; frame.right = 0; } 
 #endif
-	if (use_nofix) {
-		SND_batchSamplesNoFix(&frame, 1);
-	} else {
-		if (use_core_fps) {
-			SND_batchSamples_fixed_rate(&frame, 1);
-		} else {
-			SND_batchSamples(&frame, 1);
-		}
-	}
+	SND_batchSamples(&frame, 1);
 }
 
 struct timeval tv;
@@ -3416,15 +3383,7 @@ static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) {
 	if (!GetVolume()) { tmpdata = (SND_Frame*)mutedaudiodata; }
 #endif
 
-if (use_nofix) {
-	retvalue = SND_batchSamplesNoFix((const SND_Frame*)tmpdata, frames);
-} else {
-	if (use_core_fps) {
-		retvalue = SND_batchSamples_fixed_rate((const SND_Frame*)tmpdata, frames);
-	} else {
-		retvalue = SND_batchSamples((const SND_Frame*)tmpdata, frames);
-	}
-}
+	retvalue = SND_batchSamples((const SND_Frame*)tmpdata, frames);
 
 //	storage_audio_timing[_x++][1] = MY_GetTicks();
 //	if (_x == 60*60*10) _x=0;
@@ -3542,9 +3501,13 @@ void Core_open(const char* core_path, const char* tag_name) {
 
 }
 
-int Core_updateAVInfo(void) {
+int Core_updateAVInfo(struct retro_system_av_info ** av_infonew) {
 	struct retro_system_av_info av_info = {};
-	core.get_system_av_info(&av_info);
+	if (av_infonew != NULL){
+		memcpy(&av_info, &av_infonew, sizeof(struct retro_system_av_info));
+	} else {
+		core.get_system_av_info(&av_info);
+	}	
 
 	double a = av_info.geometry.aspect_ratio;
 	if (a<=0) a = (double)av_info.geometry.base_width / av_info.geometry.base_height;
@@ -3555,7 +3518,7 @@ int Core_updateAVInfo(void) {
 	core.sample_rate = av_info.timing.sample_rate;
 	core.aspect_ratio = a;
 
-	if (changed) LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);
+	if (changed) LOG_info("aspect_ratio: %f (%ix%i) fps: %f samplerate: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps, core.sample_rate);
 
 	return changed;
 }
@@ -5459,26 +5422,82 @@ static void trackFPS(void) {
 		// LOG_info("fps: %f cpu: %f\n", fps_double, cpu_double);
 	}
 }
+static double screen_fps = 60.0; // Fallback standard iniziale
+
+
+/* Cambiamo il tipo della variabile in uint64_t per ospitare i tick a 64-bit di SDL */
+static uint64_t start_frame_time = 0;
 
 static void limitFF(void) {
-	if (! fast_forward) return;
 	static uint64_t ff_frame_time = 0;
 	static uint64_t last_time = 0;
 	static int last_max_speed = -1;
-	if (last_max_speed!=max_ff_speed) {
+
+	/* 1. SEZIONE VELOCITÀ NOMINALE (GAMEPLAY REALE SENZA FAST-FORWARD) */
+	if (!fast_forward) {
+		double core_fps = (core.fps > 5.0 && core.fps <= 125.0) ? core.fps : 60.0;
+
+		/* Se il VSync è attivo, controlliamo se il core è in bolla con lo schermo */
+		if (prevent_tearing != 0) {
+			double fps_delta = fabs(screen_fps - core_fps);
+			if (fps_delta <= 0.15) {
+				last_time = 0;
+				return;
+			}
+		}
+
+		/* Calcoliamo quanti TICK hardware di SDL deve durare il fotogramma */
+		uint64_t perf_freq = SDL_GetPerformanceFrequency();
+		uint64_t target_frame_ticks = (uint64_t)((double)perf_freq / core_fps);
+
+		while (1) {
+			uint64_t now_time = SDL_GetPerformanceCounter();
+			uint64_t elapsed_ticks = now_time - start_frame_time;
+
+			/* Nel momento esatto in cui il tempo reale ha raggiunto la scadenza nativa, rompiamo il ciclo */
+			if (elapsed_ticks >= target_frame_ticks) {
+				break;
+			}
+
+			uint64_t ticks_remaining = target_frame_ticks - elapsed_ticks;
+			double us_remaining = ((double)ticks_remaining * 1000000.0) / (double)perf_freq;
+
+#ifndef MIYOOMINI
+			/* 🚀 REGIME QUAD-CORE ELEVATO (H700, R36S, A30): Freno progressivo vellutato */
+			if (us_remaining > 500.0) {
+				usleep(250);
+			} else {
+				usleep(0);
+			}
+#else
+			if (us_remaining > 8000.0) {
+				SDL_Delay(1); 
+			} else {
+				sched_yield(); 
+			}
+#endif
+		}
+
+		last_time = 0;
+		return;
+	}
+
+	/* 2. SEZIONE FAST-FORWARD ORIGINALE (Mantenuta identica ed intatta al 100%) */
+	if (last_max_speed != max_ff_speed) {
 		last_max_speed = max_ff_speed;
-		ff_frame_time = 1000000 / (core.fps * (max_ff_speed + 1));
+		double ff_fps = (core.fps > 0.0) ? core.fps : 60.0;
+		ff_frame_time = 1000000 / (ff_fps * (max_ff_speed + 1));
 	}
 	
 	uint64_t now = getMicroseconds();
 	if (fast_forward && max_ff_speed) {
 		if (last_time == 0) last_time = now;
 		int elapsed = now - last_time;
-		if (elapsed>0 && elapsed<0x80000) {
-			if (elapsed<ff_frame_time) {
+		if (elapsed > 0 && elapsed < 0x80000) {
+			if (elapsed < ff_frame_time) {
 				int delay = (ff_frame_time - elapsed) / 1000;
-				if (delay>0 && delay<17) { // don't allow a delay any greater than a frame
-					usleep(delay*1000);
+				if (delay > 0 && delay < 17) { 
+					usleep(delay * 1000);
 				}
 			}
 			last_time += ff_frame_time;
@@ -5500,6 +5519,16 @@ static void* flipThread(void *arg) {
 	LOG_info("flipThread moved to cpu %i with result %i\n", sched_getcpu(), moved);fflush(stdout);
 #endif
 	flipThreadStarted = 1;
+	//if (global_telemetry_start_perf > 0) {
+	//	uint64_t current_perf = SDL_GetPerformanceCounter();
+	//	uint64_t abs_time_us = ((current_perf - global_telemetry_start_perf) * 1000000ULL) / SDL_GetPerformanceFrequency();
+//
+	//	/* Stampiamo a log l'evento video nei primi 2 secondi di boot */
+	//	if (abs_time_us < 2000000ULL) {
+	//		LOG_info("[CROSS-LOG][FLIPThread Start here] TS: %llu us | AudioSeq: #%u | VideoSeq: #%u\n", 
+	//		         abs_time_us, global_audio_frame_counter, global_video_frame_counter);
+	//	}
+	//}
 	while (!quit) {
 		pthread_mutex_lock(&flip_mx);
 		run = should_run_flip;
@@ -5533,12 +5562,23 @@ static void* coreThread(void *arg) {
 	LOG_info("coreThread moved to cpu %i with result %i\n", sched_getcpu(),moved);fflush(stdout);
 #endif
 	coreThreadStarted = 1;
+	//if (global_telemetry_start_perf > 0) {
+	//	uint64_t current_perf = SDL_GetPerformanceCounter();
+	//	uint64_t abs_time_us = ((current_perf - global_telemetry_start_perf) * 1000000ULL) / SDL_GetPerformanceFrequency();
+//
+	//	/* Stampiamo a log l'evento video nei primi 2 secondi di boot */
+	//	if (abs_time_us < 2000000ULL) {
+	//		LOG_info("[CROSS-LOG][COREThread Start here] TS: %llu us | AudioSeq: #%u | VideoSeq: #%u\n", 
+	//		         abs_time_us, global_audio_frame_counter, global_video_frame_counter);
+	//	}
+	//}
 	while (!quit) {
 		int run = 0;
 		pthread_mutex_lock(&core_mx);
 		run = should_run_core;
 		pthread_mutex_unlock(&core_mx);
 		if (run) {
+			start_frame_time = SDL_GetPerformanceCounter();
 			core.run();
 			limitFF();
 			//trackFPS();
@@ -5555,10 +5595,14 @@ static void resetFPSCounter() {
 	fps_ticks = 0;
 	fps2_ticks = 0;
 }
-
+static uint32_t boot_pacing_counter = 0;
 
 int main(int argc , char* argv[]) {
 	LOG_info("MinArch Date:%s Commit:%s\n", BUILD_DATE, BUILD_HASH);
+	is_minarch = 1;
+	if (global_telemetry_start_perf == 0) {
+		global_telemetry_start_perf = MY_GetPerformanceCounter();
+	}
 	cpu_set_t maint;
 	// force a stack overflow to ensure asan is linked and actually working
 	// char tmp[2];
@@ -5646,7 +5690,12 @@ int main(int argc , char* argv[]) {
 	overclock = CPU_SPEED_NORMAL;
 	setOverclock(overclock); // default to normal
 	PAD_init();
-
+	uint32_t vsync_ns = PLAT_getVsyncInterval();
+	if (vsync_ns > 0) {
+		screen_fps = 1000000000.0 / (double)vsync_ns;
+	} else {
+		screen_fps = 60.0;
+	}
 	
 	VIB_init();
 	PWR_init();
@@ -5737,7 +5786,7 @@ int main(int argc , char* argv[]) {
 		GFX_startFrame();
 		if (has_pending_opt_change == 1) {
 			has_pending_opt_change = 0;
-			if (Core_updateAVInfo()) {
+			if (Core_updateAVInfo(NULL)) {
 				LOG_info("AV info changed, reset sound system");
 				SND_resetAudio(core.sample_rate, core.fps);
 			}
