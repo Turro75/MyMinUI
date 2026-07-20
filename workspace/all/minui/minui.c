@@ -1680,7 +1680,6 @@ int drawBoxart(SDL_Surface* _screen, char* bmpPath){
 	return 1;
 }
 
-
 /* end helper functions*/
 
 

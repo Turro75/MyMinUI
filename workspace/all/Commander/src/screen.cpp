@@ -51,6 +51,7 @@ void MaybeHeuristicAutoscale(const Config &cfg, int best_w, int best_h)
 
 } // namespace
 
+
 int Screen::init()
 {
     screen.surface = PLAT_initVideo();

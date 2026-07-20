@@ -21,8 +21,8 @@ all: readmes
 	cd overclock && make
 #	cd other/DinguxCommander && make
 #   cd other/squashfs && make
-	cp -L $(PREFIX)/lib/libsamplerate.so.0 $(REQUIRES_LIBSAMPLERATE)/
-early: $(REQUIRES_UNZIP60) $(REQUIRES_LIBSAMPLERATE) $(REQUIRES_NDS)
+#	cp -L $(PREFIX)/lib/libsamplerate.so.0 $(REQUIRES_LIBSAMPLERATE)/
+early: $(REQUIRES_UNZIP60)  $(REQUIRES_NDS)
 	mkdir -p other
 	cd $(REQUIRES_UNZIP60) && make -f unix/Makefile.trimuismart unzip
 #	cd $(REQUIRES_LIBSAMPLERATE) && make && make install

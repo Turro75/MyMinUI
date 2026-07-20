@@ -37,6 +37,7 @@ constexpr char kUsage[] =
 
 } // namespace
 
+
 int main(int argc, char *argv[])
 {
     std::string config_prelude_path;

@@ -15,7 +15,7 @@ INCDIR += -I../all/minarch/libretro-common/include/
 
 CC = $(CROSS_COMPILE)gcc
 CFLAGS   = $(MYARCH) -fomit-frame-pointer
-CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL)   $(MY_CFLAGS) -g
+CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL)   $(MY_CFLAGS) -O3 -s
 LDFLAGS	 = -ldl $(LIBS) -l$(SDL) -l$(SDL)_image -l$(SDL)_ttf -lpthread -lm -lz 
 LDFLAGS +=  -lmsettings $(MY_LDFLAGS)
 

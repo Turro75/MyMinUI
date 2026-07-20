@@ -386,7 +386,6 @@ struct VID_Context {
 	int width;  //current width 
 	int height; // current height
 	int pitch;  //sdl bpp
-	int sharpness; //let's see if it works
 	int rotate;
 	int rotategame;
 	int page;
@@ -610,7 +609,7 @@ uint32_t get_hardware_irq_atomic(void) {
 }
 
 #define NUM_SAMPLES 20
-uint32_t calibrateVsync(void) {
+uint32_t measureAverageVsyncNs(void) {
     struct timespec t_start, t_end;
     uint32_t last_irq = get_hardware_irq_atomic();
     uint32_t current_irq_val = 0;
@@ -878,7 +877,10 @@ SDL_Surface* PLAT_initVideo(void) {
 	trigger_audio_server_route(on_hdmi);
 	switch_to_hdmi_output(on_hdmi); 
 	clean_layer();
-	vid.vsync_refresh=calibrateVsync(); //calibration of virtual vsync after hdmi/lcd out selected
+	vid.vsync_refresh = 16666700; //virtual 60Hz
+	if (is_minarch!=0){
+		vid.vsync_refresh=measureAverageVsyncNs(); //calibration of virtual vsync after hdmi/lcd out selected
+	}
 	DEVICE_WIDTH = w;
 	DEVICE_HEIGHT = h;
 	DEVICE_PITCH = p;
@@ -934,7 +936,6 @@ SDL_Surface* PLAT_initVideo(void) {
 
     swap_buffers_init();
     //swap_buffers(vid.page);
-	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
 }
 
@@ -990,12 +991,6 @@ void PLAT_setVideoScaleClip(int x, int y, int width, int height) {
 }
 void PLAT_setNearestNeighbor(int enabled) {
 	// buh
-}
-void PLAT_setSharpness(int sharpness) {
-	// force effect to reload
-	// on scaling change
-	if (effect_type>=EFFECT_NONE) next_effect = effect_type;
-	effect_type = -1;
 }
 
 void PLAT_setEffect(int effect) {
@@ -1268,7 +1263,7 @@ void PLAT_setRumble(int effect, int strength) {
 }
 
 int PLAT_pickSampleRate(int requested, int max) {
-	return MIN(requested, max);
+	return MAX(requested, max);
 }
 
 char* PLAT_getModel(void) {
@@ -1351,4 +1346,8 @@ int PLAT_getScreenRotation(int game) {
 
 SDL_Surface* PLAT_getScreenGame(void) {
 	return vid.screengame;
+}
+
+uint32_t PLAT_getVsyncInterval(void){
+	return vid.vsync_refresh;
 }
