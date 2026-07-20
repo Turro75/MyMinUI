@@ -516,7 +516,6 @@ static struct VID_Context {
 	int width;  //current width 
 	int height; // current height
 	int pitch;  //sdl bpp
-	int sharpness; //let's see if it works
 	int rotate;
 	int rotategame;
 	int page;
@@ -902,7 +901,6 @@ SDL_Surface* PLAT_initVideo(void) {
 	LOG_info("vid.screen2: %ix%i\n", vid.screen2->w, vid.screen2->h);fflush(stdout);
 	LOG_info("vid.screen3: %ix%i\n", vid.screen3->w, vid.screen3->h);fflush(stdout);
 
-	vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
 }
 
@@ -969,12 +967,6 @@ void PLAT_setVideoScaleClip(int x, int y, int width, int height) {
 }
 void PLAT_setNearestNeighbor(int enabled) {
 	// buh
-}
-void PLAT_setSharpness(int sharpness) {
-	// force effect to reload
-	// on scaling change
-	if (effect_type>=EFFECT_NONE) next_effect = effect_type;
-	effect_type = -1;
 }
 
 void PLAT_setEffect(int effect) {
