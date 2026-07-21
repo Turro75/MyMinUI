@@ -51,6 +51,8 @@
 #define RAW_PLUS	 115  //event3
 #define RAW_MINUS	 114  //event3
 #define RAW_POWER	116  //event0
+#define RAW_HATY	17 //rg351p dpad as hat
+#define RAW_HATX	16 //rg351p dpad as hat
 
 // from <linux/input.h> which has BTN_ constants that conflict with platform.h
 struct input_event {
@@ -428,15 +430,36 @@ void PLAT_pollInput(void) {
 					if (code==5) {  //right stick vertical analog (-1800 up / +1800 down)
 						pad.raxis.y =  map(value ,0,4096,-0x7fff,0x7fff);
 					}	
-					if (code==16) {  //rg351p dpad left = -1, right = 1
-						if (value == 1) { pressed = 1 ; btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; prev_button_pressed_horiz = BTN_DPAD_RIGHT;}
-						if (value == -1) { pressed = 1 ; btn = BTN_DPAD_LEFT; id = BTN_ID_DPAD_LEFT; prev_button_pressed_horiz = BTN_DPAD_LEFT;}
-						if (value == 0) { pressed = 0; btn = prev_button_pressed_horiz; }						
-					}
-					if (code==17) {  //rg351p dpad up = -1, down = 1
-						if (value == 1) { pressed = 1; btn = BTN_DPAD_DOWN; id = BTN_ID_DPAD_DOWN; prev_button_pressed_vert = BTN_DPAD_DOWN; }
-						if (value == -1) { pressed = 1; btn = BTN_DPAD_UP; id = BTN_ID_DPAD_UP; prev_button_pressed_vert = BTN_DPAD_UP; }
-						if (value == 0) { pressed = 0; btn = prev_button_pressed_vert; }
+					if (code==RAW_HATY || code==RAW_HATX) {
+						if (value>1) continue; // ignore repeats
+				
+						int hats[4] = {-1,-1,-1,-1}; // -1=no change,1=pressed,0=released
+						if (code==RAW_HATY) {
+							hats[0] = value==-1; // up
+							hats[1] = value==1; // down
+						}
+						else if (code==RAW_HATX) { // left/right
+							hats[2] = value==-1; // left
+							hats[3] = value==1; // right
+						}
+					
+						for (id=0; id<4; id++) {
+							int state = hats[id];
+							btn = 1 << id;
+							if (state==0) {
+								pad.is_pressed		&= ~btn; // unset
+								pad.just_repeated	&= ~btn; // unset
+								pad.just_released	|= btn; // set
+							}
+							else if (state==1 && (pad.is_pressed & btn)==BTN_NONE) {
+								pad.just_pressed	|= btn; // set
+								pad.just_repeated	|= btn; // set
+								pad.is_pressed		|= btn; // set
+								pad.repeat_at[id]	= tick + PAD_REPEAT_DELAY;
+							}
+						}
+						
+						btn = BTN_NONE; // already handled, force continue
 					}
 				} else {
 					//other devices
