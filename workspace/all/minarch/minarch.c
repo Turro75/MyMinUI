@@ -1128,7 +1128,8 @@ static ButtonMapping button_label_mapping[] = { // used to lookup the retro_id a
 	{"R3",		RETRO_DEVICE_ID_JOYPAD_R3,		BTN_ID_R3},
 	{NULL,0,0}
 };
-static ButtonMapping core_button_mapping[RETRO_BUTTON_COUNT+1] = {0};
+#define MAX_CORE_BUTTON_MAPPING 32
+static ButtonMapping core_button_mapping[MAX_CORE_BUTTON_MAPPING] = {0};
 
 static const char* device_button_names[LOCAL_BUTTON_COUNT] = {
 	[BTN_ID_DPAD_UP]	= "UP",
@@ -1500,6 +1501,10 @@ static void Config_init(void) {
 		LOG_info("\tbind %s (%s) %i:%i\n", button_name, button_id, local_id, retro_id);
 		
 		// TODO: test this without a final line return
+		if (i >= MAX_CORE_BUTTON_MAPPING) {
+			LOG_info("\t[WARNING] core_button_mapping array overflow averted for %s! Skipping.\n", button_name);
+			continue;
+		}
 		tmp2 = calloc(strlen(button_name)+1, sizeof(char));
 		strcpy(tmp2, button_name);
 		ButtonMapping* button = &core_button_mapping[i++];
