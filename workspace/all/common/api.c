@@ -189,12 +189,7 @@ static uint32_t asset_rgbs[ASSET_COLORS];
 GFX_Fonts font;
 
 ///////////////////////////////
-static int qualityLevels[] = {
-	3,
-	4,
-	2,
-	1
-};
+
 static struct PWR_Context {
 	int initialized;
 	
@@ -386,10 +381,7 @@ uint64_t MY_GetTicks(void) {
 }
 double screen_fps = SCREEN_FPS; //default to 60.0;
 // if a fake vsycn delay is really needed 
-void GFX_delay(void) {
-	uint32_t frame_duration = MY_GetTicks() - frame_start;
-	if (frame_duration<((1/screen_fps) * 1000)) usleep((((1/screen_fps) * 1000)-frame_duration) *1000);
-}
+
 
 int GFX_truncateText(TTF_Font* font, const char* in_name, char* out_name, int max_width, int padding) {
 	int text_width;
@@ -1031,7 +1023,7 @@ size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count) {
 	if (!frames || frame_count == 0) return 0;
 
 	if (absolute_start_perf_counter == 0 || snd.sample_rate_in != last_initialized_rate || snd.sample_rate_in == 0) {
-		absolute_start_perf_counter = SDL_GetPerformanceCounter();
+		absolute_start_perf_counter = MY_GetPerformanceCounter();
 		SND_selectResampler();
 	}
 

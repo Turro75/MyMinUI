@@ -3243,7 +3243,7 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 //	last_video_time = now_usec;
 	global_video_frame_counter++;
 	if (global_telemetry_start_perf == 0) {
-		global_telemetry_start_perf = SDL_GetPerformanceCounter();
+		global_telemetry_start_perf = MY_GetPerformanceCounter();
 	}
 //	if (global_telemetry_start_perf > 0) {
 //		uint64_t current_perf = SDL_GetPerformanceCounter();
@@ -5451,7 +5451,7 @@ static void limitFF(void) {
 		uint64_t target_frame_ticks = (uint64_t)((double)perf_freq / core_fps);
 
 		while (1) {
-			uint64_t now_time = SDL_GetPerformanceCounter();
+			uint64_t now_time = MY_GetPerformanceCounter();
 			uint64_t elapsed_ticks = now_time - start_frame_time;
 
 			/* Nel momento esatto in cui il tempo reale ha raggiunto la scadenza nativa, rompiamo il ciclo */
@@ -5578,7 +5578,7 @@ static void* coreThread(void *arg) {
 		run = should_run_core;
 		pthread_mutex_unlock(&core_mx);
 		if (run) {
-			start_frame_time = SDL_GetPerformanceCounter();
+			start_frame_time = MY_GetPerformanceCounter();
 			core.run();
 			limitFF();
 			//trackFPS();
