@@ -49,7 +49,10 @@ struct disp_layer_config2_gdb {
 
 
 
-
+#define RAW_UP		103
+#define RAW_DOWN	108
+#define RAW_LEFT	105
+#define RAW_RIGHT	106
 #define RAW_A		304   //event1
 #define RAW_B		305  //event1
 #define RAW_X		307  //event1
@@ -70,7 +73,8 @@ struct disp_layer_config2_gdb {
 #define RAW_LSX		2 //event1
 #define RAW_RSY		5   //event1
 #define RAW_RSX		4  //event1
-
+#define RAW_HATY	17
+#define RAW_HATX	16
 //lid 110? 111? su event0?
 
 // from <linux/input.h> which has BTN_ constants that conflict with platform.h
@@ -281,7 +285,11 @@ void PLAT_pollInput(void) {
 				if (value>1) continue; // ignore repeats
 			
 				pressed = value;
-				if 		(code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
+					 if (code==RAW_UP) 		{ btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
+		 		else if (code==RAW_DOWN)	{ btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
+				else if (code==RAW_LEFT)	{ btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
+				else if (code==RAW_RIGHT)	{ btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; }
+				else if	(code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
 			    else if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
 				else if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
 				else if (code==RAW_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
@@ -301,15 +309,36 @@ void PLAT_pollInput(void) {
 				else if (code==RAW_POWER)	{ btn = BTN_POWER; 		id = BTN_ID_POWER; }
 			}
 			if (type==EV_ABS) {  // (range -1800 0 +1800)
-				if (code==16) {  //same as rg351p dpad left = -1, right = 1
-					if (value == 1) { pressed = 1 ; btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; prev_button_pressed_horiz = BTN_DPAD_RIGHT;}
-					if (value == -1) { pressed = 1 ; btn = BTN_DPAD_LEFT; id = BTN_ID_DPAD_LEFT; prev_button_pressed_horiz = BTN_DPAD_LEFT;}
-					if (value == 0) { pressed = 0; btn = prev_button_pressed_horiz; }						
-				}
-				else if (code==17) {  // same as rg351p dpad up = -1, down = 1
-					if (value == 1) { pressed = 1; btn = BTN_DPAD_DOWN; id = BTN_ID_DPAD_DOWN; prev_button_pressed_vert = BTN_DPAD_DOWN; }
-					if (value == -1) { pressed = 1; btn = BTN_DPAD_UP; id = BTN_ID_DPAD_UP; prev_button_pressed_vert = BTN_DPAD_UP; }
-					if (value == 0) { pressed = 0; btn = prev_button_pressed_vert; }
+				if (code==RAW_HATY || code==RAW_HATX) {
+					if (value>1) continue; // ignore repeats
+			
+					int hats[4] = {-1,-1,-1,-1}; // -1=no change,1=pressed,0=released
+					if (code==RAW_HATY) {
+						hats[0] = value==-1; // up
+						hats[1] = value==1; // down
+					}
+					else if (code==RAW_HATX) { // left/right
+						hats[2] = value==-1; // left
+						hats[3] = value==1; // right
+					}
+				
+					for (id=0; id<4; id++) {
+						int state = hats[id];
+						btn = 1 << id;
+						if (state==0) {
+							pad.is_pressed		&= ~btn; // unset
+							pad.just_repeated	&= ~btn; // unset
+							pad.just_released	|= btn; // set
+						}
+						else if (state==1 && (pad.is_pressed & btn)==BTN_NONE) {
+							pad.just_pressed	|= btn; // set
+							pad.just_repeated	|= btn; // set
+							pad.is_pressed		|= btn; // set
+							pad.repeat_at[id]	= tick + PAD_REPEAT_DELAY;
+						}
+					}
+					
+					btn = BTN_NONE; // already handled, force continue
 				}
     			else if (code==RAW_LSX) { pad.laxis.x =  map(value ,0,4096,0x7fff,-0x7fff);
 					if (pad.map_leftstick_to_dpad)	PAD_setAnalog(BTN_ID_DPAD_LEFT, BTN_ID_DPAD_RIGHT, pad.laxis.x, tick+PAD_REPEAT_DELAY); } 
