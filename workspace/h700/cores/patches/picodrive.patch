@@ -16,7 +16,7 @@ index 0d1dc08f81a11cef6b3b7238367b1ff27fcf1ead..7b3f977da6549c435b09b165f5a7589d
 +   LIBM :=
 +   fpic := -fPIC -flto
 +   CFLAGS += $(MYARCH)
-+   CFLAGS += -fomit-frame-pointer -ffast-math -D__GCW0__
++   CFLAGS += -fomit-frame-pointer -ffast-math -fno-finite-math-only -D__GCW0__
 +   DONT_COMPILE_IN_ZLIB = 0
 +   HAVE_ARMv6 = 0
 +   LOW_MEMORY = 0
