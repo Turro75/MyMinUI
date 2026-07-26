@@ -977,22 +977,11 @@ void SND_selectResampler(void) {
 	uint32_t out_rate = (snd.sample_rate_out > 0) ? snd.sample_rate_out : 48000;
 	double base_step = (double)snd.sample_rate_in / (double)out_rate;
 
-	if (0) {
-		fixed_sample_step = 44100.0 / (double)out_rate;
+	double nominal_core_fps = (snd.frame_rate > 5.0 && snd.frame_rate <= 125.0) ? snd.frame_rate : 60.0;
+	if (snd.sample_rate_in <= 48000 && nominal_core_fps > 58.0 && fabs(screen_fps - nominal_core_fps) > 0.05) {
+		fixed_sample_step = base_step * (screen_fps / nominal_core_fps);
 	} else {
-		/* 🎯 THE PERFECT LOCAL RATIO BALANCE (RISOLTO L'ERRORE DI COMPILAZIONE):
-		 * Sfruttiamo la variabile snd.frame_rate già salvata in memoria RAM locale da SND_init.
-		 * Eliminiamo ogni dipendenza da core.fps isolando api.c.
-		 * Moltiplicando base_step per (screen_fps / nominal_core_fps), il SINC NEON 
-		 * spalma i 7 campioni mancanti del NES in modo vellutato lungo tutto il frame.
-		 */
-		double nominal_core_fps = (snd.frame_rate > 5.0 && snd.frame_rate <= 125.0) ? snd.frame_rate : 60.0;
-
-		if (nominal_core_fps > 58.0 && fabs(screen_fps - nominal_core_fps) > 0.05) {
-			fixed_sample_step = base_step * (screen_fps / nominal_core_fps);
-		} else {
-			fixed_sample_step = base_step;
-		}
+		fixed_sample_step = base_step; /* mGBA a 65kHz ora usa il passo nativo e continuo privo di soffio */
 	}
 }
 
@@ -1029,8 +1018,10 @@ size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count) {
 
 #if defined (USE_SDL2)
 	uint32_t queued_bytes = SDL_GetQueuedAudioSize(audioDeviceID);
+#define GET_SDL_QUEUE_SIZE() SDL_GetQueuedAudioSize(audioDeviceID)
 #else
 	uint32_t queued_bytes = 4608; 
+#define GET_SDL_QUEUE_SIZE() 4608
 #endif
 	double current_latency_ms = (double)queued_bytes / 192.0;
 

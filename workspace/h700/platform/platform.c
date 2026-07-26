@@ -1292,7 +1292,7 @@ void PLAT_setRumble(int effect, int strength) {
 }
 
 int PLAT_pickSampleRate(int requested, int max) {
-	return MAX(requested, max);
+	return max;
 }
 
 char* PLAT_getModel(void) {
