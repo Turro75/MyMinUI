@@ -83,7 +83,6 @@ static int screen_scaling = SCALE_ASPECT;
 //static int screen_max_scale = 5; //6x
 static int screen_effect = EFFECT_NONE;
 static int prevent_tearing = 1; // lenient
-static int show_debug = 0;
 static int max_ff_speed = 3; // 4x
 static int fast_forward = 0;
 static int has_custom_controllers = 0;
@@ -3201,7 +3200,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		GFX_clearAll();	
 	}
 //	gettimeofday(&now2,NULL);
-	screengame = PLAT_getScreenGame();
+//	screengame = PLAT_getScreenGame();
 	GFX_blitRenderer(&renderer);
 	//unsigned long long now_usec = 0;
 	//unsigned long long now_usec2 = 0;
@@ -5413,7 +5412,7 @@ static void Menu_loop(void) {
 		GFX_setVsync(prevent_tearing);
 		if (!HAS_POWER_BUTTON) PWR_disableSleep();
 
-
+		screengame = PLAT_getScreenGame();
 		if (thread_video) {
 			LOG_info("Exiting menu, returning to video_thread\n");fflush(stdout);
 			render = 0;

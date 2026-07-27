@@ -493,6 +493,7 @@ void PLAT_vsync(int remaining) {
 
 //uint32_t src_w, src_h;
 //struct timespec start_time, mid_time, end_time;
+int quick = 0;
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	
 //    src_w=renderer->src_surface->w;
@@ -517,12 +518,19 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 		if (current_scaler == SCALER_NEAREST) {
 			scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
 		} else {
+			vid.page ^= !show_debug;
+			uint32_t * target = vid.fbmmap+vid.page*vid.offset;
+			quick = 1;
+			if (show_debug) {
+				target = vid.screengame->pixels;
+				quick = 0;
+			}
 			scale_mat_sharp_bilinear_565_to_8888_neon(
 				(const uint16_t*)renderer->src_surface->pixels, 
 				renderer->src_surface->w, 
 				renderer->src_surface->h, 
 				renderer->src_surface->pitch,
-				vid.screengame->pixels, // Destinazione finale a 32-bit
+				target, // Destinazione finale a 32-bit
 				vid.screengame->w, 
 				vid.screengame->h, 
 				vid.screengame->pitch, // NOTA: Il pitch di destinazione raddoppia perché ARGB8888 usa 4 byte per pixel
@@ -548,9 +556,9 @@ void PLAT_pan(void) {
 }
 int lastpage = 0;
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
-	
+	vid.page ^= (1 & !quick);
 	if (!vid.renderingGame) {
-        vid.page = lastpage ^ sync;
+    //    vid.page = lastpage ^ sync;
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.width;
@@ -584,7 +592,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			if ((current_scaler == SCALER_NEAREST)||(effect_type != EFFECT_NONE)){
 				neon_convert_565_to_8888(vid.screengame->w,vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
 			} else {
-				neon_copy_argb8888(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->pitch, vid.screengame->pixels, vid.screengame->pitch);
+				if (!quick) neon_copy_argb8888(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->pitch, vid.screengame->pixels, vid.screengame->pitch);
 			//	memcpy(vid.fbmmap+vid.page*vid.offset,vid.screengame->pixels,vid.screengame->pitch*vid.screengame->w);
 		}
 		
@@ -607,10 +615,11 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 	//FlipRotate000(vid.screengame, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
 		
 	}
-	vid.renderingGame = 0;	
+	vid.renderingGame = 0;
+	quick = 0;	
 	pan_display(vid.page);
-    vid.page^=sync;   	
-	lastpage = vid.page;	
+   // vid.page^=sync;   	
+	//lastpage = vid.page;	
 }
 
 // TODO:

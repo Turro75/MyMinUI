@@ -95,6 +95,7 @@ extern uint32_t RGB_GRAY;
 extern uint32_t RGB_DARK_GRAY;
 
 extern int PWR_isSleeping;
+extern int show_debug;
 #if defined(USE_SDL2)
 extern SDL_AudioDeviceID audioDeviceID;
 #else
@@ -565,6 +566,10 @@ void neon_copy_abgr8888(int width, int height,
                       uint32_t *dst, int dst_pitch, 
                       const uint32_t *src, int src_pitch);
 int scale_mat_sharp_bilinear_565_to_8888_neon(
+    const uint16_t *src_ptr, int src_w, int src_h, int src_pitch,
+    uint32_t *dst_ptr, int dst_w, int dst_h, int dst_pitch,
+    int dst_x, int dst_y, int out_w, int out_h);
+int scale_mat_sharp_bilinear_565_to_8888_neon_abgr(
     const uint16_t *src_ptr, int src_w, int src_h, int src_pitch,
     uint32_t *dst_ptr, int dst_w, int dst_h, int dst_pitch,
     int dst_x, int dst_y, int out_w, int out_h);
