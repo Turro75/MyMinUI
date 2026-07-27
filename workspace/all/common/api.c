@@ -906,6 +906,7 @@ void GFX_blitText(TTF_Font* font, char* str, int leading, SDL_Color color, SDL_S
 uint64_t global_telemetry_start_perf = 0;
 uint32_t global_audio_frame_counter = 0;
 uint32_t global_video_frame_counter = 0;
+double core_requested_latency_ms = 0.0; 
 SDL_AudioSpec spec_in;
 SDL_AudioSpec spec_out;
 double sample_rate_bak = 0;
@@ -1026,7 +1027,18 @@ size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count) {
 	double current_latency_ms = (double)queued_bytes / 192.0;
 
 	double core_target_fps = (snd.frame_rate > 5.0 && snd.frame_rate <= 125.0) ? snd.frame_rate : 60.0;
-	double target_latency_ms = 1440.0 / core_target_fps;
+	double target_latency_ms;
+
+	/* 🎯 DYNAMIC LATENCY COUPLER:
+	 * Se il core Libretro ci ha comunicato attivamente la sua latenza minima ottimale,
+	 * usiamo il suo valore spaccato al millesimo. Altrimenti, cadiamo sul nostro 
+	 * collaudato calcolo proporzionale inverso O(1) di sicurezza (24ms / 28.8ms).
+	 */
+	if (core_requested_latency_ms > 0.0) {
+		target_latency_ms = core_requested_latency_ms;
+	} else {
+		target_latency_ms = 1440.0 / core_target_fps;
+	}
 
 	if (queue_pre_roll_complete && current_latency_ms < 16.0 && snd.sample_rate_in > 48000) {
 		queue_pre_roll_complete = 0;
@@ -1256,6 +1268,7 @@ void SND_quit(void) { // plat_sound_finish
 }
 
 void SND_resetAudio(double sample_rate, double frame_rate) {
+	if (!snd.initialized) return;
 	LOG_info("SND_resetAudio\n");
 	SND_quit();
 	SND_init(sample_rate, frame_rate);

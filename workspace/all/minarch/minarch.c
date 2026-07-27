@@ -2264,6 +2264,7 @@ static void Input_init(const struct retro_input_descriptor *vars) {
 }
 
 int Core_updateAVInfo(struct retro_system_av_info ** av_infonew);
+struct retro_audio_buffer_status_callback audio_buffer_status; /* ptr alignment */
 
 static bool set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength) {
 	// TODO: handle other args? not sure I can
@@ -2524,31 +2525,29 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 	// TODO: used by mgba, (but only during frameskip?)
 	
 	case RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK: { /* 62 */
-	 	LOG_info("RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK does nothing\n");
-	// 	const struct retro_audio_buffer_status_callback *cb = (const struct retro_audio_buffer_status_callback *)data;
-	// 	if (cb) {
-	// 		LOG_info("has audo_buffer_status callback\n");
-	// 		core.audio_buffer_status = cb->callback;
-	// 	} else {
-	// 		LOG_info("no audo_buffer_status callback\n");
-	// 		core.audio_buffer_status = NULL;
-	// 	}
+		const struct retro_audio_buffer_status_callback *info =
+            (const struct retro_audio_buffer_status_callback*)data;
+        LOG_info("[LIBRETRO-ENV] SET_AUDIO_BUFFER_STATUS_CALLBACK trying to set on %p\n",data);
+        if (info) {
+            audio_buffer_status.callback = info->callback;
+            LOG_info("[LIBRETRO-ENV] SET_AUDIO_BUFFER_STATUS_CALLBACK saved successfully.\n");
+			return true;
+		} else {
+            audio_buffer_status.callback = NULL;
+        }
+
 	 	break;
 	}
 	// TODO: used by mgba, (but only during frameskip?)
 	case RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY: { /* 63 */
-	 	LOG_info("RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY does nothing\n");
-	//
-	// 	const unsigned *latency_ms = (const unsigned *)data;
-	// 	if (latency_ms) {
-	// 		unsigned frames = *latency_ms * core.fps / 1000;
-	// 		if (frames < 30)
-	// 			// audio_buffer_size_override = frames;
-	// 			LOG_info("audio_buffer_size_override = %i (unused?)\n", frames);
-	// 		else
-	// 			LOG_info("Audio buffer change out of range (%d), ignored\n", frames);
-	// 	}
-	 	break;
+	 	//LOG_info("RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY does nothing\n");
+		if (data){
+            const unsigned latency_ms = *(const unsigned*)data;
+			core_requested_latency_ms = (double)(latency_ms);
+			LOG_info("RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY Core requested a minimum audio latency of: %.1f ms\n", core_requested_latency_ms);
+			return true;
+		}      	
+		break;
 	 }
 
 	// TODO: RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE 64

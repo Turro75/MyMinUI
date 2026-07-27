@@ -100,6 +100,8 @@ extern int audioDeviceID;
 #endif
 extern int FIXED_SCALE;
 
+extern double core_requested_latency_ms;
+
 enum {
 	ASSET_WHITE_PILL,
 	ASSET_BLACK_PILL,
