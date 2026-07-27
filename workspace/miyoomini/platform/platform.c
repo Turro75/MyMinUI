@@ -310,6 +310,8 @@ void set_fbinfo(void){
 }
 
 int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max,cpufreq_sleep;
+SDL_Surface *screengame_32;
+SDL_Surface *screengame_16;
 
 SDL_Surface* PLAT_initVideo(void) {
 
@@ -413,7 +415,9 @@ SDL_Surface* PLAT_initVideo(void) {
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
 	vid.screen3 = SDL_CreateRGBSurface(0, vid.width, vid.height, FIXED_DEPTH, RGBA_MASK_565);
-	vid.screengame = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
+	screengame_32 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH*2,RGBA_MASK_8888); 
+	screengame_16 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH,RGBA_MASK_565); 
+	PLAT_getScreenGame();
 	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
 
     vid.fbmmap = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
@@ -426,6 +430,8 @@ void PLAT_quitVideo(void) {
 	SDL_FreeSurface(vid.screen2);
 	SDL_FreeSurface(vid.screen3);
 	SDL_FreeSurface(vid.screengame);
+    SDL_FreeSurface(screengame_16);
+    SDL_FreeSurface(screengame_32);
 	vid.vinfo.xres = FIXED_WIDTH;
 	vid.vinfo.yres = FIXED_HEIGHT;
 	set_fbinfo();
@@ -485,7 +491,14 @@ void PLAT_vsync(int remaining) {
 	}
 }
 
+//uint32_t src_w, src_h;
+//struct timespec start_time, mid_time, end_time;
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
+	
+//    src_w=renderer->src_surface->w;
+//    src_h=renderer->src_surface->h;
+//   clock_gettime(CLOCK_MONOTONIC, &start_time);
+
 	if (effect_type!=next_effect) {
 		effect_type = next_effect;
 	}
@@ -498,7 +511,29 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 		scale1x_grid(vid.screen2->pixels, vid.screengame->pixels, vid.screen2->w, vid.screen2->h, vid.screen2->pitch, vid.screengame->w, vid.screengame->h, vid.screengame->pitch);
 	}
 	else {
-		scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
+//	scale_mat_fast_bilinear_rgb565_neon(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
+//	scale_mat_sharp_bilinear_rgb565_neon_ultra(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
+
+		if (current_scaler == SCALER_NEAREST) {
+			scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
+		} else {
+			scale_mat_sharp_bilinear_565_to_8888_neon(
+				(const uint16_t*)renderer->src_surface->pixels, 
+				renderer->src_surface->w, 
+				renderer->src_surface->h, 
+				renderer->src_surface->pitch,
+				vid.screengame->pixels, // Destinazione finale a 32-bit
+				vid.screengame->w, 
+				vid.screengame->h, 
+				vid.screengame->pitch, // NOTA: Il pitch di destinazione raddoppia perché ARGB8888 usa 4 byte per pixel
+				renderer->dst_x, 
+				renderer->dst_y,
+				renderer->dst_w, 
+				renderer->dst_h
+			);
+		}
+
+//	scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
 		//SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
 	}
 	vid.targetRect.x = renderer->dst_x;
@@ -514,8 +549,8 @@ void PLAT_pan(void) {
 int lastpage = 0;
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 	
-	if (sync==1) {vid.page ^= 1;} else {vid.page=lastpage;}
 	if (!vid.renderingGame) {
+        vid.page = lastpage ^ sync;
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
 		vid.targetRect.w = vid.width;
@@ -545,13 +580,37 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 	} else {
 		//the image must be rotated by 180° 
 		//pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset*sync, vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
-		neon_convert_565_to_8888(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
-		//FlipRotate000(vid.screengame, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
+	//      clock_gettime(CLOCK_MONOTONIC, &mid_time);
+			if ((current_scaler == SCALER_NEAREST)||(effect_type != EFFECT_NONE)){
+				neon_convert_565_to_8888(vid.screengame->w,vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
+			} else {
+				neon_copy_argb8888(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->pitch, vid.screengame->pixels, vid.screengame->pitch);
+			//	memcpy(vid.fbmmap+vid.page*vid.offset,vid.screengame->pixels,vid.screengame->pitch*vid.screengame->w);
+		}
+		
+	//	clock_gettime(CLOCK_MONOTONIC, &end_time);
+	//	uint64_t scaler_elapsed_ns = (uint64_t)(mid_time.tv_sec - start_time.tv_sec) * 1000000000ULL;
+	//	uint64_t copy_elapsed_ns = (uint64_t)(end_time.tv_sec - mid_time.tv_sec) * 1000000000ULL;
+	//    if (mid_time.tv_nsec >= start_time.tv_nsec) {
+	//        scaler_elapsed_ns += (uint64_t)(mid_time.tv_nsec - start_time.tv_nsec);
+	//    } else {
+	//        scaler_elapsed_ns -= (uint64_t)(start_time.tv_nsec - mid_time.tv_nsec);
+	//    }
+	//	if (end_time.tv_nsec >= mid_time.tv_nsec) {
+	//        copy_elapsed_ns += (uint64_t)(end_time.tv_nsec - mid_time.tv_nsec);
+	//    } else {
+	//        copy_elapsed_ns -= (uint64_t)(mid_time.tv_nsec - end_time.tv_nsec);
+	//    }
+	//	LOG_info("Scaler %s took %llu usec + %llu usec %dx%d->%dx%d\n",current_scaler ? "Sharp":"Near",scaler_elapsed_ns/1000, copy_elapsed_ns/1000, src_w,src_h,vid.screengame->w,vid.screengame->h);
+
+
+	//FlipRotate000(vid.screengame, vid.fbmmap+vid.page*vid.offset,vid.linewidth, vid.targetRect);
 		
 	}
 	vid.renderingGame = 0;	
-	lastpage = vid.page;
-	if (sync==1) pan_display(vid.page); 	
+	pan_display(vid.page);
+    vid.page^=sync;   	
+	lastpage = vid.page;	
 }
 
 // TODO:
@@ -846,6 +905,12 @@ int PLAT_getScreenRotation(int game) {
 }
 
 SDL_Surface* PLAT_getScreenGame(void) {
+	
+	if ((current_scaler==SCALER_NEAREST)||(effect_type!=EFFECT_NONE)) {
+		vid.screengame = screengame_16;
+	} else {
+		vid.screengame = screengame_32;
+	}
 	return vid.screengame;
 }
 

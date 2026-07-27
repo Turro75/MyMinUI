@@ -64,6 +64,7 @@ extern uint32_t frame_start;
 extern int TARGET_FPS;
 extern uint32_t cur_cpu_freq;
 extern int is_minarch;
+extern int current_scaler;
 
 
 //////////////////////////////
@@ -81,6 +82,7 @@ extern int is_minarch;
 #define RGBA_MASK_AUTO	0x0, 0x0, 0x0, 0x0
 #define RGBA_MASK_565	0xF800, 0x07E0, 0x001F, 0x0000
 #define RGBA_MASK_8888	0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
+#define BGRA_MASK_8888	0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000
 #ifndef SCREEN_FPS
 #define SCREEN_FPS 60.0
 #endif
@@ -153,6 +155,10 @@ enum {
 	EFFECT_COUNT,
 };
 
+enum {
+	SCALER_NEAREST,
+	SCALER_SHARP,
+};
 /*
 struct mybackbuffer {
 	int size;
@@ -551,6 +557,17 @@ void neon_convert_8888_to_565(int width, int height,
 void neon_copy_rgb565(int width, int height, 
                       uint16_t *dst, int dst_pitch, 
                       const uint16_t *src, int src_pitch);
+
+void neon_copy_argb8888(int width, int height, 
+                      uint32_t *dst, int dst_pitch, 
+                      const uint32_t *src, int src_pitch);
+void neon_copy_abgr8888(int width, int height, 
+                      uint32_t *dst, int dst_pitch, 
+                      const uint32_t *src, int src_pitch);
+int scale_mat_sharp_bilinear_565_to_8888_neon(
+    const uint16_t *src_ptr, int src_w, int src_h, int src_pitch,
+    uint32_t *dst_ptr, int dst_w, int dst_h, int dst_pitch,
+    int dst_x, int dst_y, int out_w, int out_h);
 
 void scale1x_line(void* __restrict src, void* __restrict dst, uint32_t sw, uint32_t sh, uint32_t sp, uint32_t dw, uint32_t dh, uint32_t dp);
 void scale1x_grid(void* __restrict src, void* __restrict dst, uint32_t sw, uint32_t sh, uint32_t sp, uint32_t dw, uint32_t dh, uint32_t dp);

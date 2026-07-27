@@ -1024,6 +1024,12 @@ static char* effect_labels[] = {
 	NULL
 };
 
+static char* scaler_labels[] = {
+	"Near",
+	"Sharp",	
+	NULL
+};
+
 static char* tearing_labels[] = {
 	"Off",
 	"Lenient",
@@ -1055,6 +1061,7 @@ static char* play_as_player_labels[] = {
 enum {
 	FE_OPT_SCALING,
 //	FE_OPT_MAX_SCALE,
+	FE_OPT_SCALER,
 	FE_OPT_EFFECT,
 	FE_OPT_TEARING,
 	FE_OPT_OVERCLOCK,
@@ -1261,6 +1268,16 @@ static struct Config {
 				.values = effect_labels,
 				.labels = effect_labels,
 			},
+			[FE_OPT_SCALER] = {
+				.key	= "minarch_screen_scaler",
+				.name	= "Screen Scaler",
+				.desc	= "Sharp uses bilinear sharp sampling\nNear uses nearest neighbor sampling (forced when scaling=native).",
+				.default_value = SCALER_NEAREST,
+				.value = SCALER_NEAREST,
+				.count = 2,
+				.values = scaler_labels,
+				.labels = scaler_labels,
+			},
 			[FE_OPT_TEARING] = {
 				.key	= "minarch_prevent_tearing",
 				.name	= "Prevent Tearing",
@@ -1383,7 +1400,7 @@ static void Config_syncFrontend(char* key, int value) {
 	int i = -1;
 	if (exactMatch(key,config.frontend.options[FE_OPT_SCALING].key)) {
 		screen_scaling 	= value;
-		
+		if (screen_scaling==SCALE_NATIVE) current_scaler=SCALER_NEAREST;
 		renderer.dst_p = 0;
 		i = FE_OPT_SCALING;
 	}
@@ -1405,6 +1422,13 @@ static void Config_syncFrontend(char* key, int value) {
 
 		renderer.dst_p = 0;
 		i = FE_OPT_EFFECT;
+	}
+	else if (exactMatch(key,config.frontend.options[FE_OPT_SCALER].key)) {
+		current_scaler = value;
+		if (screen_scaling==SCALE_NATIVE) current_scaler=SCALER_NEAREST;
+		screengame = PLAT_getScreenGame();
+		//renderer.dst_p = 0;
+		i = FE_OPT_SCALER;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_TEARING].key)) {
 		prevent_tearing = value;
@@ -3177,6 +3201,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 		GFX_clearAll();	
 	}
 //	gettimeofday(&now2,NULL);
+	screengame = PLAT_getScreenGame();
 	GFX_blitRenderer(&renderer);
 	//unsigned long long now_usec = 0;
 	//unsigned long long now_usec2 = 0;
@@ -5014,6 +5039,7 @@ static void Menu_loop(void) {
 	if (firstmenu) PLAT_clearAll();
 	firstmenu = 0;
 	// 1. Perform the rotation first
+	screengame = PLAT_getScreenGame();
 	SDL_Surface* rotated = rotozoomSurface(screengame, (4 - gamerotate) * 90.0, 1.0, 1);
 
 	// 2. Calculate scale factors based on the target device dimensions

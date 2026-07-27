@@ -37,6 +37,7 @@ uint32_t cur_cpu_freq;
 
 int FIXED_SCALE;
 int is_minarch = 0;
+int current_scaler = SCALER_NEAREST;
 ////////////////////////////////
 
 int USER_BTN_UP;
@@ -1019,10 +1020,8 @@ size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count) {
 
 #if defined (USE_SDL2)
 	uint32_t queued_bytes = SDL_GetQueuedAudioSize(audioDeviceID);
-#define GET_SDL_QUEUE_SIZE() SDL_GetQueuedAudioSize(audioDeviceID)
 #else
 	uint32_t queued_bytes = 4608; 
-#define GET_SDL_QUEUE_SIZE() 4608
 #endif
 	double current_latency_ms = (double)queued_bytes / 192.0;
 
@@ -1047,9 +1046,8 @@ size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count) {
 #endif
 	}
 
-	/* 🎯 RIPRISTINATO IL GUADAGNO DRC STABILE A 0.0008 */
 	double latency_error_ms = target_latency_ms - current_latency_ms;
-	double tracking_gain = (snd.sample_rate_in > 48000) ? 0.0003 : 0.0008;
+	double tracking_gain = (snd.sample_rate_in > 48000) ? 0.0004 : 0.0008;
 	double trim_factor = 1.0 + (latency_error_ms * tracking_gain);
 	
 	if (trim_factor > 1.0100) trim_factor = 1.0100;
@@ -1948,7 +1946,7 @@ static void PWR_enterSleep(void) {
 //#endif
 	if (GetHDMI()) {
 		PLAT_clearVideo(gfx.screen);
-		PLAT_flip(gfx.screen, 0);
+		PLAT_flip(gfx.screen, 1);
 	}
 	else {
 		SetRawVolume(MUTE_VOLUME_RAW);
@@ -2028,9 +2026,6 @@ int PWR_getBattery(void) { // 10-100 in 10-20% fragments
 	return pwr.charge;
 }
 
-#include <arm_neon.h>
-#include <stdint.h>
-#include <stdlib.h>
 
 //this is the replacement of SDL_SoftStretch
 int scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(
@@ -3066,6 +3061,170 @@ void neon_copy_rgb565(int width, int height,
     }
 }
 
+void neon_copy_argb8888(int width, int height, 
+                        uint32_t *dst, int dst_pitch, 
+                        const uint32_t *src, int src_pitch) 
+{
+    // Trasformiamo i pitch da byte a elementi uint32_t per l'aritmetica dei puntatori
+    src_pitch /= 4;
+    dst_pitch /= 4;
+
+    for (int y = 0; y < height; y++) {
+        const uint32_t *s = src + (y * src_pitch);
+        uint32_t *d = dst + (y * dst_pitch);
+        
+        int x = 0;
+        // Processiamo 16 pixel alla volta (16 pixel * 4 byte = 64 byte totali per ciclo)
+        // Usiamo 4 registri Q da 128 bit in parallelo per saturare il bus di memoria
+        for (; x <= width - 16; x += 16) {
+            uint32x4_t p0 = vld1q_u32(s + x + 0);
+            uint32x4_t p1 = vld1q_u32(s + x + 4);
+            uint32x4_t p2 = vld1q_u32(s + x + 8);
+            uint32x4_t p3 = vld1q_u32(s + x + 12);
+            
+            vst1q_u32(d + x + 0, p0);
+            vst1q_u32(d + x + 4, p1);
+            vst1q_u32(d + x + 8, p2);
+            vst1q_u32(d + x + 12, p3);
+        }
+        
+        // Gestione dei pixel rimanenti (Tail) se la larghezza non è multiplo di 16
+        for (; x < width; x++) {
+            d[x] = s[x];
+        }
+    }
+}
+
+void neon_copy_abgr8888(int width, int height, 
+                             uint32_t *dst, int dst_pitch, 
+                             const uint32_t *src, int src_pitch) 
+{
+    // Trasformiamo i pitch da byte a elementi uint32_t per l'aritmetica dei puntatori
+    src_pitch /= 4;
+    dst_pitch /= 4;
+
+    // Mappa di indici per invertire Rosso (byte 2) e Blu (byte 0) in un blocco a 32-bit (A-R-G-B)
+    // L'ordine dei byte da mappare per lo swap è: 2 (B), 1 (G), 0 (R), 3 (A)
+    // Il secondo blocco (4,5,6,7) mappa il secondo pixel nel registro a 64-bit: 6, 5, 4, 7
+    uint8x8_t v_swap_pattern = { 2, 1, 0, 3, 6, 5, 4, 7 };
+
+    for (int y = 0; y < height; y++) {
+        const uint32_t *s = src + (y * src_pitch);
+        uint32_t *d = dst + (y * dst_pitch);
+        
+        int x = 0;
+        // Processiamo 16 pixel alla volta (64 byte totali)
+        for (; x <= width - 16; x += 16) {
+            uint32x4_t p0 = vld1q_u32(s + x + 0);
+            uint32x4_t p1 = vld1q_u32(s + x + 4);
+            uint32x4_t p2 = vld1q_u32(s + x + 8);
+            uint32x4_t p3 = vld1q_u32(s + x + 12);
+            
+            // Applichiamo lo swap hardware dei byte a coppie di pixel (64-bit alla volta)
+            uint8x8_t p0_l = vtbl1_u8(vget_low_u8(vreinterpretq_u8_u32(p0)), v_swap_pattern);
+            uint8x8_t p0_h = vtbl1_u8(vget_high_u8(vreinterpretq_u8_u32(p0)), v_swap_pattern);
+            
+            uint8x8_t p1_l = vtbl1_u8(vget_low_u8(vreinterpretq_u8_u32(p1)), v_swap_pattern);
+            uint8x8_t p1_h = vtbl1_u8(vget_high_u8(vreinterpretq_u8_u32(p1)), v_swap_pattern);
+            
+            uint8x8_t p2_l = vtbl1_u8(vget_low_u8(vreinterpretq_u8_u32(p2)), v_swap_pattern);
+            uint8x8_t p2_h = vtbl1_u8(vget_high_u8(vreinterpretq_u8_u32(p2)), v_swap_pattern);
+            
+            uint8x8_t p3_l = vtbl1_u8(vget_low_u8(vreinterpretq_u8_u32(p3)), v_swap_pattern);
+            uint8x8_t p3_h = vtbl1_u8(vget_high_u8(vreinterpretq_u8_u32(p3)), v_swap_pattern);
+
+            // Ricombiniamo i registri alti/bassi in vettori a 128-bit e scriviamo in destinazione
+            vst1q_u32(d + x + 0, vreinterpretq_u32_u8(vcombine_u8(p0_l, p0_h)));
+            vst1q_u32(d + x + 4, vreinterpretq_u32_u8(vcombine_u8(p1_l, p1_h)));
+            vst1q_u32(d + x + 8, vreinterpretq_u32_u8(vcombine_u8(p2_l, p2_h)));
+            vst1q_u32(d + x + 12, vreinterpretq_u32_u8(vcombine_u8(p3_l, p3_h)));
+        }
+        
+        // Coda scalare per i pixel rimanenti a fine riga
+        for (; x < width; x++) {
+            uint32_t pixel = s[x];
+            uint32_t a = pixel & 0xFF000000;
+            uint32_t r = (pixel & 0x00FF0000) >> 16;
+            uint32_t g = pixel & 0x0000FF00; // Il verde resta fermo
+            uint32_t b = (pixel & 0x000000FF) << 16;
+            d[x] = a | b | g | r;
+        }
+    }
+}
+
+
+void neon_copy_argb8888_scanlines(int width, int height, 
+                                        uint32_t *dst, int dst_pitch, 
+                                        const uint32_t *src, int src_pitch) 
+{
+    src_pitch /= 4;
+    dst_pitch /= 4;
+
+    // Maschera costante a 128-bit: spegne i 3 bit più bassi di ogni canale (R, G, B)
+    // Preserva i gradienti del testo bilineare ma scurisce pesantemente la riga
+    uint32x4_t v_heavy_scan_mask = vdupq_n_u32(0xFFF0F0F0); 
+	uint32x4_t v_black_pixel = vdupq_n_u32(0xFF000000); // Nero opaco (Alpha = 255, R=0, G=0, B=0)
+
+
+    for (int y = 0; y < height; y++) {
+        const uint32_t *s = src + (y * src_pitch);
+        uint32_t *d = dst + (y * dst_pitch);
+        
+        int x = 0;
+
+        if (y & 1) {
+            // RIGA DISPARI: Scanline Pesante al 75% di oscuramento
+            for (; x <= width - 16; x += 16) {
+            //    uint32x4_t p0 = vld1q_u32(s + x + 0);
+            //    uint32x4_t p1 = vld1q_u32(s + x + 4);
+            //    uint32x4_t p2 = vld1q_u32(s + x + 8);
+            //    uint32x4_t p3 = vld1q_u32(s + x + 12);
+            //    
+            //    // Operazione atomica nei registri: impatto 0 msec
+            //    p0 = vandq_u32(p0, v_heavy_scan_mask);
+            //    p1 = vandq_u32(p1, v_heavy_scan_mask);
+            //    p2 = vandq_u32(p2, v_heavy_scan_mask);
+            //    p3 = vandq_u32(p3, v_heavy_scan_mask);
+//
+            //    vst1q_u32(d + x + 0, p0);
+            //    vst1q_u32(d + x + 4, p1);
+            //    vst1q_u32(d + x + 8, p2);
+            //    vst1q_u32(d + x + 12, p3);
+//
+				// Non serve nemmeno caricare i pixel sorgenti 'vld1q' dalla RAM! risparmiamo banda!
+				vst1q_u32(d + x + 0, v_black_pixel);
+				vst1q_u32(d + x + 4, v_black_pixel);
+				vst1q_u32(d + x + 8, v_black_pixel);
+				vst1q_u32(d + x + 12, v_black_pixel);
+            }
+            
+            // Coda scalare protetta (senza array di local stack)
+            for (; x < width; x++) {
+                d[x] = s[x] & 0xFFF0F0F0;
+            }
+        } else {
+            // RIGA PARI: Copia Standard alla massima luminosità
+            for (; x <= width - 16; x += 16) {
+                uint32x4_t p0 = vld1q_u32(s + x + 0);
+                uint32x4_t p1 = vld1q_u32(s + x + 4);
+                uint32x4_t p2 = vld1q_u32(s + x + 8);
+                uint32x4_t p3 = vld1q_u32(s + x + 12);
+                
+                vst1q_u32(d + x + 0, p0);
+                vst1q_u32(d + x + 4, p1);
+                vst1q_u32(d + x + 8, p2);
+                vst1q_u32(d + x + 12, p3);
+            }
+            
+            for (; x < width; x++) {
+                d[x] = s[x];
+            }
+        }
+    }
+}
+
+
+
 /**
  * Sostituto di pixman_composite_src_8888_0565_asm_neon
  * Converte da XRGB8888 (32bpp) a RGB565 (16bpp) usando NEON.
@@ -3190,4 +3349,171 @@ void scale1x_grid(void* __restrict src, void* __restrict dst, uint32_t sw, uint3
 		dst_row += dst_stride;
 		src_row += src_stride;
 	}
+}
+
+
+typedef struct {
+    int src_x[8];
+    uint16_t w[8];
+    uint16_t inv_w[8];
+} NeonX_UltraLUT_32;
+
+int scale_mat_sharp_bilinear_565_to_8888_neon(
+    const uint16_t *src_ptr, int src_w, int src_h, int src_pitch,
+    uint32_t *dst_ptr, int dst_w, int dst_h, int dst_pitch,
+    int dst_x, int dst_y, int out_w, int out_h)
+{
+    float raw_scale_x = (float)out_w / (float)src_w;
+    float raw_scale_y = (float)out_h / (float)src_h;
+    
+    float scale_x = (raw_scale_x > 1.0f) ? floorf(raw_scale_x) : 1.0f;
+    float scale_y = (raw_scale_y > 1.0f) ? floorf(raw_scale_y) : 1.0f;
+
+    uint64_t incx = ((uint64_t)(src_w) << 16) / out_w;
+    uint64_t incy = ((uint64_t)(src_h) << 16) / out_h;
+
+    int num_blocks = out_w / 8;
+    NeonX_UltraLUT_32 *x_lut = (NeonX_UltraLUT_32 *)malloc((num_blocks + 1) * sizeof(NeonX_UltraLUT_32));
+    if (!x_lut) return -1;
+
+    for (int b = 0; b < num_blocks; b++) {
+        for (int i = 0; i < 8; i++) {
+            int target_x = b * 8 + i;
+            float fx = ((float)target_x + 0.5f) / raw_scale_x - 0.5f;
+            int sx = (int)floorf(fx);
+            float f_fraction = fx - (float)sx;
+            
+            float sharp_fraction = (f_fraction - 0.5f) * scale_x + 0.5f;
+            if (sharp_fraction < 0.0f) sharp_fraction = 0.0f;
+            if (sharp_fraction > 1.0f) sharp_fraction = 1.0f;
+
+            if (sx < 0) { sx = 0; sharp_fraction = 0.0f; }
+            if (sx >= src_w - 1) { sx = src_w - 2; sharp_fraction = 1.0f; }
+
+            x_lut[b].src_x[i] = sx;
+            uint16_t weight = (uint16_t)(sharp_fraction * 32.0f);
+            x_lut[b].w[i] = weight;
+            x_lut[b].inv_w[i] = 32 - weight;
+        }
+    }
+
+    src_pitch /= 2;
+    dst_pitch /= 4; 
+
+    uint16x8_t v_mask_r = vdupq_n_u16(0xF800);
+    uint16x8_t v_mask_g = vdupq_n_u16(0x07E0);
+    uint16x8_t v_mask_b = vdupq_n_u16(0x001F);
+    
+    uint8x8_t v_alpha = vdup_n_u8(255);
+
+    for (int y = 0; y < out_h; y++) {
+        float fy = ((float)y + 0.5f) / raw_scale_y - 0.5f;
+        int src_y = (int)floorf(fy);
+        float f_fraction_y = fy - (float)src_y;
+
+        float sharp_fraction_y = (f_fraction_y - 0.5f) * scale_y + 0.5f;
+        if (sharp_fraction_y < 0.0f) sharp_fraction_y = 0.0f;
+        if (sharp_fraction_y > 1.0f) sharp_fraction_y = 1.0f;
+
+        if (src_y < 0) { src_y = 0; sharp_fraction_y = 0.0f; }
+        if (src_y >= src_h - 1) { src_y = src_h - 2; sharp_fraction_y = 1.0f; }
+
+        const uint16_t *src_row = src_ptr + (src_y * src_pitch);
+        uint32_t *dst_row = dst_ptr + ((dst_y + y) * dst_pitch) + dst_x;
+
+        int b = 0;
+        int x = 0;
+        
+        for (; b < num_blocks; b++, x += 8) {
+            uint32_t pair0 = *(const uint32_t*)(src_row + x_lut[b].src_x[0]);
+            uint32_t pair1 = *(const uint32_t*)(src_row + x_lut[b].src_x[1]);
+            uint32_t pair2 = *(const uint32_t*)(src_row + x_lut[b].src_x[2]);
+            uint32_t pair3 = *(const uint32_t*)(src_row + x_lut[b].src_x[3]);
+            uint32_t pair4 = *(const uint32_t*)(src_row + x_lut[b].src_x[4]);
+            uint32_t pair5 = *(const uint32_t*)(src_row + x_lut[b].src_x[5]);
+            uint32_t pair6 = *(const uint32_t*)(src_row + x_lut[b].src_x[6]);
+            uint32_t pair7 = *(const uint32_t*)(src_row + x_lut[b].src_x[7]);
+
+            uint16x8_t pA = { 
+                (uint16_t)pair0, (uint16_t)pair1, (uint16_t)pair2, (uint16_t)pair3,
+                (uint16_t)pair4, (uint16_t)pair5, (uint16_t)pair6, (uint16_t)pair7 
+            };
+            uint16x8_t pB = { 
+                (uint16_t)(pair0 >> 16), (uint16_t)(pair1 >> 16), (uint16_t)(pair2 >> 16), (uint16_t)(pair3 >> 16),
+                (uint16_t)(pair4 >> 16), (uint16_t)(pair5 >> 16), (uint16_t)(pair6 >> 16), (uint16_t)(pair7 >> 16) 
+            };
+            
+            uint16x8_t w     = vld1q_u16(x_lut[b].w);
+            uint16x8_t inv_w = vld1q_u16(x_lut[b].inv_w);
+
+            // --- CANALE ROSSO ---
+            uint16x8_t rA = vandq_u16(pA, v_mask_r);
+            uint16x8_t rB = vandq_u16(pB, v_mask_r);
+            uint32x4_t r_res_l = vmull_u16(vget_low_u16(rA), vget_low_u16(inv_w));
+            r_res_l = vmlal_u16(r_res_l, vget_low_u16(rB), vget_low_u16(w));
+            uint32x4_t r_res_h = vmull_u16(vget_high_u16(rA), vget_high_u16(inv_w));
+            r_res_h = vmlal_u16(r_res_h, vget_high_u16(rB), vget_high_u16(w));
+            
+            // CORREZIONE STANDARD: Shift combinato standard a 16-bit e poi restringimento a 8-bit
+            uint16x8_t r_16bit = vcombine_u16(vshrn_n_u32(r_res_l, 13), vshrn_n_u32(r_res_h, 13));
+            uint8x8_t r_8bit = vmovn_u16(r_16bit);
+            r_8bit = vorr_u8(r_8bit, vshr_n_u8(r_8bit, 5)); // Bit-expansion per bianchi perfetti (255)
+
+            // --- CANALE VERDE ---
+            uint16x8_t gA = vandq_u16(pA, v_mask_g);
+            uint16x8_t gB = vandq_u16(pB, v_mask_g);
+            uint32x4_t g_res_l = vmull_u16(vget_low_u16(gA), vget_low_u16(inv_w));
+            g_res_l = vmlal_u16(g_res_l, vget_low_u16(gB), vget_low_u16(w));
+            uint32x4_t g_res_h = vmull_u16(vget_high_u16(gA), vget_high_u16(inv_w));
+            g_res_h = vmlal_u16(g_res_h, vget_high_u16(gB), vget_high_u16(w));
+            
+            uint16x8_t g_16bit = vcombine_u16(vshrn_n_u32(g_res_l, 8), vshrn_n_u32(g_res_h, 8));
+            uint8x8_t g_8bit = vmovn_u16(g_16bit);
+            g_8bit = vorr_u8(g_8bit, vshr_n_u8(g_8bit, 6));
+
+            // --- CANALE BLU ---
+            uint16x8_t bA = vandq_u16(pA, v_mask_b);
+            uint16x8_t bB = vandq_u16(pB, v_mask_b);
+            uint32x4_t b_res_l = vmull_u16(vget_low_u16(bA), vget_low_u16(inv_w));
+            b_res_l = vmlal_u16(b_res_l, vget_low_u16(bB), vget_low_u16(w));
+            uint32x4_t b_res_h = vmull_u16(vget_high_u16(bA), vget_high_u16(inv_w));
+            b_res_h = vmlal_u16(b_res_h, vget_high_u16(bB), vget_high_u16(w));
+            
+            uint16x8_t b_16bit = vcombine_u16(vshrn_n_u32(b_res_l, 2), vshrn_n_u32(b_res_h, 2));
+            uint8x8_t b_8bit = vmovn_u16(b_16bit);
+            b_8bit = vorr_u8(b_8bit, vshr_n_u8(b_8bit, 5));
+
+            uint8x8x4_t argb_pack = { b_8bit, g_8bit, r_8bit, v_alpha }; 
+            vst4_u8((uint8_t *)(dst_row + x), argb_pack);
+        }
+
+        for (; x < out_w; x++) {
+            int block_idx = x / 8;
+            int sub_idx = x % 8;
+            int sx = x_lut[block_idx].src_x[sub_idx];
+            uint32_t w_val = x_lut[block_idx].w[sub_idx];
+            uint32_t inv_w_val = x_lut[block_idx].inv_w[sub_idx];
+
+            uint32_t pA = src_row[sx];
+            uint32_t pB = src_row[sx + 1];
+
+            uint32_t r = (((pA & 0xF800) * inv_w_val) + ((pB & 0xF800) * w_val)) >> 5;
+            uint32_t g = (((pA & 0x07E0) * inv_w_val) + ((pB & 0x07E0) * w_val)) >> 5;
+            uint32_t b = (((pA & 0x001F) * inv_w_val) + ((pB & 0x001F) * w_val)) >> 5;
+
+            uint32_t r8 = ((r & 0xF800) >> 11) << 3;
+            uint32_t g8 = ((g & 0x07E0) >> 5) << 2;
+            uint32_t b8 = (b & 0x001F) << 3;
+            
+            r8 |= (r8 >> 5);
+            g8 |= (g8 >> 6);
+            b8 |= (b8 >> 5);
+
+            dst_row[x] = (255 << 24) | (r8 << 16) | (g8 << 8) | b8;
+
+        }
+    }
+
+    free(x_lut);
+    return 0;
 }

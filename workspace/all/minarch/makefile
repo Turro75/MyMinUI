@@ -29,9 +29,9 @@ SOURCE = $(TARGET).c ../common/utils.c ../common/$(SDL)_rotozoom.c ../common/api
 CC = $(CROSS_COMPILE)gcc
 CFLAGS   = $(MYARCH) -fomit-frame-pointer -ftree-vectorize -funroll-loops -funsafe-math-optimizations
 CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL) -std=gnu99
-CFLAGS	+=  -flto=auto $(MY_CFLAGS) 
-CFLAGS	+=  -O3 -s 
-#CFLAGS	+=  -g 
+CFLAGS	+=   $(MY_CFLAGS) 
+CFLAGS	+=  -O3 -s -flto=auto
+#CFLAGS	+=  -O0 -g -flto=auto
 LDFLAGS	 = -ldl $(LIBS) -lmsettings -l$(SDL) -l$(SDL)_image -l$(SDL)_ttf -lpthread -lm -lz $(MY_LDFLAGS)
 # CFLAGS  += -Wall -Wno-unused-variable -Wno-unused-function -Wno-format-overflow
 # CFLAGS  += -fsanitize=address -fno-common
