@@ -273,3 +273,6 @@ void mySetVolume(int val){ //{-60 ... 0dB}
 		close(fd);
 	}
 }
+
+int GetMute(void) { return 0; }
+void SetMute(int value) {}

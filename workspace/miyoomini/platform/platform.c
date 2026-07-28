@@ -740,7 +740,7 @@ int PLAT_lidChanged(int* state) {
 
 
 //////////////////////////////////
-
+int online = 0;
 void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 	*is_charging = is_plus ? (axp_read(0x00) & 0x4) > 0 : getInt("/sys/devices/gpiochip0/gpio/gpio59/value");
 	
@@ -757,6 +757,9 @@ void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 	// TODO: tmp
 	// *is_charging = 0;
 	// *charge = PWR_LOW_CHARGE;
+	char status[16];
+	getFile("/sys/class/net/wlan0/operstate", status,16);
+	online = prefixMatch("up", status);
 }
 
 void PLAT_enableBacklight(int enable) {
@@ -859,14 +862,49 @@ char* PLAT_getModel(void) {
 }
 
 int PLAT_isOnline(void) {
-	return 0;
+	return online;
 }
 
-char* PLAT_getIPAddress(void){
-	char *outstr = NULL;
-	outstr = malloc(8); // Alloca memoria per la stringa
-	strcpy(outstr,"Offline");
-	return outstr;
+char* PLAT_getIPAddress(void) {
+    FILE *fp;
+    char _buffer[256];
+    char *outstr = NULL;
+
+    // Esegue il comando e legge l'output
+    fp = popen("ip route | cut -d' ' -f6 | uniq | grep \"\\.\"", "r");
+/*
+ ip route
+default via 192.168.1.1 dev wlan0 proto dhcp metric 600 
+192.168.1.0/24 dev wlan0 proto kernel scope link src 192.168.1.247 metric 600 
+*/
+
+    if (fp == NULL) {
+        LOG_info("getIpAddress popen failed - %s\n", strerror(errno));
+        return NULL; // Restituisce NULL in caso di errore
+    }
+
+    // Legge l'output riga per riga
+    if (fgets(_buffer, sizeof(_buffer), fp) != NULL) {
+        // Alloca memoria per la stringa di output
+        size_t len = strlen(_buffer);
+        if (len > 0 && _buffer[len - 1] == '\n') {
+            _buffer[len - 1] = '\0'; // Rimuove il carattere di newline
+        }
+        outstr = malloc(len + 1); // Alloca memoria per la stringa
+        if (outstr != NULL) {
+            strcpy(outstr, _buffer); // Copia la stringa
+        } else {
+            LOG_info("Memory allocation failed for IP address\n");
+        }
+    }
+
+    // Chiude lo stream
+    int status = pclose(fp);
+    if (status == -1) {
+        LOG_info("pclose failed - %s\n", strerror(errno));
+    }
+	
+    return outstr; // Restituisce la stringa allocata o NULL
 }
 
 int PLAT_getNumProcessors(void) {
