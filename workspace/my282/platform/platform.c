@@ -656,7 +656,7 @@ void PLAT_pan(void) {
 }
 
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
-	vid.page ^= (1 & !quick);
+	vid.page ^= !quick;
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;
@@ -868,6 +868,7 @@ SDL_Surface* PLAT_getScreenGame(void) {
 		vid.screengame = screengame_16;
 	} else {
 		vid.screengame = screengame_32;
+		neon_copy_argb8888(vid.screengame->w, vid.screengame->h, vid.screengame->pixels , vid.screengame->pitch, vid.fbmmap[0]+vid.page*vid.offset, vid.screengame->pitch);
 	}
 	return vid.screengame;
 }

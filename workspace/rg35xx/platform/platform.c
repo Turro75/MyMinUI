@@ -568,7 +568,7 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	}
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
 //	uint32_t now = SDL_GetTicks();
-	vid.page ^= (1 & !quick);
+	vid.page ^= !quick;
 	if (!vid.renderingGame) {
 		vid.targetRect.x = 0;
 		vid.targetRect.y = 0;

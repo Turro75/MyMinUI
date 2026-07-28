@@ -558,7 +558,7 @@ void PLAT_pan(void) {
 }
 int lastpage = 0;
 void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + minui + tools
-	vid.page ^= (1 & !quick);
+	vid.page ^= !quick;
 	if (!vid.renderingGame) {
     //    vid.page = lastpage ^ sync;
 		vid.targetRect.x = 0;
@@ -759,9 +759,13 @@ void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 	// TODO: tmp
 	// *is_charging = 0;
 	// *charge = PWR_LOW_CHARGE;
-	char status[16];
-	getFile("/sys/class/net/wlan0/operstate", status,16);
-	online = prefixMatch("up", status);
+	if (is_plus || lid.has_lid) {
+		char status[16];
+		getFile("/sys/class/net/wlan0/operstate", status,16);
+		online = prefixMatch("up", status);
+	} else {
+		online = 0;
+	}
 }
 
 void PLAT_enableBacklight(int enable) {
@@ -871,6 +875,9 @@ char* PLAT_getIPAddress(void) {
     FILE *fp;
     char _buffer[256];
     char *outstr = NULL;
+	if (!is_plus || !lid.has_lid){
+		return "Offline";
+	}
 
     // Esegue il comando e legge l'output
     fp = popen("ip route | cut -d' ' -f6 | uniq | grep \"\\.\"", "r");
@@ -959,6 +966,7 @@ SDL_Surface* PLAT_getScreenGame(void) {
 		vid.screengame = screengame_16;
 	} else {
 		vid.screengame = screengame_32;
+		neon_copy_argb8888(vid.screengame->w, vid.screengame->h, vid.screengame->pixels , vid.screengame->pitch, vid.fbmmap+vid.page*vid.offset, vid.screengame->pitch);
 	}
 	return vid.screengame;
 }

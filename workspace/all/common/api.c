@@ -1175,11 +1175,6 @@ void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 		}
 	}
 
-#ifdef MIYOOMINI
-	/* wait for audio to start at boot on Miyoo Mini (not the plus), otherwise it will be muted after a state resume */
-	usleep(500000 * (1 - is_plus) * starting); 
-	starting = 0;
-#endif
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
 		LOG_info("SDL_InitSubSystem(SDL_INIT_AUDIO) error: %s\n", SDL_GetError());
@@ -3353,6 +3348,7 @@ void scale1x_grid(void* __restrict src, void* __restrict dst, uint32_t sw, uint3
 }
 
 
+// Assicurati che la struttura corrisponda alla definizione corretta con gli array da 8 elementi
 typedef struct {
     int src_x[8];
     uint16_t w[8];
@@ -3370,43 +3366,60 @@ int scale_mat_sharp_bilinear_565_to_8888_neon(
     float scale_x = (raw_scale_x > 1.0f) ? floorf(raw_scale_x) : 1.0f;
     float scale_y = (raw_scale_y > 1.0f) ? floorf(raw_scale_y) : 1.0f;
 
-    uint64_t incx = ((uint64_t)(src_w) << 16) / out_w;
-    uint64_t incy = ((uint64_t)(src_h) << 16) / out_h;
-
     int num_blocks = out_w / 8;
-    NeonX_UltraLUT_32 *x_lut = (NeonX_UltraLUT_32 *)malloc((num_blocks + 1) * sizeof(NeonX_UltraLUT_32));
+    
+    // 1. ALLOCAZIONE PROTETTA CON PADDING E AZZERAMENTO
+    NeonX_UltraLUT_32 *x_lut = (NeonX_UltraLUT_32 *)malloc((num_blocks + 2) * sizeof(NeonX_UltraLUT_32));
     if (!x_lut) return -1;
+    memset(x_lut, 0, (num_blocks + 2) * sizeof(NeonX_UltraLUT_32));
 
-    for (int b = 0; b < num_blocks; b++) {
-        for (int i = 0; i < 8; i++) {
-            int target_x = b * 8 + i;
-            float fx = ((float)target_x + 0.5f) / raw_scale_x - 0.5f;
-            int sx = (int)floorf(fx);
-            float f_fraction = fx - (float)sx;
-            
-            float sharp_fraction = (f_fraction - 0.5f) * scale_x + 0.5f;
-            if (sharp_fraction < 0.0f) sharp_fraction = 0.0f;
-            if (sharp_fraction > 1.0f) sharp_fraction = 1.0f;
+    // 2. POPOLAMENTO LINEARE DI TUTTA LA CODA (Evita indici spazzatura come 16777215)
+    for (int target_x = 0; target_x < out_w; target_x++) {
+        int b = target_x / 8;
+        int i = target_x % 8;
 
-            if (sx < 0) { sx = 0; sharp_fraction = 0.0f; }
-            if (sx >= src_w - 1) { sx = src_w - 2; sharp_fraction = 1.0f; }
+        float fx = ((float)target_x + 0.5f) / raw_scale_x - 0.5f;
+        int sx = (int)floorf(fx);
+        float f_fraction = fx - (float)sx;
+        
+        float sharp_fraction = (f_fraction - 0.5f) * scale_x + 0.5f;
+        if (sharp_fraction < 0.0f) sharp_fraction = 0.0f;
+        if (sharp_fraction > 1.0f) sharp_fraction = 1.0f;
 
-            x_lut[b].src_x[i] = sx;
-            uint16_t weight = (uint16_t)(sharp_fraction * 32.0f);
-            x_lut[b].w[i] = weight;
-            x_lut[b].inv_w[i] = 32 - weight;
-        }
+        if (sx < 0) { sx = 0; sharp_fraction = 0.0f; }
+        if (sx >= src_w - 1) { sx = src_w - 2; sharp_fraction = 1.0f; }
+
+        x_lut[b].src_x[i] = sx;
+        uint16_t weight = (uint16_t)(sharp_fraction * 32.0f);
+        x_lut[b].w[i] = weight;
+        x_lut[b].inv_w[i] = 32 - weight;
     }
 
+    // Riempimento di sicurezza per gli slot vuoti rimanenti nell'ultimo blocco NEON
+    int remaining_slots = (num_blocks + 1) * 8;
+    for (int target_x = out_w; target_x < remaining_slots; target_x++) {
+        int b = target_x / 8;
+        int i = target_x % 8;
+        int last_valid_idx = (out_w - 1) % 8;
+        int last_valid_block = (out_w - 1) / 8;
+
+        x_lut[b].src_x[i]   = x_lut[last_valid_block].src_x[last_valid_idx];
+        x_lut[b].w[i]       = x_lut[last_valid_block].w[last_valid_idx];
+        x_lut[b].inv_w[i]   = x_lut[last_valid_block].inv_w[last_valid_idx];
+    }
+
+    // 3. CONVERSIONE SICURA PITCH (Gestisce sia pixel che byte esterni)
+    if (src_pitch == src_w) { src_pitch = src_w * 2; }
+    if (dst_pitch == dst_w) { dst_pitch = dst_w * 4; }
     src_pitch /= 2;
     dst_pitch /= 4; 
 
     uint16x8_t v_mask_r = vdupq_n_u16(0xF800);
     uint16x8_t v_mask_g = vdupq_n_u16(0x07E0);
     uint16x8_t v_mask_b = vdupq_n_u16(0x001F);
-    
     uint8x8_t v_alpha = vdup_n_u8(255);
 
+    // 4. CICLO VERTICALE E ORIZZONTALE PRINCIPALE (NEON)
     for (int y = 0; y < out_h; y++) {
         float fy = ((float)y + 0.5f) / raw_scale_y - 0.5f;
         int src_y = (int)floorf(fy);
@@ -3447,39 +3460,35 @@ int scale_mat_sharp_bilinear_565_to_8888_neon(
             uint16x8_t w     = vld1q_u16(x_lut[b].w);
             uint16x8_t inv_w = vld1q_u16(x_lut[b].inv_w);
 
-            // --- CANALE ROSSO ---
+            // Canale Rosso
             uint16x8_t rA = vandq_u16(pA, v_mask_r);
             uint16x8_t rB = vandq_u16(pB, v_mask_r);
             uint32x4_t r_res_l = vmull_u16(vget_low_u16(rA), vget_low_u16(inv_w));
             r_res_l = vmlal_u16(r_res_l, vget_low_u16(rB), vget_low_u16(w));
             uint32x4_t r_res_h = vmull_u16(vget_high_u16(rA), vget_high_u16(inv_w));
             r_res_h = vmlal_u16(r_res_h, vget_high_u16(rB), vget_high_u16(w));
-            
-            // CORREZIONE STANDARD: Shift combinato standard a 16-bit e poi restringimento a 8-bit
             uint16x8_t r_16bit = vcombine_u16(vshrn_n_u32(r_res_l, 13), vshrn_n_u32(r_res_h, 13));
             uint8x8_t r_8bit = vmovn_u16(r_16bit);
-            r_8bit = vorr_u8(r_8bit, vshr_n_u8(r_8bit, 5)); // Bit-expansion per bianchi perfetti (255)
+            r_8bit = vorr_u8(r_8bit, vshr_n_u8(r_8bit, 5));
 
-            // --- CANALE VERDE ---
+            // Canale Verde
             uint16x8_t gA = vandq_u16(pA, v_mask_g);
             uint16x8_t gB = vandq_u16(pB, v_mask_g);
             uint32x4_t g_res_l = vmull_u16(vget_low_u16(gA), vget_low_u16(inv_w));
             g_res_l = vmlal_u16(g_res_l, vget_low_u16(gB), vget_low_u16(w));
             uint32x4_t g_res_h = vmull_u16(vget_high_u16(gA), vget_high_u16(inv_w));
             g_res_h = vmlal_u16(g_res_h, vget_high_u16(gB), vget_high_u16(w));
-            
             uint16x8_t g_16bit = vcombine_u16(vshrn_n_u32(g_res_l, 8), vshrn_n_u32(g_res_h, 8));
             uint8x8_t g_8bit = vmovn_u16(g_16bit);
             g_8bit = vorr_u8(g_8bit, vshr_n_u8(g_8bit, 6));
 
-            // --- CANALE BLU ---
+            // Canale Blu
             uint16x8_t bA = vandq_u16(pA, v_mask_b);
             uint16x8_t bB = vandq_u16(pB, v_mask_b);
             uint32x4_t b_res_l = vmull_u16(vget_low_u16(bA), vget_low_u16(inv_w));
             b_res_l = vmlal_u16(b_res_l, vget_low_u16(bB), vget_low_u16(w));
             uint32x4_t b_res_h = vmull_u16(vget_high_u16(bA), vget_high_u16(inv_w));
             b_res_h = vmlal_u16(b_res_h, vget_high_u16(bB), vget_high_u16(w));
-            
             uint16x8_t b_16bit = vcombine_u16(vshrn_n_u32(b_res_l, 2), vshrn_n_u32(b_res_h, 2));
             uint8x8_t b_8bit = vmovn_u16(b_16bit);
             b_8bit = vorr_u8(b_8bit, vshr_n_u8(b_8bit, 5));
@@ -3488,6 +3497,7 @@ int scale_mat_sharp_bilinear_565_to_8888_neon(
             vst4_u8((uint8_t *)(dst_row + x), argb_pack);
         }
 
+        // 5. CODA SCALARE (GESTIONE CODA 744..746 PROTETTA DA OVERFLOW)
         for (; x < out_w; x++) {
             int block_idx = x / 8;
             int sub_idx = x % 8;
@@ -3496,7 +3506,9 @@ int scale_mat_sharp_bilinear_565_to_8888_neon(
             uint32_t inv_w_val = x_lut[block_idx].inv_w[sub_idx];
 
             uint32_t pA = src_row[sx];
-            uint32_t pB = src_row[sx + 1];
+            
+            // CORREZIONE CRITICA: Se sx punta alla fine (367), blocca pB evitando di leggere l'indice 368 illegale fuori schermo
+            uint32_t pB = (sx < src_w - 1) ? src_row[sx + 1] : pA;
 
             uint32_t r = (((pA & 0xF800) * inv_w_val) + ((pB & 0xF800) * w_val)) >> 5;
             uint32_t g = (((pA & 0x07E0) * inv_w_val) + ((pB & 0x07E0) * w_val)) >> 5;
@@ -3511,7 +3523,6 @@ int scale_mat_sharp_bilinear_565_to_8888_neon(
             b8 |= (b8 >> 5);
 
             dst_row[x] = (255 << 24) | (r8 << 16) | (g8 << 8) | b8;
-
         }
     }
 
@@ -3530,43 +3541,60 @@ int scale_mat_sharp_bilinear_565_to_8888_neon_abgr(
     float scale_x = (raw_scale_x > 1.0f) ? floorf(raw_scale_x) : 1.0f;
     float scale_y = (raw_scale_y > 1.0f) ? floorf(raw_scale_y) : 1.0f;
 
-    uint64_t incx = ((uint64_t)(src_w) << 16) / out_w;
-    uint64_t incy = ((uint64_t)(src_h) << 16) / out_h;
-
     int num_blocks = out_w / 8;
-    NeonX_UltraLUT_32 *x_lut = (NeonX_UltraLUT_32 *)malloc((num_blocks + 1) * sizeof(NeonX_UltraLUT_32));
+    
+    // 1. ALLOCAZIONE PROTETTA CON PADDING E AZZERAMENTO
+    NeonX_UltraLUT_32 *x_lut = (NeonX_UltraLUT_32 *)malloc((num_blocks + 2) * sizeof(NeonX_UltraLUT_32));
     if (!x_lut) return -1;
+    memset(x_lut, 0, (num_blocks + 2) * sizeof(NeonX_UltraLUT_32));
 
-    for (int b = 0; b < num_blocks; b++) {
-        for (int i = 0; i < 8; i++) {
-            int target_x = b * 8 + i;
-            float fx = ((float)target_x + 0.5f) / raw_scale_x - 0.5f;
-            int sx = (int)floorf(fx);
-            float f_fraction = fx - (float)sx;
-            
-            float sharp_fraction = (f_fraction - 0.5f) * scale_x + 0.5f;
-            if (sharp_fraction < 0.0f) sharp_fraction = 0.0f;
-            if (sharp_fraction > 1.0f) sharp_fraction = 1.0f;
+    // 2. POPOLAMENTO LINEARE DI TUTTA LA CODA (Evita indici spazzatura come 16777215)
+    for (int target_x = 0; target_x < out_w; target_x++) {
+        int b = target_x / 8;
+        int i = target_x % 8;
 
-            if (sx < 0) { sx = 0; sharp_fraction = 0.0f; }
-            if (sx >= src_w - 1) { sx = src_w - 2; sharp_fraction = 1.0f; }
+        float fx = ((float)target_x + 0.5f) / raw_scale_x - 0.5f;
+        int sx = (int)floorf(fx);
+        float f_fraction = fx - (float)sx;
+        
+        float sharp_fraction = (f_fraction - 0.5f) * scale_x + 0.5f;
+        if (sharp_fraction < 0.0f) sharp_fraction = 0.0f;
+        if (sharp_fraction > 1.0f) sharp_fraction = 1.0f;
 
-            x_lut[b].src_x[i] = sx;
-            uint16_t weight = (uint16_t)(sharp_fraction * 32.0f);
-            x_lut[b].w[i] = weight;
-            x_lut[b].inv_w[i] = 32 - weight;
-        }
+        if (sx < 0) { sx = 0; sharp_fraction = 0.0f; }
+        if (sx >= src_w - 1) { sx = src_w - 2; sharp_fraction = 1.0f; }
+
+        x_lut[b].src_x[i] = sx;
+        uint16_t weight = (uint16_t)(sharp_fraction * 32.0f);
+        x_lut[b].w[i] = weight;
+        x_lut[b].inv_w[i] = 32 - weight;
     }
 
+    // Riempimento di sicurezza per gli slot vuoti rimanenti nell'ultimo blocco NEON
+    int remaining_slots = (num_blocks + 1) * 8;
+    for (int target_x = out_w; target_x < remaining_slots; target_x++) {
+        int b = target_x / 8;
+        int i = target_x % 8;
+        int last_valid_idx = (out_w - 1) % 8;
+        int last_valid_block = (out_w - 1) / 8;
+
+        x_lut[b].src_x[i]   = x_lut[last_valid_block].src_x[last_valid_idx];
+        x_lut[b].w[i]       = x_lut[last_valid_block].w[last_valid_idx];
+        x_lut[b].inv_w[i]   = x_lut[last_valid_block].inv_w[last_valid_idx];
+    }
+
+    // 3. CONVERSIONE SICURA PITCH (Gestisce sia pixel che byte esterni)
+    if (src_pitch == src_w) { src_pitch = src_w * 2; }
+    if (dst_pitch == dst_w) { dst_pitch = dst_w * 4; }
     src_pitch /= 2;
     dst_pitch /= 4; 
 
     uint16x8_t v_mask_r = vdupq_n_u16(0xF800);
     uint16x8_t v_mask_g = vdupq_n_u16(0x07E0);
     uint16x8_t v_mask_b = vdupq_n_u16(0x001F);
-    
     uint8x8_t v_alpha = vdup_n_u8(255);
 
+    // 4. CICLO VERTICALE E ORIZZONTALE PRINCIPALE (NEON)
     for (int y = 0; y < out_h; y++) {
         float fy = ((float)y + 0.5f) / raw_scale_y - 0.5f;
         int src_y = (int)floorf(fy);
@@ -3607,39 +3635,35 @@ int scale_mat_sharp_bilinear_565_to_8888_neon_abgr(
             uint16x8_t w     = vld1q_u16(x_lut[b].w);
             uint16x8_t inv_w = vld1q_u16(x_lut[b].inv_w);
 
-            // --- CANALE ROSSO ---
+            // Canale Rosso
             uint16x8_t rA = vandq_u16(pA, v_mask_r);
             uint16x8_t rB = vandq_u16(pB, v_mask_r);
             uint32x4_t r_res_l = vmull_u16(vget_low_u16(rA), vget_low_u16(inv_w));
             r_res_l = vmlal_u16(r_res_l, vget_low_u16(rB), vget_low_u16(w));
             uint32x4_t r_res_h = vmull_u16(vget_high_u16(rA), vget_high_u16(inv_w));
             r_res_h = vmlal_u16(r_res_h, vget_high_u16(rB), vget_high_u16(w));
-            
-            // CORREZIONE STANDARD: Shift combinato standard a 16-bit e poi restringimento a 8-bit
             uint16x8_t r_16bit = vcombine_u16(vshrn_n_u32(r_res_l, 13), vshrn_n_u32(r_res_h, 13));
             uint8x8_t r_8bit = vmovn_u16(r_16bit);
-            r_8bit = vorr_u8(r_8bit, vshr_n_u8(r_8bit, 5)); // Bit-expansion per bianchi perfetti (255)
+            r_8bit = vorr_u8(r_8bit, vshr_n_u8(r_8bit, 5));
 
-            // --- CANALE VERDE ---
+            // Canale Verde
             uint16x8_t gA = vandq_u16(pA, v_mask_g);
             uint16x8_t gB = vandq_u16(pB, v_mask_g);
             uint32x4_t g_res_l = vmull_u16(vget_low_u16(gA), vget_low_u16(inv_w));
             g_res_l = vmlal_u16(g_res_l, vget_low_u16(gB), vget_low_u16(w));
             uint32x4_t g_res_h = vmull_u16(vget_high_u16(gA), vget_high_u16(inv_w));
             g_res_h = vmlal_u16(g_res_h, vget_high_u16(gB), vget_high_u16(w));
-            
             uint16x8_t g_16bit = vcombine_u16(vshrn_n_u32(g_res_l, 8), vshrn_n_u32(g_res_h, 8));
             uint8x8_t g_8bit = vmovn_u16(g_16bit);
             g_8bit = vorr_u8(g_8bit, vshr_n_u8(g_8bit, 6));
 
-            // --- CANALE BLU ---
+            // Canale Blu
             uint16x8_t bA = vandq_u16(pA, v_mask_b);
             uint16x8_t bB = vandq_u16(pB, v_mask_b);
             uint32x4_t b_res_l = vmull_u16(vget_low_u16(bA), vget_low_u16(inv_w));
             b_res_l = vmlal_u16(b_res_l, vget_low_u16(bB), vget_low_u16(w));
             uint32x4_t b_res_h = vmull_u16(vget_high_u16(bA), vget_high_u16(inv_w));
             b_res_h = vmlal_u16(b_res_h, vget_high_u16(bB), vget_high_u16(w));
-            
             uint16x8_t b_16bit = vcombine_u16(vshrn_n_u32(b_res_l, 2), vshrn_n_u32(b_res_h, 2));
             uint8x8_t b_8bit = vmovn_u16(b_16bit);
             b_8bit = vorr_u8(b_8bit, vshr_n_u8(b_8bit, 5));
@@ -3648,6 +3672,7 @@ int scale_mat_sharp_bilinear_565_to_8888_neon_abgr(
             vst4_u8((uint8_t *)(dst_row + x), argb_pack);
         }
 
+        // 5. CODA SCALARE (GESTIONE CODA 744..746 PROTETTA DA OVERFLOW)
         for (; x < out_w; x++) {
             int block_idx = x / 8;
             int sub_idx = x % 8;
@@ -3656,7 +3681,9 @@ int scale_mat_sharp_bilinear_565_to_8888_neon_abgr(
             uint32_t inv_w_val = x_lut[block_idx].inv_w[sub_idx];
 
             uint32_t pA = src_row[sx];
-            uint32_t pB = src_row[sx + 1];
+            
+            // CORREZIONE CRITICA: Se sx punta alla fine (367), blocca pB evitando di leggere l'indice 368 illegale fuori schermo
+            uint32_t pB = (sx < src_w - 1) ? src_row[sx + 1] : pA;
 
             uint32_t r = (((pA & 0xF800) * inv_w_val) + ((pB & 0xF800) * w_val)) >> 5;
             uint32_t g = (((pA & 0x07E0) * inv_w_val) + ((pB & 0x07E0) * w_val)) >> 5;
@@ -3670,8 +3697,7 @@ int scale_mat_sharp_bilinear_565_to_8888_neon_abgr(
             g8 |= (g8 >> 6);
             b8 |= (b8 >> 5);
 
-            dst_row[x] = (255 << 24) | (b8 << 16) | (g8 << 8) | r8;
-
+            dst_row[x] = (255 << 24) | (g8 << 16) | (g8 << 8) | r8;
         }
     }
 

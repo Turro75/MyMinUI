@@ -1400,6 +1400,7 @@ static void Config_syncFrontend(char* key, int value) {
 	if (exactMatch(key,config.frontend.options[FE_OPT_SCALING].key)) {
 		screen_scaling 	= value;
 		if (screen_scaling==SCALE_NATIVE) current_scaler=SCALER_NEAREST;
+		screengame = PLAT_getScreenGame();
 		renderer.dst_p = 0;
 		i = FE_OPT_SCALING;
 	}
@@ -1426,7 +1427,7 @@ static void Config_syncFrontend(char* key, int value) {
 		current_scaler = value;
 		if (screen_scaling==SCALE_NATIVE) current_scaler=SCALER_NEAREST;
 		screengame = PLAT_getScreenGame();
-		//renderer.dst_p = 0;
+		renderer.dst_p = 0;
 		i = FE_OPT_SCALER;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_TEARING].key)) {
@@ -3143,7 +3144,7 @@ void video_refresh_callback_resize(void) {
 	renderer.dst_h = targetarea.h;
 	renderer.dst_x = targetarea.x;
 	renderer.dst_y = targetarea.y;	
-	renderer.dst_p = renderer.dst_w * FIXED_DEPTH;	
+	renderer.dst_p = renderer.dst_w * FIXED_BPP * (1+current_scaler);	
 	renderer.resize = 0;
 	if (renderer.screenscaling != screen_scaling) {
 		renderer.resize = 1;
@@ -5411,8 +5412,7 @@ static void Menu_loop(void) {
 		
 		GFX_setVsync(prevent_tearing);
 		if (!HAS_POWER_BUTTON) PWR_disableSleep();
-
-		screengame = PLAT_getScreenGame();
+		
 		if (thread_video) {
 			LOG_info("Exiting menu, returning to video_thread\n");fflush(stdout);
 			render = 0;
