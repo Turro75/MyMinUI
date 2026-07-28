@@ -975,11 +975,10 @@ SDL_Surface* PLAT_initVideo(void) {
 void PLAT_quitVideo(void) {
 	PLAT_clearVideo(vid.screen);
 	PLAT_flip(vid.screen, 1);
-	SDL_FreeSurface(vid.screen);
-	SDL_FreeSurface(vid.screen2);
-	SDL_FreeSurface(vid.screengame);
-	SDL_FreeSurface(screengame_16);
-	SDL_FreeSurface(screengame_32);
+	if (vid.screen) SDL_FreeSurface(vid.screen);
+	if (vid.screen2) SDL_FreeSurface(vid.screen2);
+    if (screengame_16) SDL_FreeSurface(screengame_16);
+    if (screengame_32) SDL_FreeSurface(screengame_32);
 	clean_layer();
 	munmap(vid.fbmmap[0], 0);
 	munmap(vid.fbmmap[1], 0);
@@ -993,13 +992,15 @@ void PLAT_quitVideo(void) {
 void PLAT_clearVideo(SDL_Surface* screen) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
-	SDL_FillRect(vid.screengame, NULL, 0);
+	SDL_FillRect(screengame_16, NULL, 0);
+	SDL_FillRect(screengame_32, NULL, 0);	
 }
 
 void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
-	SDL_FillRect(vid.screengame, NULL, 0);
+	SDL_FillRect(screengame_16, NULL, 0);	
+	SDL_FillRect(screengame_32, NULL, 0);	
 	memset(vid.fbmmap[0], 0, vid.screen_size);
 	memset(vid.fbmmap[1], 0, vid.screen_size);
 }
