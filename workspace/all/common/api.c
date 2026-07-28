@@ -38,6 +38,7 @@ uint32_t cur_cpu_freq;
 int FIXED_SCALE;
 int is_minarch = 0;
 int current_scaler = SCALER_NEAREST;
+int screen_scaling = SCALE_ASPECT;
 ////////////////////////////////
 
 int USER_BTN_UP;
@@ -458,6 +459,12 @@ int GFX_wrapText(TTF_Font* font, char* str, int max_width, int max_lines) {
 	
 	if (line_width>max_line_width) max_line_width = line_width;
 	return max_line_width;
+}
+
+int GFX_getRealScaler(void){
+	//scaling is SCALE_SOMETHING
+	//scaler is nearest/bilinear sharp.
+	return ((screen_scaling>0) & (current_scaler>0));
 }
 
 ///////////////////////////////

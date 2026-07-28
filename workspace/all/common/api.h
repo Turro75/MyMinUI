@@ -65,6 +65,7 @@ extern int TARGET_FPS;
 extern uint32_t cur_cpu_freq;
 extern int is_minarch;
 extern int current_scaler;
+extern int screen_scaling;
 
 
 //////////////////////////////
@@ -504,6 +505,7 @@ int PLAT_getProcessorTemp(void);
 
 int PLAT_getScreenRotation(int game);
 SDL_Surface* PLAT_getScreenGame(void);
+int GFX_getRealScaler(void);
 
 int FlipRotate000(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);
 int FlipRotate090(SDL_Surface *buffer, void * fbmmap, int linewidth, SDL_Rect targetarea);

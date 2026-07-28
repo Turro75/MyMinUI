@@ -79,7 +79,6 @@ extern int overclock; // normal
 
 
 // default frontend options
-static int screen_scaling = SCALE_ASPECT;
 //static int screen_max_scale = 5; //6x
 static int screen_effect = EFFECT_NONE;
 static int prevent_tearing = 1; // lenient
@@ -1397,10 +1396,13 @@ static int toggle_thread = 0;
 char effect_str[5];
 static void Config_syncFrontend(char* key, int value) {
 	int i = -1;
+	int real_scaler;
 	if (exactMatch(key,config.frontend.options[FE_OPT_SCALING].key)) {
+		real_scaler = GFX_getRealScaler();
 		screen_scaling 	= value;
-		if (screen_scaling==SCALE_NATIVE) current_scaler=SCALER_NEAREST;
-		screengame = PLAT_getScreenGame();
+		if (real_scaler != GFX_getRealScaler()){
+			screengame = PLAT_getScreenGame();
+		}
 		renderer.dst_p = 0;
 		i = FE_OPT_SCALING;
 	}
@@ -1424,10 +1426,16 @@ static void Config_syncFrontend(char* key, int value) {
 		i = FE_OPT_EFFECT;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_SCALER].key)) {
+		real_scaler = GFX_getRealScaler();
 		current_scaler = value;
-		if (screen_scaling==SCALE_NATIVE) current_scaler=SCALER_NEAREST;
-		screengame = PLAT_getScreenGame();
-		renderer.dst_p = 0;
+		if (real_scaler != GFX_getRealScaler())
+		{
+			screengame = PLAT_getScreenGame();
+			renderer.dst_p = 0;
+		}
+	//	if (screen_scaling==SCALE_NATIVE) current_scaler=SCALER_NEAREST;
+		
+	//	renderer.dst_p = 0;
 		i = FE_OPT_SCALER;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_TEARING].key)) {
@@ -3144,7 +3152,7 @@ void video_refresh_callback_resize(void) {
 	renderer.dst_h = targetarea.h;
 	renderer.dst_x = targetarea.x;
 	renderer.dst_y = targetarea.y;	
-	renderer.dst_p = renderer.dst_w * FIXED_BPP * (1+current_scaler);	
+	renderer.dst_p = renderer.dst_w * FIXED_BPP * (1+GFX_getRealScaler());	
 	renderer.resize = 0;
 	if (renderer.screenscaling != screen_scaling) {
 		renderer.resize = 1;
@@ -3198,7 +3206,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 //	gettimeofday(&now1,NULL);
 	if (renderer.dst_p==0 || renderer.resize ==1) {
 		video_refresh_callback_resize();
-		GFX_clearAll();	
+		//GFX_clearAll();	
 	}
 //	gettimeofday(&now2,NULL);
 //	screengame = PLAT_getScreenGame();

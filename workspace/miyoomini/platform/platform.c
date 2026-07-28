@@ -516,8 +516,7 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	else {
 //	scale_mat_fast_bilinear_rgb565_neon(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
 //	scale_mat_sharp_bilinear_rgb565_neon_ultra(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
-
-		if (current_scaler == SCALER_NEAREST) {
+		if (GFX_getRealScaler() == SCALER_NEAREST) {
 			scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
 		} else {
 			vid.page ^= !show_debug;
@@ -591,12 +590,12 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		//the image must be rotated by 180° 
 		//pixman_composite_src_0565_8888_asm_neon(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset*sync, vid.screengame->pitch/2, vid.screengame->pixels, vid.screengame->pitch/2);
 	//      clock_gettime(CLOCK_MONOTONIC, &mid_time);
-			if ((current_scaler == SCALER_NEAREST)||(effect_type != EFFECT_NONE)){
+			if ((GFX_getRealScaler() == SCALER_NEAREST)||(effect_type != EFFECT_NONE)){
 				neon_convert_565_to_8888(vid.screengame->w,vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
 			} else {
 				if (!quick) neon_copy_argb8888(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->pitch, vid.screengame->pixels, vid.screengame->pitch);
 			//	memcpy(vid.fbmmap+vid.page*vid.offset,vid.screengame->pixels,vid.screengame->pitch*vid.screengame->w);
-		}
+			}
 		
 	//	clock_gettime(CLOCK_MONOTONIC, &end_time);
 	//	uint64_t scaler_elapsed_ns = (uint64_t)(mid_time.tv_sec - start_time.tv_sec) * 1000000000ULL;
@@ -961,8 +960,7 @@ int PLAT_getScreenRotation(int game) {
 }
 
 SDL_Surface* PLAT_getScreenGame(void) {
-	
-	if ((current_scaler==SCALER_NEAREST)||(effect_type!=EFFECT_NONE)) {
+	if ((GFX_getRealScaler()==SCALER_NEAREST)||(effect_type!=EFFECT_NONE)) {
 		vid.screengame = screengame_16;
 	} else {
 		vid.screengame = screengame_32;

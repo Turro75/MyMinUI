@@ -515,7 +515,7 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	else {
 	//	scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
 		//SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
-		if (current_scaler == SCALER_NEAREST) {
+		if (GFX_getRealScaler() == SCALER_NEAREST) {
 			scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
 		} else {
 			vid.page ^= !show_debug;
@@ -599,7 +599,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 	} else {
 		// No Rotation
 //      clock_gettime(CLOCK_MONOTONIC, &mid_time);
-			if ((current_scaler == SCALER_NEAREST)||(effect_type != EFFECT_NONE)){
+			if ((GFX_getRealScaler() == SCALER_NEAREST)||(effect_type != EFFECT_NONE)){
 				neon_convert_565_to_8888_abgr(vid.screengame->w,vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->w, vid.screengame->pixels, vid.screengame->w);
 			} else {
 				if (!quick) neon_copy_abgr8888(vid.screengame->w, vid.screengame->h, vid.fbmmap+vid.page*vid.offset, vid.screengame->pitch, vid.screengame->pixels, vid.screengame->pitch);
@@ -781,7 +781,7 @@ int PLAT_getScreenRotation(int game) {
 
 SDL_Surface* PLAT_getScreenGame(void) {
 	
-	if ((current_scaler==SCALER_NEAREST)||(effect_type!=EFFECT_NONE)) {
+	if ((GFX_getRealScaler()==SCALER_NEAREST)||(effect_type!=EFFECT_NONE)) {
 		vid.screengame = screengame_16;
 	} else {
 		vid.screengame = screengame_32;
