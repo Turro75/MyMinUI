@@ -1,0 +1,11 @@
+--- a/nis/nss_nisplus/nisplus-alias.c	2016-08-02 04:01:36.000000000 +0200
++++ b/nis/nss_nisplus/nisplus-alias.c	2026-07-30 18:46:12.304475009 +0200
+@@ -291,7 +291,7 @@
+ 	return status;
+     }
+ 
+-  if (name != NULL)
++  if (name == NULL)
+     {
+       *errnop = EINVAL;
+       return NSS_STATUS_UNAVAIL;

@@ -1,7 +1,5 @@
 #!/bin/sh
 
-cp -a ~/lib/* ~/buildroot/output/host/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/
-
 mkdir -p /opt/my282-toolchain
 if [ -d /opt/my282-toolchain/usr ]; then
 	rm -fr /opt/my282-toolchain/usr
@@ -11,21 +9,23 @@ cp -rf ~/buildroot/output/host/* /opt/my282-toolchain/
 cd /opt/my282-toolchain
 ln -s ./ usr
 
-if [ -f ~/hwcap.h ]; then
-	cp ~/hwcap.h arm-buildroot-linux-gnueabihf/sysroot/usr/include/asm/
+if [ -f /root/hwcap.h ]; then
+	cp -f /root/hwcap.h /opt/my282-toolchain/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/asm/
 fi
 
+cp -a /root/lib/* /opt/my282-toolchain/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/
 
-cp ~/relocate-sdk.sh /opt/my282-toolchain/
-cp ~/sdk-location /opt/my282-toolchain/
+
+cp /root/relocate-sdk.sh /opt/my282-toolchain/
+cp /root/sdk-location /opt/my282-toolchain/
 /opt/my282-toolchain/relocate-sdk.sh
 
 #pack the toolchain for speed up next builds
 
 
 # move the rootfs.img and tar.gz to workspace
-mv ~/buildroot/output/images/rootfs.tar.gz  /opt/my282-toolchain/
-mv ~/buildroot/output/images/rootfs.ext2  /opt/my282-toolchain/
+cp /root/buildroot/output/images/rootfs.tar.gz  /opt/my282-toolchain/
+cp /root/buildroot/output/images/rootfs.ext2  /opt/my282-toolchain/
 
 cd /opt/
 tar -czvf my282_toolchain_glibc.tar.gz my282-toolchain/

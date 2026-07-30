@@ -1,13 +1,6 @@
-From c79aedf13fe693da0fc5c4ff727aed5bd43526dc Mon Sep 17 00:00:00 2001
-From: Hutson Betts <hutson@hyper-expanse.net>
-Date: Thu, 10 Dec 2020 21:13:54 -0600
-Subject: [PATCH] glibc 2.28
-
-
-diff --git a/lib/fflush.c b/lib/fflush.c
-index ef2a7f1..787790d 100644
---- a/lib/fflush.c
-+++ b/lib/fflush.c
+diff -ur host-m4-1.4.17/lib/fflush.c m4_patched/lib/fflush.c
+--- host-m4-1.4.17/lib/fflush.c	2013-09-22 08:15:20.000000000 +0200
++++ m4_patched/lib/fflush.c	2026-07-29 16:13:02.460872005 +0200
 @@ -33,7 +33,7 @@
  #undef fflush
  
@@ -17,16 +10,16 @@ index ef2a7f1..787790d 100644
  
  /* Clear the stream's ungetc buffer, preserving the value of ftello (fp).  */
  static void
-@@ -72,7 +72,7 @@ clear_ungetc_buffer (FILE *fp)
+@@ -71,7 +71,7 @@
  
  #endif
  
 -#if ! (defined _IO_ftrylockfile || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */)
 +#if ! (defined _IO_EOF_SEEN || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */)
  
- # if (defined __sferror || defined __DragonFly__ || defined __ANDROID__) && defined __SNPT
- /* FreeBSD, NetBSD, OpenBSD, DragonFly, Mac OS X, Cygwin, Android */
-@@ -148,7 +148,7 @@ rpl_fflush (FILE *stream)
+ # if (defined __sferror || defined __DragonFly__) && defined __SNPT /* FreeBSD, NetBSD, OpenBSD, DragonFly, Mac OS X, Cygwin */
+ 
+@@ -145,7 +145,7 @@
    if (stream == NULL || ! freading (stream))
      return fflush (stream);
  
@@ -35,24 +28,10 @@ index ef2a7f1..787790d 100644
  
    clear_ungetc_buffer_preserving_position (stream);
  
-diff --git a/lib/fpending.c b/lib/fpending.c
-index ce93604..9fe7ffb 100644
---- a/lib/fpending.c
-+++ b/lib/fpending.c
-@@ -32,7 +32,7 @@ __fpending (FILE *fp)
-   /* Most systems provide FILE as a struct and the necessary bitmask in
-      <stdio.h>, because they need it for implementing getc() and putc() as
-      fast macros.  */
--#if defined _IO_ftrylockfile || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
-+#if defined _IO_EOF_SEEN || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
-   return fp->_IO_write_ptr - fp->_IO_write_base;
- #elif defined __sferror || defined __DragonFly__ || defined __ANDROID__
-   /* FreeBSD, NetBSD, OpenBSD, DragonFly, Mac OS X, Cygwin, Android */
-diff --git a/lib/fpurge.c b/lib/fpurge.c
-index 53ee68c..7cba3a3 100644
---- a/lib/fpurge.c
-+++ b/lib/fpurge.c
-@@ -62,7 +62,7 @@ fpurge (FILE *fp)
+diff -ur host-m4-1.4.17/lib/fpurge.c m4_patched/lib/fpurge.c
+--- host-m4-1.4.17/lib/fpurge.c	2013-09-22 08:15:20.000000000 +0200
++++ m4_patched/lib/fpurge.c	2026-07-29 16:26:20.890125120 +0200
+@@ -61,7 +61,7 @@
    /* Most systems provide FILE as a struct and the necessary bitmask in
       <stdio.h>, because they need it for implementing getc() and putc() as
       fast macros.  */
@@ -61,10 +40,9 @@ index 53ee68c..7cba3a3 100644
    fp->_IO_read_end = fp->_IO_read_ptr;
    fp->_IO_write_ptr = fp->_IO_write_base;
    /* Avoid memory leak when there is an active ungetc buffer.  */
-diff --git a/lib/freadahead.c b/lib/freadahead.c
-index cfc969b..5e43e13 100644
---- a/lib/freadahead.c
-+++ b/lib/freadahead.c
+diff -ur host-m4-1.4.17/lib/freadahead.c m4_patched/lib/freadahead.c
+--- host-m4-1.4.17/lib/freadahead.c	2013-09-22 08:15:20.000000000 +0200
++++ m4_patched/lib/freadahead.c	2026-07-29 16:26:20.890153037 +0200
 @@ -25,7 +25,7 @@
  size_t
  freadahead (FILE *fp)
@@ -74,11 +52,10 @@ index cfc969b..5e43e13 100644
    if (fp->_IO_write_ptr > fp->_IO_write_base)
      return 0;
    return (fp->_IO_read_end - fp->_IO_read_ptr)
-diff --git a/lib/freading.c b/lib/freading.c
-index 05cb0b8..f1da5b9 100644
---- a/lib/freading.c
-+++ b/lib/freading.c
-@@ -31,7 +31,7 @@ freading (FILE *fp)
+diff -ur host-m4-1.4.17/lib/freading.c m4_patched/lib/freading.c
+--- host-m4-1.4.17/lib/freading.c	2013-09-22 08:15:20.000000000 +0200
++++ m4_patched/lib/freading.c	2026-07-29 16:26:20.890109662 +0200
+@@ -31,7 +31,7 @@
    /* Most systems provide FILE as a struct and the necessary bitmask in
       <stdio.h>, because they need it for implementing getc() and putc() as
       fast macros.  */
@@ -87,11 +64,10 @@ index 05cb0b8..f1da5b9 100644
    return ((fp->_flags & _IO_NO_WRITES) != 0
            || ((fp->_flags & (_IO_NO_READS | _IO_CURRENTLY_PUTTING)) == 0
                && fp->_IO_read_base != NULL));
-diff --git a/lib/fseeko.c b/lib/fseeko.c
-index 0c01c4f..0601619 100644
---- a/lib/fseeko.c
-+++ b/lib/fseeko.c
-@@ -47,7 +47,7 @@ fseeko (FILE *fp, off_t offset, int whence)
+diff -ur host-m4-1.4.17/lib/fseeko.c m4_patched/lib/fseeko.c
+--- host-m4-1.4.17/lib/fseeko.c	2013-09-22 08:15:55.000000000 +0200
++++ m4_patched/lib/fseeko.c	2026-07-29 16:26:20.890138037 +0200
+@@ -47,7 +47,7 @@
  #endif
  
    /* These tests are based on fpurge.c.  */
@@ -100,7 +76,7 @@ index 0c01c4f..0601619 100644
    if (fp->_IO_read_end == fp->_IO_read_ptr
        && fp->_IO_write_ptr == fp->_IO_write_base
        && fp->_IO_save_base == NULL)
-@@ -123,7 +123,7 @@ fseeko (FILE *fp, off_t offset, int whence)
+@@ -121,7 +121,7 @@
            return -1;
          }
  
@@ -108,11 +84,10 @@ index 0c01c4f..0601619 100644
 +#if defined _IO_EOF_SEEN || __GNU_LIBRARY__ == 1 /* GNU libc, BeOS, Haiku, Linux libc5 */
        fp->_flags &= ~_IO_EOF_SEEN;
        fp->_offset = pos;
- #elif defined __sferror || defined __DragonFly__ || defined __ANDROID__
-diff --git a/lib/stdio-impl.h b/lib/stdio-impl.h
-index 766d693..75fe3ad 100644
---- a/lib/stdio-impl.h
-+++ b/lib/stdio-impl.h
+ #elif defined __sferror || defined __DragonFly__ /* FreeBSD, NetBSD, OpenBSD, DragonFly, Mac OS X, Cygwin */
+diff -ur host-m4-1.4.17/lib/stdio-impl.h m4_patched/lib/stdio-impl.h
+--- host-m4-1.4.17/lib/stdio-impl.h	2013-09-22 08:20:02.000000000 +0200
++++ m4_patched/lib/stdio-impl.h	2026-07-29 16:28:20.333205688 +0200
 @@ -18,6 +18,12 @@
     the same implementation of stdio extension API, except that some fields
     have different naming conventions, or their access requires some casts.  */
@@ -125,7 +100,5 @@ index 766d693..75fe3ad 100644
 +#endif
  
  /* BSD stdio derived implementations.  */
- 
--- 
-2.25.1
+
 

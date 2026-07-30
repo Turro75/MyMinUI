@@ -1,0 +1,11 @@
+--- a/gcc/ubsan.c.orig	2026-07-29 17:13:25.767567870 +0200
++++ b/gcc/ubsan.c	2026-07-29 16:57:45.849834011 +0200
+@@ -1469,7 +1469,7 @@
+ 
+   expanded_location xloc = expand_location (loc);
+   if (xloc.file == NULL || strncmp (xloc.file, "\1", 2) == 0
+-      || xloc.file == '\0' || xloc.file[0] == '\xff'
++      || xloc.file[0] == '\0' || xloc.file[0] == '\xff'
+       || xloc.file[1] == '\xff')
+     return false;
+ 

@@ -1,0 +1,21 @@
+diff -ru patchelf-orig/patchelf.hash patchelf/patchelf.hash
+--- a/package/patchelf/patchelf.hash	2016-11-30 23:16:22.000000000 +0100
++++ b/package/patchelf/patchelf.hash	2026-07-30 08:06:01.270275005 +0200
+@@ -1,2 +1,2 @@
+ # Locally calculated
+-sha256	14af06a2da688d577d64ff8dac065bb8903bbffbe01d30c62df7af9bf4ce72fe	patchelf-0.8.tar.gz
++sha256	f2aa40a6148cb3b0ca807a1bf836b081793e55ec9e5540a5356d800132be7e0a	patchelf-0.9.tar.gz
+diff -ru patchelf-orig/patchelf.mk patchelf/patchelf.mk
+--- a/package/patchelf/patchelf.mk	2016-11-30 23:16:22.000000000 +0100
++++ b/package/patchelf/patchelf.mk	2026-07-30 08:03:19.718717000 +0200
+@@ -4,8 +4,8 @@
+ #
+ ################################################################################
+ 
+-PATCHELF_VERSION = 0.8
+-PATCHELF_SITE = http://releases.nixos.org/patchelf/patchelf-0.8
++PATCHELF_VERSION = 0.9
++PATCHELF_SITE = http://releases.nixos.org/patchelf/patchelf-0.9
+ PATCHELF_LICENSE = GPLv3+
+ PATCHELF_LICENSE_FILES = COPYING
+ 

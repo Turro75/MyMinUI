@@ -1,0 +1,81 @@
+diff -ur e2fsprogs-1.43.3/debugfs/debugfs.c host-e2fsprogs-1.43.3/debugfs/debugfs.c
+--- e2fsprogs-1.43.3/debugfs/debugfs.c	2016-09-02 06:17:32.000000000 +0200
++++ host-e2fsprogs-1.43.3/debugfs/debugfs.c	2026-07-29 20:12:01.653536003 +0200
+@@ -36,6 +36,7 @@
+ #include "../version.h"
+ #include "jfs_user.h"
+ #include "support/plausible.h"
++#include <sys/sysmacros.h>
+ 
+ #ifndef BUFSIZ
+ #define BUFSIZ 8192
+diff -ur e2fsprogs-1.43.3/lib/ext2fs/ismounted.c host-e2fsprogs-1.43.3/lib/ext2fs/ismounted.c
+--- e2fsprogs-1.43.3/lib/ext2fs/ismounted.c	2016-09-02 06:17:32.000000000 +0200
++++ host-e2fsprogs-1.43.3/lib/ext2fs/ismounted.c	2026-07-29 20:04:28.472627001 +0200
+@@ -52,6 +52,7 @@
+ 
+ #include "ext2_fs.h"
+ #include "ext2fs.h"
++#include <sys/sysmacros.h>
+ 
+ #ifdef HAVE_SETMNTENT
+ /*
+diff -ur e2fsprogs-1.43.3/misc/create_inode.c host-e2fsprogs-1.43.3/misc/create_inode.c
+--- e2fsprogs-1.43.3/misc/create_inode.c	2016-09-02 06:17:32.000000000 +0200
++++ host-e2fsprogs-1.43.3/misc/create_inode.c	2026-07-29 20:09:49.419308011 +0200
+@@ -28,6 +28,7 @@
+ 
+ #include "create_inode.h"
+ #include "support/nls-enable.h"
++#include <sys/sysmacros.h>
+ 
+ /* 64KiB is the minimium blksize to best minimize system call overhead. */
+ #define COPY_FILE_BUFLEN	65536
+@@ -392,7 +393,7 @@
+ }
+ #endif /* !defined HAVE_PREAD64 && !defined HAVE_PREAD */
+ 
+-static errcode_t copy_file_range(ext2_filsys fs, int fd, ext2_file_t e2_file,
++static errcode_t copy_file_chunk(ext2_filsys fs, int fd, ext2_file_t e2_file,
+ 				 off_t start, off_t end, char *buf,
+ 				 char *zerobuf)
+ {
+@@ -466,7 +467,7 @@
+ 
+ 		data_blk = data & ~(fs->blocksize - 1);
+ 		hole_blk = (hole + (fs->blocksize - 1)) & ~(fs->blocksize - 1);
+-		err = copy_file_range(fs, fd, e2_file, data_blk, hole_blk, buf,
++		err = copy_file_chunk(fs, fd, e2_file, data_blk, hole_blk, buf,
+ 				      zerobuf);
+ 		if (err)
+ 			return err;
+@@ -516,7 +517,7 @@
+ 		}
+ 		for (i = 0, ext = ext_buf; i < fiemap_buf->fm_mapped_extents;
+ 		     i++, ext++) {
+-			err = copy_file_range(fs, fd, e2_file, ext->fe_logical,
++			err = copy_file_chunk(fs, fd, e2_file, ext->fe_logical,
+ 					      ext->fe_logical + ext->fe_length,
+ 					      buf, zerobuf);
+ 			if (err)
+@@ -569,7 +570,7 @@
+ 		goto out;
+ #endif
+ 
+-	err = copy_file_range(fs, fd, e2_file, 0, statbuf->st_size, buf,
++	err = copy_file_chunk(fs, fd, e2_file, 0, statbuf->st_size, buf,
+ 			      zerobuf);
+ out:
+ 	ext2fs_free_mem(&zerobuf);
+diff -ur e2fsprogs-1.43.3/misc/ismounted.c host-e2fsprogs-1.43.3/misc/ismounted.c
+--- e2fsprogs-1.43.3/misc/ismounted.c	2016-09-02 06:17:32.000000000 +0200
++++ host-e2fsprogs-1.43.3/misc/ismounted.c	2026-07-29 19:53:34.102491004 +0200
+@@ -32,7 +32,7 @@
+ #include <ctype.h>
+ 
+ #include "fsck.h"
+-
++#include <sys/sysmacros.h>
+ /*
+  * ext2fs_check_if_mounted flags
+  */

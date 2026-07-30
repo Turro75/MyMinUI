@@ -26,6 +26,7 @@ RUN apt-get -y update && apt-get -y install \
 	tree \
 	unzip \
 	vim \
+	subversion \
 	wget \
 	mc \
 	zip \
