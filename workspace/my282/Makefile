@@ -13,7 +13,6 @@ endif
 ###########################################################
 
 REQUIRES_UNZIP60=other/unzip60
-REQUIRES_LIBSAMPLERATE=other/libsamplerate
 REQUIRES_NDS=other/nds
 
 all: readmes
@@ -22,7 +21,7 @@ all: readmes
 #	cd other/DinguxCommander && make
 #   cd other/squashfs && make
 #	cp -L $(PREFIX)/lib/libsamplerate.so.0 $(REQUIRES_LIBSAMPLERATE)/
-early: $(REQUIRES_UNZIP60)  $(REQUIRES_NDS)
+early: $(REQUIRES_UNZIP60) $(REQUIRES_NDS)
 	mkdir -p other
 	cd $(REQUIRES_UNZIP60) && make -f unix/Makefile.trimuismart unzip
 #	cd $(REQUIRES_LIBSAMPLERATE) && make && make install
@@ -40,16 +39,8 @@ clean:
 $(REQUIRES_UNZIP60):
 	git clone --depth 1 https://github.com/shauninman/unzip60.git $(REQUIRES_UNZIP60)
 
-$(REQUIRES_LIBSAMPLERATE):
-	mkdir -p $(REQUIRES_LIBSAMPLERATE)
-#	git clone https://github.com/libsndfile/libsamplerate.git $(REQUIRES_LIBSAMPLERATE)
-#	cd $(REQUIRES_LIBSAMPLERATE) && git checkout 0.1.9
-#	cd $(REQUIRES_LIBSAMPLERATE) && ./autogen.sh
-#	cd $(REQUIRES_LIBSAMPLERATE) && ./configure --host=arm-buildroot-linux-gnueabihf --prefix=$(PREFIX)
-#	
-
 $(REQUIRES_NDS):
-	rmdir -r $(REQUIRES_NDS) | true
+	rm -r $(REQUIRES_NDS) | true
 	git clone https://github.com/Turro75/nds.git $(REQUIRES_NDS)
 	cd $(REQUIRES_NDS) && git checkout 55d45ea
 	cd $(REQUIRES_NDS) && patch -p1 < ../nds_19.patch

@@ -167,3 +167,7 @@ int getInt(char* path) {
 int GetHDMI(void) {
 	return getInt("/sys/class/switch/hdmi/state");
 }
+
+int GetMute(void) { return 0; }
+void SetMute(int value) {}
+

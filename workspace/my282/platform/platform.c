@@ -762,9 +762,9 @@ void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 	else           *charge =  10;
 
 	// wifi status, just hooking into the regular PWR polling
-	// char status[16];
-	// getFile("/sys/class/net/wlan0/operstate", status,16);
-	// online = prefixMatch("up", status);
+	char status[16];
+	getFile("/sys/class/net/wlan0/operstate", status,16);
+	online = prefixMatch("up", status);
 }
 
 #define LED_PATH "/sys/class/leds/led1/brightness"
@@ -847,11 +847,50 @@ int PLAT_isOnline(void) {
 	return online;
 }
 
-char* PLAT_getIPAddress(void){
-	char *outstr = NULL;
-	outstr = malloc(8); // Alloca memoria per la stringa
-	strcpy(outstr,"Offline");
-	return outstr;
+char* PLAT_getIPAddress(void) {
+    FILE *fp;
+    char _buffer[256];
+    char *outstr = NULL;
+	if (!online){
+		return "Offline";
+	}
+
+    // Esegue il comando e legge l'output
+	//ip_address="$(ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)"
+    fp = popen("ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1", "r");
+/*
+ ip route
+default via 192.168.1.1 dev wlan0 proto dhcp metric 600 
+192.168.1.0/24 dev wlan0 proto kernel scope link src 192.168.1.247 metric 600 
+*/
+
+    if (fp == NULL) {
+        LOG_info("getIpAddress popen failed - %s\n", strerror(errno));
+        return NULL; // Restituisce NULL in caso di errore
+    }
+
+    // Legge l'output riga per riga
+    if (fgets(_buffer, sizeof(_buffer), fp) != NULL) {
+        // Alloca memoria per la stringa di output
+        size_t len = strlen(_buffer);
+        if (len > 0 && _buffer[len - 1] == '\n') {
+            _buffer[len - 1] = '\0'; // Rimuove il carattere di newline
+        }
+        outstr = malloc(len + 1); // Alloca memoria per la stringa
+        if (outstr != NULL) {
+            strcpy(outstr, _buffer); // Copia la stringa
+        } else {
+            LOG_info("Memory allocation failed for IP address\n");
+        }
+    }
+
+    // Chiude lo stream
+    int status = pclose(fp);
+    if (status == -1) {
+        LOG_info("pclose failed - %s\n", strerror(errno));
+    }
+	
+    return outstr; // Restituisce la stringa allocata o NULL
 }
 
 int PLAT_getScreenRotation(int game) {
