@@ -44,6 +44,7 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 ## Main features added by MyMinUI to Min/FinUI till Today:
   - completely rewritten CPU rendering engine based on neon, multicores and double buffering to maximize performances avoiding screen tearing effect
   - additional aspect ratio options: extended (middle way between aspect and fullscreen), force 4:3 and 3:2 useful for squared screens.
+  - replaced sharpness setting (hidden since epoch) by a new scaler setting in options->frontend, now it can be selected the scaler as nearest neighbor (fast and good for integer scaling) and the bilinear sharp (a bit slow but better on anything else)
   - provide MAX overclock setting
   - png boxart supported for systems and roms
   - added Fancy Mode to show boxart and selecting save states using previews.
@@ -56,7 +57,7 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
   - ability to map left analog stick as dpad and ABXY buttons as right analog stick
   - play as player X feature that allows impersonating p2,p3 and p4.
   - auto detect 15,16 and 32bits source frame img.
-  - implement audio fix (taken from NextUI) for better audio handling on some emulators.
+  - implemented a new audio engine to avoid audio popping/crackling, removed the nextui audio fix.
   - reworked install/update process to let the user simply copying the release file to the sdcard
   - moved from libSDL to libSDL2
   - add 256MB of swapfile on miyoomini and rg35xx allowing neogeo games able to run.
@@ -78,6 +79,24 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 
 # New features of MyMinUI:
+
+# Release 05/08/2026
+
+### ALL:
+-  replaced the audio fix taken from nextui by a new audio engine that has been implemented to avoid the need of a setting to get the proper audio. Removed the setting Audio Sync as now useless.
+-  implemented a new scaler algorithm, a new setting is now available in the options -> frontend->screen_scaler as near or sharp. near means Nearest Neighbor while Sharp means Bilinear Sharp. When aspect is set to native the system automatically select the nearest neighbor algo even if sharp is selected. Since bilinear sharp is a bit heavier it will loose few FPS when debug hub is active. 
+- removed Sharpness setting as unused
+- various bug fix 
+
+# my282:
+- downgraded the toolchain as it turned out that the previous toolchain sometimes produced binaries not supported by system libraries.
+
+# h700:
+- improved dpad handling
+- refined picodrive compilation flags to let newer system able to run binaries built by old toolchains 
+
+# r36s:
+- improved dpad handling on rg351p
 
 # Release 12/07/2026
 
