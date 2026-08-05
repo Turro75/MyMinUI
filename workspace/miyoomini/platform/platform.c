@@ -137,6 +137,7 @@ void PLAT_pollInput(void) {
 				if (pad.is_pressed & btn) {
 					if ((tick - pad.begin_time[id]) > (PAD_REPEAT_DELAY + PAD_REPEAT_INTERVAL)) {
 						pad.just_released	|= btn; // set
+						pad.just_released_short	&= ~btn; // unset
 					} else {
 						pad.just_released_short	|= btn; // set
 					}
@@ -875,11 +876,11 @@ char* PLAT_getIPAddress(void) {
     char _buffer[256];
     char *outstr = NULL;
 	if (!is_plus || !lid.has_lid){
-		return "Offline";
+		return NULL;
 	}
 
     // Esegue il comando e legge l'output
-    fp = popen("ip route | cut -d' ' -f6 | uniq | grep \"\\.\"", "r");
+    fp = popen("ip addr show wlan0 | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1", "r");
 /*
  ip route
 default via 192.168.1.1 dev wlan0 proto dhcp metric 600 
@@ -903,6 +904,7 @@ default via 192.168.1.1 dev wlan0 proto dhcp metric 600
             strcpy(outstr, _buffer); // Copia la stringa
         } else {
             LOG_info("Memory allocation failed for IP address\n");
+			return NULL; // Restituisce NULL in caso di errore di allocazione
         }
     }
 

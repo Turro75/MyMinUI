@@ -2145,7 +2145,7 @@ int main (int argc, char *argv[]) {
 						SDL_BlitSurface(ip_addr_txt, NULL, version, &(SDL_Rect){x,SCALE1(VERSION_LINE_HEIGHT*4)});
 						SDL_FreeSurface(ip_txt);
 						SDL_FreeSurface(ip_addr_txt);	
-						free(ip_addr);					
+						if (ip_addr) free(ip_addr);					
 					}	
 				//}
 				SDL_BlitSurface(version, NULL, screen, &(SDL_Rect){(screen->w-version->w)/2,(screen->h-version->h)/4});
