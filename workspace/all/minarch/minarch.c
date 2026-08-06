@@ -1622,7 +1622,15 @@ static void Config_readOptionsString(char* cfg) {
 			}
 		pad.map_leftstick_to_dpad = config.controller_map_lstick_to_dpad;
 	}
-	 
+
+	if (Config_getValue(cfg,"TurboSpeed",value,NULL)) {
+		int speed = TURBO_NORMAL; // an unknown value falls back to Normal
+		for (int i=0; turbo_speed_labels[i]; i++) {
+			if (!strcmp(turbo_speed_labels[i], value)) { speed = i; break; }
+		}
+		turbo_speed = speed;
+	}
+
 	for (int i=0; config.core.options[i].key; i++) {
 		Option* option = &config.core.options[i];
 		if (!Config_getValue(cfg, option->key, value, &option->lock)) continue;
@@ -1639,9 +1647,15 @@ static void Config_readControlsString(char* cfg) {
 	char* tmp;
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
+
+		// comes before the continue below: a cfg without the `bind` line for this
+		// button may still carry its `turbo` line
+		sprintf(key, "turbo %s", mapping->name);
+		if (Config_getValue(cfg, key, value, NULL)) mapping->turbo = strstr(value, "On") ? 1 : 0;
+
 		sprintf(key, "bind %s", mapping->name);
 		sprintf(value, "NONE");
-		
+
 		if (!Config_getValue(cfg, key, value, NULL)) continue;
 		if ((tmp = strrchr(value, ':'))) *tmp = '\0'; // this is a binding artifact in default.cfg, ignore
 		
@@ -1761,12 +1775,14 @@ static void Config_write(int override) {
 
 	fprintf(file,"%s = %s\n", "MapABXYtoRightStick", config.controller_map_abxy_to_rstick ? "On" : "Off");
 	fprintf(file,"%s = %s\n", "MapLeftSticktoDPad", config.controller_map_lstick_to_dpad ? "On" : "Off");
+	fprintf(file,"%s = %s\n", "TurboSpeed", turbo_speed_labels[turbo_speed]);
 
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
 		int j = mapping->local + 1;
 		if (mapping->mod) j += LOCAL_BUTTON_COUNT;
 		fprintf(file, "bind %s = %s\n", mapping->name, button_labels[j]);
+		if (Turbo_isSupported(mapping->retro)) fprintf(file, "turbo %s = %s\n", mapping->name, mapping->turbo ? "On" : "Off");
 	}
 	for (int i=0; config.shortcuts[i].name; i++) {
 		ButtonMapping* mapping = &config.shortcuts[i];
@@ -1809,11 +1825,14 @@ static void Config_restore(void) {
 	config.controller_map_abxy_to_rstick = 0;
 	config.controller_map_lstick_to_dpad = 0;
 	pad.map_leftstick_to_dpad = config.controller_map_lstick_to_dpad;
+	turbo_speed = TURBO_NORMAL;
+	Turbo_resetHeld();
 
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
 		mapping->local = mapping->default_;
 		mapping->mod = 0;
+		mapping->turbo = 0;
 	}
 	for (int i=0; config.shortcuts[i].name; i++) {
 		ButtonMapping* mapping = &config.shortcuts[i];
