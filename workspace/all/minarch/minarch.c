@@ -20,6 +20,7 @@
 #include "defines.h"
 #include "utils.h"
 #include "api.h"
+#include "turbo.h"
 
 #include <sys/sysinfo.h>
 #include <sys/time.h>
@@ -1085,13 +1086,14 @@ enum {
 #define LOCAL_BUTTON_COUNT 16 // depends on device
 #define RETRO_BUTTON_COUNT 16 // allow L3/R3 to be remapped by user if desired, eg. Virtual Boy uses extra buttons for right d-pad
 
-typedef struct ButtonMapping { 
+typedef struct ButtonMapping {
 	char* name;
 	int retro;
 	int local; // TODO: dislike this name...
 	int mod;
 	int default_;
 	int ignore;
+	int turbo;
 } ButtonMapping;
 
 static ButtonMapping default_button_mapping[] = { // used if pak.cfg doesn't exist or doesn't have bindings
@@ -1135,6 +1137,38 @@ static ButtonMapping button_label_mapping[] = { // used to lookup the retro_id a
 };
 #define MAX_CORE_BUTTON_MAPPING 32
 static ButtonMapping core_button_mapping[MAX_CORE_BUTTON_MAPPING] = {0};
+
+static char* turbo_speed_labels[] = {
+	"Slow",
+	"Normal",
+	"Fast",
+	NULL,
+};
+static int turbo_speed = TURBO_NORMAL;
+// sized by MAX_CORE_BUTTON_MAPPING, not RETRO_BUTTON_COUNT:
+// config.controls may point at core_button_mapping, which has 32 entries.
+static uint32_t turbo_held[MAX_CORE_BUTTON_MAPPING] = {0};
+
+static int Turbo_isSupported(int retro_id) {
+	switch (retro_id) {
+		case RETRO_DEVICE_ID_JOYPAD_A:
+		case RETRO_DEVICE_ID_JOYPAD_B:
+		case RETRO_DEVICE_ID_JOYPAD_X:
+		case RETRO_DEVICE_ID_JOYPAD_Y:
+		case RETRO_DEVICE_ID_JOYPAD_L:
+		case RETRO_DEVICE_ID_JOYPAD_R:
+		case RETRO_DEVICE_ID_JOYPAD_L2:
+		case RETRO_DEVICE_ID_JOYPAD_R2:
+		case RETRO_DEVICE_ID_JOYPAD_L3:
+		case RETRO_DEVICE_ID_JOYPAD_R3:
+			return 1;
+		default:
+			return 0;
+	}
+}
+static void Turbo_resetHeld(void) {
+	for (int i=0; i<MAX_CORE_BUTTON_MAPPING; i++) turbo_held[i] = 0;
+}
 
 static const char* device_button_names[LOCAL_BUTTON_COUNT] = {
 	[BTN_ID_DPAD_UP]	= "UP",
