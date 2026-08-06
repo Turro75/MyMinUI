@@ -4803,23 +4803,27 @@ static int Menu_options(MenuList* list) {
 		else if (type==MENU_INPUT) {
 			if (PAD_justPressed(BTN_X)) {
 				MenuItem* item = &items[selected];
-				item->value = 0;
-				
-				if (item->on_change) item->on_change(list, selected);
-				else if (list->on_change) list->on_change(list, selected);
-				
-				// copied from PAD_justRepeated(BTN_DOWN) above
-				selected += 1;
-				if (selected>=count) {
-					selected = 0;
-					start = 0;
-					end = visible_rows;
+				// items that only open a submenu have neither values nor a value to clear;
+				// zeroing value on them would make the drawing read values[0] off a NULL pointer
+				if (item->values) {
+					item->value = 0;
+
+					if (item->on_change) item->on_change(list, selected);
+					else if (list->on_change) list->on_change(list, selected);
+
+					// copied from PAD_justRepeated(BTN_DOWN) above
+					selected += 1;
+					if (selected>=count) {
+						selected = 0;
+						start = 0;
+						end = visible_rows;
+					}
+					else if (selected>=end) {
+						start += 1;
+						end += 1;
+					}
+					dirty = 1;
 				}
-				else if (selected>=end) {
-					start += 1;
-					end += 1;
-				}
-				dirty = 1;
 			}
 		}
 		
