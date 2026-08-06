@@ -4155,6 +4155,77 @@ static int OptionEmulator_openMenu(MenuList* list, int i) {
 	return MENU_CALLBACK_NOP;
 }
 
+static int OptionTurbo_speedChanged(MenuList* list, int i) {
+	MenuItem* item = &list->items[i];
+	turbo_speed = item->value;
+	return MENU_CALLBACK_NOP;
+}
+static int OptionTurbo_buttonChanged(MenuList* list, int i) {
+	MenuItem* item = &list->items[i];
+	config.controls[item->id].turbo = item->value;
+	return MENU_CALLBACK_NOP;
+}
+static MenuList OptionTurbo_menu = {
+	.totalnum = 0,
+	.type = MENU_FIXED,
+	.desc = "Hold a button with Turbo On to fire repeatedly.",
+	.items = NULL
+};
+
+static int OptionTurbo_openMenu(MenuList* list, int i) {
+	if (OptionTurbo_menu.items==NULL) {
+		int count = 0;
+		for (int j=0; config.controls[j].name; j++) {
+			if (config.controls[j].ignore) continue;
+			if (!Turbo_isSupported(config.controls[j].retro)) continue;
+			count += 1;
+		}
+		if (count==0) {
+			Menu_message("This core has no turbo-capable buttons.", (char*[]){ "B","BACK", NULL });
+			return MENU_CALLBACK_NOP;
+		}
+
+		OptionTurbo_menu.totalnum = count + 1; // + Turbo Speed
+		// +1 on the allocation: NULL-name sentinel, same as OptionShortcuts_openMenu
+		OptionTurbo_menu.items = calloc(OptionTurbo_menu.totalnum + 1, sizeof(MenuItem));
+		int k = 0;
+
+		MenuItem* speed = &OptionTurbo_menu.items[k++];
+		speed->name = "Turbo Speed";
+		speed->desc = "Repeat rate: Slow 5/s, Normal 10/s, Fast 15/s.";
+		speed->value = turbo_speed;
+		speed->values = turbo_speed_labels;
+		speed->on_change = OptionTurbo_speedChanged;
+
+		for (int j=0; config.controls[j].name; j++) {
+			ButtonMapping* button = &config.controls[j];
+			if (button->ignore) continue;
+			if (!Turbo_isSupported(button->retro)) continue;
+
+			MenuItem* item = &OptionTurbo_menu.items[k++];
+			item->id = j;
+			item->name = button->name;
+			item->desc = NULL;
+			item->value = button->turbo;
+			item->values = onoff_labels;
+			item->on_change = OptionTurbo_buttonChanged;
+		}
+	}
+	else {
+		// update values
+		int k = 0;
+		OptionTurbo_menu.items[k++].value = turbo_speed;
+		for (int j=0; config.controls[j].name; j++) {
+			ButtonMapping* button = &config.controls[j];
+			if (button->ignore) continue;
+			if (!Turbo_isSupported(button->retro)) continue;
+			OptionTurbo_menu.items[k++].value = button->turbo;
+		}
+	}
+	Menu_options(&OptionTurbo_menu);
+	return MENU_CALLBACK_NOP;
+}
+
 int OptionControls_bind(MenuList* list, int i) {
 	MenuItem* item = &list->items[i];
 	if (item->values!=button_labels) {
@@ -4246,10 +4317,16 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 	if (OptionControls_menu.items==NULL) {
 	//	LOG_info("OptionControls_openMenu Create\n");
 		// TODO: where do I free this?
-		OptionControls_menu.totalnum = RETRO_BUTTON_COUNT+2+has_custom_controllers;
+		OptionControls_menu.totalnum = RETRO_BUTTON_COUNT+3+has_custom_controllers;
 		OptionControls_menu.items = calloc(OptionControls_menu.totalnum, sizeof(MenuItem));
 		int k = 0;
-		
+
+		MenuItem* item1 = &OptionControls_menu.items[k++];
+		item1->name = "Turbo";
+		item1->desc = "Repeat-fire settings per button.";
+		item1->value = -1; // no value on the right; values is left NULL on purpose
+		item1->on_confirm = OptionTurbo_openMenu;
+
 		MenuItem* item2 = &OptionControls_menu.items[k++];
 		item2->name = "MapABXYtoRightStick";
 		item2->desc = "Map ABXY buttons to right stick.";
@@ -4296,7 +4373,9 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 		// update values
 		//LOG_info("OptionControls_openMenu Refresh\n");
 		int k = 0;
-		
+
+		k++; // Turbo: nothing to refresh
+
 		MenuItem* item2 = &OptionControls_menu.items[k++];
 		item2->value = config.controller_map_abxy_to_rstick;
 
