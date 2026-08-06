@@ -2229,8 +2229,22 @@ static void input_poll_callback(void) {
 		int btn_retro = 1 << mapping->retro;
 		if (btn==BTN_NONE) continue; // present buttons can still be unbound
 		if (PAD_isPressed(btn) && (!mapping->mod || PAD_isPressed(BTN_MENU))) {
-			buttons |= 1 << mapping->retro;
+			// ignore_menu comes before the gate: it is about the MENU modifier, not about
+			// the shot. After the continue, the menu would open by itself on the off frames
+			// of a MENU+button bind with turbo enabled.
 			if (mapping->mod) ignore_menu = 1;
+
+			// turbo: the button stays physically held, but the core reads it released on
+			// the off frames of the cycle. The continue also skips the analogs below,
+			// otherwise turbo on L2/R2 would come out half-applied on cores that read the
+			// trigger through the analog axis rather than the bit.
+			if (mapping->turbo && Turbo_isSupported(mapping->retro)) {
+				int fire = Turbo_fire(turbo_held[i], turbo_speed);
+				turbo_held[i] += 1;
+				if (!fire) continue;
+			}
+
+			buttons |= 1 << mapping->retro;
 			analogs[12] = btn_retro==BTN_L2 ? 0x7fff : 0;
 			analogs[13] = btn_retro==BTN_R2 ? 0x7fff : 0;
 			analogs[14] = btn_retro==BTN_L3 ? 0x7fff : 0;
@@ -2245,6 +2259,10 @@ static void input_poll_callback(void) {
 				else if (btn==BTN_B) 		analogs[3]= 0x7fff;
 				else if (btn==BTN_X) 		analogs[3]= -0x7fff;
 			}
+		}
+		else {
+			// without this the phase never restarts and a short tap stops counting as one press
+			turbo_held[i] = 0;
 		}
 		//  && !PWR_ignoreSettingInput(btn, show_setting)
 	}	
@@ -5436,8 +5454,9 @@ static void Menu_loop(void) {
 	}
 
 	SDL_FreeSurface(preview);
-	
+
 	PAD_reset();
+	Turbo_resetHeld(); // do not return to the game mid-cycle with the button still held
 	//PWR_warn(1);
 	GFX_clearAll();
 	GFX_flip(screen);
