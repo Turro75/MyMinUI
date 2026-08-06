@@ -4854,7 +4854,8 @@ static int Menu_options(MenuList* list) {
 						
 						// every value list in an input table is the same
 						// so only calculate rw for the first item...
-						if (!mrw || type!=MENU_INPUT) {
+						// (item->values can be NULL on items that only open a submenu)
+						if (item->values && (!mrw || type!=MENU_INPUT)) {
 							for (int j=0; item->values[j]; j++) {
 								TTF_SizeUTF8(font.tiny, item->values[j], &rw, NULL);
 								if (lw+rw>w) w = lw+rw;
