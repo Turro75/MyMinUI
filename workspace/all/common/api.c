@@ -187,7 +187,7 @@ void InitAssetRects(void) {
 }
 
 
-static uint32_t asset_rgbs[ASSET_COLORS];
+static uint32_t asset_rgbs[ASSET_COUNT];
 GFX_Fonts font;
 
 ///////////////////////////////
