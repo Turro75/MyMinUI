@@ -139,6 +139,8 @@ enum {
 	ASSET_WIFI,
 	ASSET_RED_DOT,
 	ASSET_RED_PAGE,
+
+	ASSET_COUNT, // ASSET_COLORS sits in the middle of this enum, use this to size arrays
 };
 
 typedef struct GFX_Fonts {
