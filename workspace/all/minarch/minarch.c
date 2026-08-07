@@ -4506,7 +4506,7 @@ static MenuList options_menu = {
 };
 
 static void OptionSaveChanges_updateDesc(void) {
-	options_menu.items[4].desc = getSaveDesc();
+	options_menu.items[5].desc = getSaveDesc(); // 5 is "Save Changes", 4 is "Shortcuts"
 }
 
 #define OPTION_PADDING 8
