@@ -2848,7 +2848,7 @@ static inline void copyRow_565_to_8888_NEON(uint16_t *src, uint32_t *dst, int wi
 
         // 2. Estrazione componenti tramite bitwise and e shift
         // Rosso: (pixel >> 11) & 0x1F  -> poi shift a 8 bit (<< 3)
-        uint8x8_t r = vshrn_n_u16(v_565, 8); // Shift a destra di 8 e stringi a 8 bit
+        uint8x8_t r = vmovn_u16(vshrq_n_u16(v_565, 11)); // (pixel >> 11) & 0x1F: isola il rosso prima di stringere
         r = vshl_n_u8(r, 3);                 // Porta a 8 bit (5 bit + 3)
 
         // Verde: (pixel >> 5) & 0x3F   -> poi shift a 8 bit (<< 2)
