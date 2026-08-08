@@ -722,8 +722,8 @@ int swap_buffers_init(void){
     vid.layer_config.info.alpha_mode = 1;
     vid.layer_config.info.alpha_value = 0xff;
 	vid.layer_config.info.fb.align[0] = 4;//bytes
-    //vid.layer_config.info.fb.format = DISP_FORMAT_ARGB_8888;
-	vid.layer_config.info.fb.format = DISP_FORMAT_RGB_565;
+    vid.layer_config.info.fb.format = DISP_FORMAT_ARGB_8888;
+	//vid.layer_config.info.fb.format = DISP_FORMAT_RGB_565;
 	vid.layer_config.info.fb.flags = DISP_BF_NORMAL;
 	vid.layer_config.info.fb.scan = DISP_SCAN_PROGRESSIVE;
     vid.layer_config.info.fb.size[0].width = vid.orig_fbwidth; //have to find a way to get this value from sys
@@ -771,8 +771,8 @@ int swap_buffers(int page){
     vid.layer_config.info.alpha_mode = 1;
     vid.layer_config.info.alpha_value = 0xff;
 	vid.layer_config.info.fb.align[0] = 4;//bytes
-    //vid.layer_config.info.fb.format = DISP_FORMAT_ARGB_8888;
-	vid.layer_config.info.fb.format = DISP_FORMAT_RGB_565;
+    vid.layer_config.info.fb.format = DISP_FORMAT_ARGB_8888;
+	//vid.layer_config.info.fb.format = DISP_FORMAT_RGB_565;
 	vid.layer_config.info.fb.flags = DISP_BF_NORMAL;
 	vid.layer_config.info.fb.scan = DISP_SCAN_PROGRESSIVE;
     vid.layer_config.info.fb.size[0].width = vid.orig_fbwidth; //have to find a way to get this value from sys
@@ -805,6 +805,8 @@ int swap_buffers(int page){
 int cpufreq_menu,cpufreq_game,cpufreq_perf,cpufreq_powersave,cpufreq_max,cpufreq_sleep;
 int isnewdtb;
 //SDL_Surface * page[2];
+
+SDL_Surface *screengame_32;  // 32bpp game surface for the sharp scaler (the layer is ARGB8888)
 
 SDL_Surface* PLAT_initVideo(void) {
 
@@ -974,6 +976,7 @@ SDL_Surface* PLAT_initVideo(void) {
 	vid.screen =  SDL_CreateRGBSurface(0, DEVICE_WIDTH, DEVICE_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screengame =  SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565);
 	vid.screen2 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH, RGBA_MASK_565); 
+	screengame_32 = SDL_CreateRGBSurface(0, GAME_WIDTH, GAME_HEIGHT, FIXED_DEPTH*2, RGBA_MASK_8888);
 	LOG_info("vid.screen: %ix%i\n", vid.screen->w, vid.screen->h);fflush(stdout);
 	LOG_info("vid.screengame: %ix%i\n", vid.screengame->w, vid.screengame->h);fflush(stdout);
 	LOG_info("vid.screen2: %ix%i\n", vid.screen2->w, vid.screen2->h);fflush(stdout);
@@ -1079,6 +1082,7 @@ void PLAT_quitVideo(void) {
 	SDL_FreeSurface(vid.screen);
 	SDL_FreeSurface(vid.screen2);
 	SDL_FreeSurface(vid.screengame);
+	if (screengame_32) SDL_FreeSurface(screengame_32);
 	readDispSys();
 }
 
@@ -1086,12 +1090,14 @@ void PLAT_clearVideo(SDL_Surface* screen) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
+	if (screengame_32) SDL_FillRect(screengame_32, NULL, 0);
 }
 
 void PLAT_clearAll(void) {
 	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	SDL_FillRect(vid.screen2, NULL, 0);
 	SDL_FillRect(vid.screengame, NULL, 0);
+	if (screengame_32) SDL_FillRect(screengame_32, NULL, 0);
 	if (!vid.ionmmapfailed) my_ion_prepareWrite();
 	memset(vid.fbmmap, 0, vid.screen_size*2);
 	if (!vid.ionmmapfailed) my_ion_flushWrite();
@@ -1152,8 +1158,26 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 		scale1x_grid(vid.screen2->pixels, vid.screengame->pixels, vid.screen2->w, vid.screen2->h, vid.screen2->pitch, vid.screengame->w, vid.screengame->h, vid.screengame->pitch);
 	}
 	else {
-		scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
-		//SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+		if ((GFX_getRealScaler()==SCALER_NEAREST)||(vid.ionmmapfailed!=0)) {
+			scale_mat_nearest_lut_rgb565_neon_fast_xy_pitch(renderer->src_surface->pixels, renderer->src_surface->w, renderer->src_surface->h, renderer->src_surface->pitch, vid.screengame->pixels, vid.screengame->w, vid.screengame->h, vid.screengame->pitch, renderer->dst_x, renderer->dst_y,renderer->dst_w, renderer->dst_h);
+			//SDL_SoftStretch(renderer->src_surface, NULL, vid.screen, &(SDL_Rect){renderer->dst_x,renderer->dst_y,renderer->dst_w,renderer->dst_h});
+		} else {
+			// sharp bilinear outputs 32bpp, matching the ARGB8888 layer (same approach as h700/my282/r36s)
+			scale_mat_sharp_bilinear_565_to_8888_neon(
+				(const uint16_t*)renderer->src_surface->pixels,
+				renderer->src_surface->w,
+				renderer->src_surface->h,
+				renderer->src_surface->pitch,
+				(uint32_t*)screengame_32->pixels,
+				screengame_32->w,
+				screengame_32->h,
+				screengame_32->pitch,
+				renderer->dst_x,
+				renderer->dst_y,
+				renderer->dst_w,
+				renderer->dst_h
+			);
+		}
 	}
 	vid.targetRect.x = renderer->dst_x;
 	vid.targetRect.y = renderer->dst_y;
@@ -1190,7 +1214,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			FlipRotate000(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			} else {
 	//			LOG_info("Executing 90deg 16\n");
-			FlipRotate000_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			FlipRotate000(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			}
 		}
 		if (vid.rotate == 1)
@@ -1202,7 +1226,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 				FlipRotate090(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			} else {
 	//			LOG_info("Executing 90deg 16\n");
-				FlipRotate090_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+				FlipRotate090(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			}
 		}
 		if (vid.rotate == 2)
@@ -1213,7 +1237,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			FlipRotate180(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			} else {
 	//			LOG_info("Executing 180deg 16\n");
-			FlipRotate180_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			FlipRotate180(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			}
 		}
 		if (vid.rotate == 3)
@@ -1224,7 +1248,7 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 			FlipRotate270(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			} else {
 	//			LOG_info("Executing 270deg 16\n");
-			FlipRotate270_16(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			FlipRotate270(vid.screen, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 			}
 		}
 		//fflush(stdout);
@@ -1240,7 +1264,12 @@ void PLAT_flip(SDL_Surface* IGNORED, int sync) { //this rotates minarch menu + m
 		if (vid.ionmmapfailed!=0){
 			FlipRotate000(vid.screengame, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
 		} else {
-			FlipRotate000_16(vid.screengame, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			if ((GFX_getRealScaler()==SCALER_NEAREST)||(effect_type!=EFFECT_NONE)) {
+				FlipRotate000(vid.screengame, vid.fbmmap+vid.offset*vid.page,vid.linewidth, vid.targetRect);
+			} else {
+				// sharp frames are already 32bpp, copy them verbatim
+				neon_copy_argb8888(GAME_WIDTH, GAME_HEIGHT, (uint32_t*)(vid.fbmmap+vid.offset*vid.page), vid.linewidth*4, (const uint32_t*)screengame_32->pixels, screengame_32->pitch);
+			}
 			my_ion_flushWrite();
 			swap_buffers(vid.page);
 		}
@@ -1462,5 +1491,8 @@ int PLAT_getScreenRotation(int game) {
 }
 
 SDL_Surface* PLAT_getScreenGame(void) {
-	return vid.screengame;
+	if ((GFX_getRealScaler()==SCALER_NEAREST)||(effect_type!=EFFECT_NONE)) {
+		return vid.screengame;
+	}
+	return screengame_32;
 }
