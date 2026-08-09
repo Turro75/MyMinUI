@@ -1,0 +1,22 @@
+diff --git a/Makefile.libretro b/Makefile.libretro
+index 350b50c..c8d64cb 100644
+--- a/Makefile.libretro
++++ b/Makefile.libretro
+@@ -458,6 +458,17 @@ else ifeq ($(platform), miyoo)
+ 	CFLAGS += -fomit-frame-pointer -march=armv5te -mtune=arm926ej-s
+ 	CXXFLAGS += -fomit-frame-pointer -march=armv5te -mtune=arm926ej-s
+ 
++# H700
++else ifeq ($(platform), h700)
++	TARGET := $(TARGET_NAME)_libretro.so
++    CC = $(CROSS_COMPILE)gcc
++    CXX = $(CROSS_COMPILE)g++
++    AR = $(CROSS_COMPILE)ar
++	fpic := -fPIC
++	SHARED := -shared -Wl,-version-script=build/link.T -Wl,-no-undefined
++	CFLAGS += -fomit-frame-pointer $(MYFLAGS)
++	CXXFLAGS += -fomit-frame-pointer $(MYFLAGS)
++
+ # GCW0 (OpenDingux and OpenDingux Beta)
+ else ifeq ($(platform), gcw0)
+ 	TARGET := $(TARGET_NAME)_libretro.so
