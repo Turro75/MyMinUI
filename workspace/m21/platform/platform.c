@@ -1016,7 +1016,12 @@ SDL_Surface* PLAT_initVideo(void) {
 	PLAT_clearAll();
 	pan_display(vid.page * vid.ionmmapfailed);
 	vid.page = 1;
-	vid.sharpness = SHARPNESS_SOFT;
+	// SHARPNESS_SOFT is not defined anywhere in the tree; the common enum in
+	// all/common/api.h now spells this SCALER_NEAREST/SCALER_SHARP. vid.sharpness
+	// is write-only (never read here or elsewhere) and PLAT_setSharpness() ignores
+	// its argument, so dropping the assignment is behaviour-neutral and unblocks
+	// the build. Restore it if the sharpness path is ever finished.
+	// vid.sharpness = SHARPNESS_SOFT;
 	return vid.screen;
 }
 
@@ -1136,6 +1141,16 @@ void PLAT_vsync(int remaining) {
 	} else {
 		pan_display(vid.page * vid.ionmmapfailed);
 	}
+}
+
+// Part of the platform contract (all/common/api.h) but never implemented here --
+// it was added to the shared code after M21 support stopped, so linking failed.
+// The h700 keeps a vid.vsync_refresh field seeded with this same 60Hz value and
+// then refines it via measureAverageVsyncNs(); neither the field nor that
+// calibration exists on this platform, so we return the fixed panel rate.
+// Value is in nanoseconds.
+uint32_t PLAT_getVsyncInterval(void) {
+	return 16666700; // 60Hz
 }
 
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
