@@ -49,6 +49,12 @@ bump() {
 	list ./workspace/m21/cores/src
 	bump
 
+	tell H700
+#	show ./workspace/rg35xx/other/DinguxCommander
+	echo CORES
+	list ./workspace/h700/cores/src
+	bump
+
 	tell MIYOOMINI
 #	show ./workspace/miyoomini/other/DinguxCommander
 	show ./workspace/miyoomini/other/sdl
