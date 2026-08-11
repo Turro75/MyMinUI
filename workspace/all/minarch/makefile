@@ -23,7 +23,7 @@ OBJDUMP = $(CROSS_COMPILE)objdump
 
 TARGET = minarch
 INCDIR = -I. -I./libretro-common/include/ -I../common/ -I../../$(PLATFORM)/platform/ $(MY_INCDIR)
-SOURCE = $(TARGET).c ../common/utils.c ../common/$(SDL)_rotozoom.c ../common/api.c ../../$(PLATFORM)/platform/platform.c 
+SOURCE = $(TARGET).c turbo.c ../common/utils.c ../common/$(SDL)_rotozoom.c ../common/api.c ../../$(PLATFORM)/platform/platform.c 
 
 
 CC = $(CROSS_COMPILE)gcc

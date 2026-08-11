@@ -20,6 +20,7 @@
 #include "defines.h"
 #include "utils.h"
 #include "api.h"
+#include "turbo.h"
 
 #include <sys/sysinfo.h>
 #include <sys/time.h>
@@ -1085,13 +1086,14 @@ enum {
 #define LOCAL_BUTTON_COUNT 16 // depends on device
 #define RETRO_BUTTON_COUNT 16 // allow L3/R3 to be remapped by user if desired, eg. Virtual Boy uses extra buttons for right d-pad
 
-typedef struct ButtonMapping { 
+typedef struct ButtonMapping {
 	char* name;
 	int retro;
 	int local; // TODO: dislike this name...
 	int mod;
 	int default_;
 	int ignore;
+	int turbo;
 } ButtonMapping;
 
 static ButtonMapping default_button_mapping[] = { // used if pak.cfg doesn't exist or doesn't have bindings
@@ -1135,6 +1137,38 @@ static ButtonMapping button_label_mapping[] = { // used to lookup the retro_id a
 };
 #define MAX_CORE_BUTTON_MAPPING 32
 static ButtonMapping core_button_mapping[MAX_CORE_BUTTON_MAPPING] = {0};
+
+static char* turbo_speed_labels[] = {
+	"Slow",
+	"Normal",
+	"Fast",
+	NULL,
+};
+static int turbo_speed = TURBO_NORMAL;
+// sized by MAX_CORE_BUTTON_MAPPING, not RETRO_BUTTON_COUNT:
+// config.controls may point at core_button_mapping, which has 32 entries.
+static uint32_t turbo_held[MAX_CORE_BUTTON_MAPPING] = {0};
+
+static int Turbo_isSupported(int retro_id) {
+	switch (retro_id) {
+		case RETRO_DEVICE_ID_JOYPAD_A:
+		case RETRO_DEVICE_ID_JOYPAD_B:
+		case RETRO_DEVICE_ID_JOYPAD_X:
+		case RETRO_DEVICE_ID_JOYPAD_Y:
+		case RETRO_DEVICE_ID_JOYPAD_L:
+		case RETRO_DEVICE_ID_JOYPAD_R:
+		case RETRO_DEVICE_ID_JOYPAD_L2:
+		case RETRO_DEVICE_ID_JOYPAD_R2:
+		case RETRO_DEVICE_ID_JOYPAD_L3:
+		case RETRO_DEVICE_ID_JOYPAD_R3:
+			return 1;
+		default:
+			return 0;
+	}
+}
+static void Turbo_resetHeld(void) {
+	for (int i=0; i<MAX_CORE_BUTTON_MAPPING; i++) turbo_held[i] = 0;
+}
 
 static const char* device_button_names[LOCAL_BUTTON_COUNT] = {
 	[BTN_ID_DPAD_UP]	= "UP",
@@ -1588,7 +1622,15 @@ static void Config_readOptionsString(char* cfg) {
 			}
 		pad.map_leftstick_to_dpad = config.controller_map_lstick_to_dpad;
 	}
-	 
+
+	if (Config_getValue(cfg,"TurboSpeed",value,NULL)) {
+		int speed = TURBO_NORMAL; // an unknown value falls back to Normal
+		for (int i=0; turbo_speed_labels[i]; i++) {
+			if (!strcmp(turbo_speed_labels[i], value)) { speed = i; break; }
+		}
+		turbo_speed = speed;
+	}
+
 	for (int i=0; config.core.options[i].key; i++) {
 		Option* option = &config.core.options[i];
 		if (!Config_getValue(cfg, option->key, value, &option->lock)) continue;
@@ -1605,9 +1647,15 @@ static void Config_readControlsString(char* cfg) {
 	char* tmp;
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
+
+		// comes before the continue below: a cfg without the `bind` line for this
+		// button may still carry its `turbo` line
+		sprintf(key, "turbo %s", mapping->name);
+		if (Config_getValue(cfg, key, value, NULL)) mapping->turbo = strstr(value, "On") ? 1 : 0;
+
 		sprintf(key, "bind %s", mapping->name);
 		sprintf(value, "NONE");
-		
+
 		if (!Config_getValue(cfg, key, value, NULL)) continue;
 		if ((tmp = strrchr(value, ':'))) *tmp = '\0'; // this is a binding artifact in default.cfg, ignore
 		
@@ -1727,12 +1775,14 @@ static void Config_write(int override) {
 
 	fprintf(file,"%s = %s\n", "MapABXYtoRightStick", config.controller_map_abxy_to_rstick ? "On" : "Off");
 	fprintf(file,"%s = %s\n", "MapLeftSticktoDPad", config.controller_map_lstick_to_dpad ? "On" : "Off");
+	fprintf(file,"%s = %s\n", "TurboSpeed", turbo_speed_labels[turbo_speed]);
 
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
 		int j = mapping->local + 1;
 		if (mapping->mod) j += LOCAL_BUTTON_COUNT;
 		fprintf(file, "bind %s = %s\n", mapping->name, button_labels[j]);
+		if (Turbo_isSupported(mapping->retro)) fprintf(file, "turbo %s = %s\n", mapping->name, mapping->turbo ? "On" : "Off");
 	}
 	for (int i=0; config.shortcuts[i].name; i++) {
 		ButtonMapping* mapping = &config.shortcuts[i];
@@ -1775,11 +1825,14 @@ static void Config_restore(void) {
 	config.controller_map_abxy_to_rstick = 0;
 	config.controller_map_lstick_to_dpad = 0;
 	pad.map_leftstick_to_dpad = config.controller_map_lstick_to_dpad;
+	turbo_speed = TURBO_NORMAL;
+	Turbo_resetHeld();
 
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
 		mapping->local = mapping->default_;
 		mapping->mod = 0;
+		mapping->turbo = 0;
 	}
 	for (int i=0; config.shortcuts[i].name; i++) {
 		ButtonMapping* mapping = &config.shortcuts[i];
@@ -2195,8 +2248,22 @@ static void input_poll_callback(void) {
 		int btn_retro = 1 << mapping->retro;
 		if (btn==BTN_NONE) continue; // present buttons can still be unbound
 		if (PAD_isPressed(btn) && (!mapping->mod || PAD_isPressed(BTN_MENU))) {
-			buttons |= 1 << mapping->retro;
+			// ignore_menu comes before the gate: it is about the MENU modifier, not about
+			// the shot. After the continue, the menu would open by itself on the off frames
+			// of a MENU+button bind with turbo enabled.
 			if (mapping->mod) ignore_menu = 1;
+
+			// turbo: the button stays physically held, but the core reads it released on
+			// the off frames of the cycle. The continue also skips the analogs below,
+			// otherwise turbo on L2/R2 would come out half-applied on cores that read the
+			// trigger through the analog axis rather than the bit.
+			if (mapping->turbo && Turbo_isSupported(mapping->retro)) {
+				int fire = Turbo_fire(turbo_held[i], turbo_speed);
+				turbo_held[i] += 1;
+				if (!fire) continue;
+			}
+
+			buttons |= 1 << mapping->retro;
 			analogs[12] = btn_retro==BTN_L2 ? 0x7fff : 0;
 			analogs[13] = btn_retro==BTN_R2 ? 0x7fff : 0;
 			analogs[14] = btn_retro==BTN_L3 ? 0x7fff : 0;
@@ -2211,6 +2278,10 @@ static void input_poll_callback(void) {
 				else if (btn==BTN_B) 		analogs[3]= 0x7fff;
 				else if (btn==BTN_X) 		analogs[3]= -0x7fff;
 			}
+		}
+		else {
+			// without this the phase never restarts and a short tap stops counting as one press
+			turbo_held[i] = 0;
 		}
 		//  && !PWR_ignoreSettingInput(btn, show_setting)
 	}	
@@ -4103,6 +4174,77 @@ static int OptionEmulator_openMenu(MenuList* list, int i) {
 	return MENU_CALLBACK_NOP;
 }
 
+static int OptionTurbo_speedChanged(MenuList* list, int i) {
+	MenuItem* item = &list->items[i];
+	turbo_speed = item->value;
+	return MENU_CALLBACK_NOP;
+}
+static int OptionTurbo_buttonChanged(MenuList* list, int i) {
+	MenuItem* item = &list->items[i];
+	config.controls[item->id].turbo = item->value;
+	return MENU_CALLBACK_NOP;
+}
+static MenuList OptionTurbo_menu = {
+	.totalnum = 0,
+	.type = MENU_FIXED,
+	.desc = "Hold a button with Turbo On to fire repeatedly.",
+	.items = NULL
+};
+
+static int OptionTurbo_openMenu(MenuList* list, int i) {
+	if (OptionTurbo_menu.items==NULL) {
+		int count = 0;
+		for (int j=0; config.controls[j].name; j++) {
+			if (config.controls[j].ignore) continue;
+			if (!Turbo_isSupported(config.controls[j].retro)) continue;
+			count += 1;
+		}
+		if (count==0) {
+			Menu_message("This core has no turbo-capable buttons.", (char*[]){ "B","BACK", NULL });
+			return MENU_CALLBACK_NOP;
+		}
+
+		OptionTurbo_menu.totalnum = count + 1; // + Turbo Speed
+		// +1 on the allocation: NULL-name sentinel, same as OptionShortcuts_openMenu
+		OptionTurbo_menu.items = calloc(OptionTurbo_menu.totalnum + 1, sizeof(MenuItem));
+		int k = 0;
+
+		MenuItem* speed = &OptionTurbo_menu.items[k++];
+		speed->name = "Turbo Speed";
+		speed->desc = "Repeat rate: Slow 5/s, Normal 10/s, Fast 15/s.";
+		speed->value = turbo_speed;
+		speed->values = turbo_speed_labels;
+		speed->on_change = OptionTurbo_speedChanged;
+
+		for (int j=0; config.controls[j].name; j++) {
+			ButtonMapping* button = &config.controls[j];
+			if (button->ignore) continue;
+			if (!Turbo_isSupported(button->retro)) continue;
+
+			MenuItem* item = &OptionTurbo_menu.items[k++];
+			item->id = j;
+			item->name = button->name;
+			item->desc = NULL;
+			item->value = button->turbo;
+			item->values = onoff_labels;
+			item->on_change = OptionTurbo_buttonChanged;
+		}
+	}
+	else {
+		// update values
+		int k = 0;
+		OptionTurbo_menu.items[k++].value = turbo_speed;
+		for (int j=0; config.controls[j].name; j++) {
+			ButtonMapping* button = &config.controls[j];
+			if (button->ignore) continue;
+			if (!Turbo_isSupported(button->retro)) continue;
+			OptionTurbo_menu.items[k++].value = button->turbo;
+		}
+	}
+	Menu_options(&OptionTurbo_menu);
+	return MENU_CALLBACK_NOP;
+}
+
 int OptionControls_bind(MenuList* list, int i) {
 	MenuItem* item = &list->items[i];
 	if (item->values!=button_labels) {
@@ -4194,10 +4336,16 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 	if (OptionControls_menu.items==NULL) {
 	//	LOG_info("OptionControls_openMenu Create\n");
 		// TODO: where do I free this?
-		OptionControls_menu.totalnum = RETRO_BUTTON_COUNT+2+has_custom_controllers;
+		OptionControls_menu.totalnum = RETRO_BUTTON_COUNT+3+has_custom_controllers;
 		OptionControls_menu.items = calloc(OptionControls_menu.totalnum, sizeof(MenuItem));
 		int k = 0;
-		
+
+		MenuItem* item1 = &OptionControls_menu.items[k++];
+		item1->name = "Turbo";
+		item1->desc = "Repeat-fire settings per button.";
+		item1->value = -1; // no value on the right; values is left NULL on purpose
+		item1->on_confirm = OptionTurbo_openMenu;
+
 		MenuItem* item2 = &OptionControls_menu.items[k++];
 		item2->name = "MapABXYtoRightStick";
 		item2->desc = "Map ABXY buttons to right stick.";
@@ -4244,7 +4392,9 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 		// update values
 		//LOG_info("OptionControls_openMenu Refresh\n");
 		int k = 0;
-		
+
+		k++; // Turbo: nothing to refresh
+
 		MenuItem* item2 = &OptionControls_menu.items[k++];
 		item2->value = config.controller_map_abxy_to_rstick;
 
@@ -4653,23 +4803,27 @@ static int Menu_options(MenuList* list) {
 		else if (type==MENU_INPUT) {
 			if (PAD_justPressed(BTN_X)) {
 				MenuItem* item = &items[selected];
-				item->value = 0;
-				
-				if (item->on_change) item->on_change(list, selected);
-				else if (list->on_change) list->on_change(list, selected);
-				
-				// copied from PAD_justRepeated(BTN_DOWN) above
-				selected += 1;
-				if (selected>=count) {
-					selected = 0;
-					start = 0;
-					end = visible_rows;
+				// items that only open a submenu have neither values nor a value to clear;
+				// zeroing value on them would make the drawing read values[0] off a NULL pointer
+				if (item->values) {
+					item->value = 0;
+
+					if (item->on_change) item->on_change(list, selected);
+					else if (list->on_change) list->on_change(list, selected);
+
+					// copied from PAD_justRepeated(BTN_DOWN) above
+					selected += 1;
+					if (selected>=count) {
+						selected = 0;
+						start = 0;
+						end = visible_rows;
+					}
+					else if (selected>=end) {
+						start += 1;
+						end += 1;
+					}
+					dirty = 1;
 				}
-				else if (selected>=end) {
-					start += 1;
-					end += 1;
-				}
-				dirty = 1;
 			}
 		}
 		
@@ -4802,7 +4956,8 @@ static int Menu_options(MenuList* list) {
 						
 						// every value list in an input table is the same
 						// so only calculate rw for the first item...
-						if (!mrw || type!=MENU_INPUT) {
+						// (item->values can be NULL on items that only open a submenu)
+						if (item->values && (!mrw || type!=MENU_INPUT)) {
 							for (int j=0; item->values[j]; j++) {
 								TTF_SizeUTF8(font.tiny, item->values[j], &rw, NULL);
 								if (lw+rw>w) w = lw+rw;
@@ -5402,8 +5557,9 @@ static void Menu_loop(void) {
 	}
 
 	SDL_FreeSurface(preview);
-	
+
 	PAD_reset();
+	Turbo_resetHeld(); // do not return to the game mid-cycle with the button still held
 	//PWR_warn(1);
 	GFX_clearAll();
 	GFX_flip(screen);
