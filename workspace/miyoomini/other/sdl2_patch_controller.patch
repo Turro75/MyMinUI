@@ -1,0 +1,140 @@
+diff --git a/configure.ac b/configure.ac
+index e2c7cc4..0620e13 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -3833,8 +3833,10 @@ case "$host" in
+                 have_joystick=yes
+             ;;
+             mmiyoo)
+-                AC_DEFINE(SDL_JOYSTICK_MMIYOO, 1, [ ])
+-                SOURCES="$SOURCES $srcdir/src/joystick/mmiyoo/*.c"
++                AC_DEFINE(SDL_JOYSTICK_MMIYOO, 0, [ ])
++                AC_DEFINE(SDL_JOYSTICK_LINUX,  1, [ ])
++                SOURCES="$SOURCES $srcdir/src/joystick/linux/*.c"
++                SOURCES="$SOURCES $srcdir/src/joystick/steam/*.c"
+                 have_joystick=yes
+             ;;
+           esac
+diff --git a/src/joystick/linux/SDL_sysjoystick.c b/src/joystick/linux/SDL_sysjoystick.c
+index ae1e2b0..17ee36c 100644
+--- a/src/joystick/linux/SDL_sysjoystick.c
++++ b/src/joystick/linux/SDL_sysjoystick.c
+@@ -181,6 +181,93 @@ GuessIsJoystick(int fd)
+     return 0;
+ }
+ 
++static Uint16 crc16_for_byte(Uint8 r)
++{
++    Uint16 crc = 0;
++    int i;
++    for (i = 0; i < 8; ++i) {
++        crc = ((crc ^ r) & 1 ? 0xA001 : 0) ^ crc >> 1;
++        r >>= 1;
++    }
++    return crc;
++}
++
++Uint16 SDL_crc16(Uint16 crc, const void *data, size_t len)
++{
++    /* As an optimization we can precalculate a 256 entry table for each byte */
++    size_t i;
++    for (i = 0; i < len; ++i) {
++        crc = crc16_for_byte((Uint8)crc ^ ((const Uint8 *)data)[i]) ^ crc >> 8;
++    }
++    return crc;
++}
++
++SDL_JoystickGUID SDL_CreateJoystickGUID(Uint16 bus, Uint16 vendor, Uint16 product, Uint16 version, const char *vendor_name, const char *product_name, Uint8 driver_signature, Uint8 driver_data)
++{
++    SDL_JoystickGUID guid;
++    Uint16 *guid16 = (Uint16 *)guid.data;
++    Uint16 crc = 0;
++
++    SDL_zero(guid);
++
++    if (vendor_name && *vendor_name && product_name && *product_name) {
++        crc = SDL_crc16(crc, vendor_name, SDL_strlen(vendor_name));
++        crc = SDL_crc16(crc, " ", 1);
++        crc = SDL_crc16(crc, product_name, SDL_strlen(product_name));
++    } else if (product_name) {
++        crc = SDL_crc16(crc, product_name, SDL_strlen(product_name));
++    }
++
++    /* We only need 16 bits for each of these; space them out to fill 128. */
++    /* Byteswap so devices get same GUID on little/big endian platforms. */
++    *guid16++ = SDL_SwapLE16(bus);
++    *guid16++ = SDL_SwapLE16(crc);
++
++    if (vendor) {
++        *guid16++ = SDL_SwapLE16(vendor);
++        *guid16++ = 0;
++        *guid16++ = SDL_SwapLE16(product);
++        *guid16++ = 0;
++        *guid16++ = SDL_SwapLE16(version);
++        guid.data[14] = driver_signature;
++        guid.data[15] = driver_data;
++    } else {
++        size_t available_space = sizeof(guid.data) - 4;
++
++        if (driver_signature) {
++            available_space -= 2;
++            guid.data[14] = driver_signature;
++            guid.data[15] = driver_data;
++        }
++        if (product_name) {
++            SDL_strlcpy((char *)guid16, product_name, available_space);
++        }
++    }
++    return guid;
++}
++
++
++int MY_ForceCustomControllerDetection(int fd,struct input_id inpid, const char* name, char **name_return, Uint16 *vendor_return, Uint16 *product_return, SDL_JoystickGUID *guid){
++    // patch to force the internal controller seen as sdl2 gamecontroller
++    if (ioctl(fd, EVIOCGID, &inpid) >= 0) {
++        if (inpid.vendor == 0x0001 && inpid.product == 0x0001) {
++            if (name_return) {
++                 *name_return = SDL_strdup(name);
++            }
++            if (guid) {
++                *guid = SDL_CreateJoystickGUID(inpid.bustype, inpid.vendor, inpid.product, inpid.version, NULL, name, 0, 0);
++            }
++            *vendor_return = inpid.vendor;
++            *product_return = inpid.product;
++            printf("Joystick: %s, bustype = %d, vendor = 0x%.4x, product = 0x%.4x, version = %d\n", *name_return, inpid.bustype, inpid.vendor, inpid.product, inpid.version);
++            return 1; // ok the joystick is valid!
++        }
++    }
++    return 0;
++}
++
++
++
+ static int
+ IsJoystick(const char *path, int fd, char **name_return, SDL_JoystickGUID *guid)
+ {
+@@ -188,6 +275,11 @@ IsJoystick(const char *path, int fd, char **name_return, SDL_JoystickGUID *guid)
+     Uint16 *guid16 = (Uint16 *)guid->data;
+     char *name;
+     char product_string[128];
++    Uint16 vendor_return, product_return;
++
++    if (MY_ForceCustomControllerDetection(fd, inpid, "MyMinUI Miyoo Mini (+)", name_return, &vendor_return, &product_return, guid)>0){
++        return 1;
++    }
+ 
+     if(ioctl(fd, JSIOCGNAME(sizeof(product_string)), product_string) >= 0) {
+         SDL_zero(inpid);
+diff --git a/src/joystick/SDL_joystick.c b/src/joystick/SDL_joystick.c
+index d83674c..61db258 100644
+--- a/src/joystick/SDL_joystick.c
++++ b/src/joystick/SDL_joystick.c
+@@ -99,7 +99,7 @@ static SDL_JoystickDriver *SDL_joystick_drivers[] = {
+     &SDL_VITA_JoystickDriver,
+ #endif
+ #if defined(SDL_JOYSTICK_MMIYOO)
+-    &SDL_MMIYOO_JoystickDriver,
++//    &SDL_MMIYOO_JoystickDriver,
+ #endif
+ #if defined(SDL_JOYSTICK_DUMMY) || defined(SDL_JOYSTICK_DISABLED)
+     &SDL_DUMMY_JoystickDriver,

@@ -52,6 +52,7 @@ $(REQUIRES_SDL2):
 	git clone --depth 1 --branch pico8 https://github.com/XK9274/sdl2_miyoo.git $(REQUIRES_SDL2)
 	cp other/libneon.so $(REQUIRES_SDL2)/
 	cd $(REQUIRES_SDL2) && patch -p1 < ../sdl2pico8.patch
+	cd $(REQUIRES_SDL2) && patch -p1 < ../sdl2_patch_controller.patch
 
 $(REQUIRES_NDS):
 	rmdir -r $(REQUIRES_NDS) | true

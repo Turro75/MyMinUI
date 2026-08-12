@@ -36,8 +36,8 @@ WORKDIR /root
 
 COPY support .
 VOLUME /root/workspace
-#RUN ./setup-toolchain.sh 
-RUN ./build-toolchain.sh 
+RUN ./setup-toolchain.sh 
+#RUN ./build-toolchain.sh 
 
 RUN cat ./setup-env.sh >> .bashrc
 

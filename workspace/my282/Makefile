@@ -14,14 +14,17 @@ endif
 
 REQUIRES_UNZIP60=other/unzip60
 REQUIRES_NDS=other/nds
+REQUIRES_SDL2=other/sdl2
 
 all: readmes
 	cd show && make
 	cd overclock && make
+#	cd $(REQUIRES_SDL2) && make cfg
+#	cd $(REQUIRES_SDL2) && make
 #	cd other/DinguxCommander && make
 #   cd other/squashfs && make
 #	cp -L $(PREFIX)/lib/libsamplerate.so.0 $(REQUIRES_LIBSAMPLERATE)/
-early: $(REQUIRES_UNZIP60) $(REQUIRES_NDS)
+early: $(REQUIRES_UNZIP60) $(REQUIRES_NDS) $(REQUIRES_SDL2)
 	mkdir -p other
 	cd $(REQUIRES_UNZIP60) && make -f unix/Makefile.trimuismart unzip
 #	cd $(REQUIRES_LIBSAMPLERATE) && make && make install
@@ -47,5 +50,10 @@ $(REQUIRES_NDS):
 	cd $(REQUIRES_NDS) && cp -r ../nds_add_libs/a30 ./drastic/lib/
 	cd $(REQUIRES_NDS) && make -f Makefile.a30 cfg
 	cd $(REQUIRES_NDS) && make -f Makefile.a30
+
+$(REQUIRES_SDL2):
+	git clone --depth 1 https://github.com/Ninoh-FOX/SDL2_mali_A30_pico8.git $(REQUIRES_SDL2)
+	cp other/libneon.so $(REQUIRES_SDL2)/
+
 
 include ../all/readmes/makefile

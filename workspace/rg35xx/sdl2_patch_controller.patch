@@ -1,0 +1,41 @@
+diff --git a/src/joystick/linux/SDL_sysjoystick.c b/src/joystick/linux/SDL_sysjoystick.c
+index 779190421..155163af3 100644
+--- a/src/joystick/linux/SDL_sysjoystick.c
++++ b/src/joystick/linux/SDL_sysjoystick.c
+@@ -275,6 +275,25 @@ static int GuessIsSensor(int fd)
+     return 0;
+ }
+ 
++int MY_ForceCustomControllerDetection(int fd,struct input_id inpid, const char* name, char **name_return, Uint16 *vendor_return, Uint16 *product_return, SDL_JoystickGUID *guid){
++    // patch to force the internal controller seen as sdl2 gamecontroller
++    if (ioctl(fd, EVIOCGID, &inpid) >= 0) {
++        if (inpid.vendor == 0x0001 && inpid.product == 0x0001) {
++            if (name_return) {
++                 *name_return = SDL_strdup(name);
++            }
++            if (guid) {
++                *guid = SDL_CreateJoystickGUID(inpid.bustype, inpid.vendor, inpid.product, inpid.version, NULL, name, 0, 0);
++            }
++            *vendor_return = inpid.vendor;
++            *product_return = inpid.product;
++            //printf("Joystick: %s, bustype = %d, vendor = 0x%.4x, product = 0x%.4x, version = %d\n", *name_return, inpid.bustype, inpid.vendor, inpid.product, inpid.version);
++            return 1; // ok the joystick is valid!
++        }
++    }
++    return 0;
++}
++
+ static int IsJoystick(const char *path, int *fd, char **name_return, Uint16 *vendor_return, Uint16 *product_return, SDL_JoystickGUID *guid)
+ {
+     struct input_id inpid;
+@@ -297,7 +316,9 @@ static int IsJoystick(const char *path, int *fd, char **name_return, Uint16 *ven
+     if (!fd || *fd < 0) {
+         return 0;
+     }
+-
++    if (MY_ForceCustomControllerDetection(*fd, inpid, "MyMinUI RG35XX OG", name_return, vendor_return, product_return, guid)>0){
++        return 1;
++    }
+     if (ioctl(*fd, JSIOCGNAME(sizeof(product_string)), product_string) <= 0) {
+         /* When udev enumeration or classification, we only got joysticks here, so no need to test */
+         if (enumeration_method != ENUMERATION_LIBUDEV && !class && !GuessIsJoystick(*fd)) {

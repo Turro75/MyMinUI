@@ -26,7 +26,13 @@ if [ ! -f /mnt/SDCARD/.tmp_update/$PLATFORM.sh ]; then
     cp -Rf /mnt/SDCARD/miyoo/app/.tmp_update /mnt/SDCARD/
     cp -Rf /mnt/SDCARD/miyoo354/app/.tmp_update /mnt/SDCARD/
 fi
-
+UPDATERCNT=$(pgrep -f "keymon.elf" | wc -l)
+sync
+if [ "$UPDATERCNT" -gt 0 ]; then
+	if [ $(pgrep -f '/customer/main' | grep -v 'pgrep' | wc -l) -gt 1 ]; then echo "killing customer/main" >&2 ; kill -9 $(pgrep -f '/customer/main' | grep -v 'pgrep' | tail -n 1); fi
+	if [ $(pgrep -f 'tee' | grep -v "pgrep" | wc -l) -gt 1 ]; then echo 'killing tee' >&2 ; kill -9 $(pgrep -f 'tee' | grep -v "pgrep" |  tail -n 1); fi
+	kill $$
+fi
 
 /mnt/SDCARD/.tmp_update/$PLATFORM.sh # &> /mnt/SDCARD/boot.txt
 

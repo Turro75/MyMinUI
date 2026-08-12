@@ -10,10 +10,10 @@ cd /opt/my282-toolchain
 ln -s ./ usr
 
 if [ -f /root/hwcap.h ]; then
-	cp -f /root/hwcap.h /opt/my282-toolchain/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/include/asm/
+	cp -f /root/hwcap.h /opt/my282-toolchain/arm-buildroot-linux-gnueabihf/sysroot/usr/include/asm/
 fi
 
-cp -a /root/lib/* /opt/my282-toolchain/usr/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/
+cp -a /root/lib/* /opt/my282-toolchain/arm-buildroot-linux-gnueabihf/sysroot/usr/lib/
 
 
 cp /root/relocate-sdk.sh /opt/my282-toolchain/

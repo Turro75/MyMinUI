@@ -1,1 +1,2 @@
 // add SDL2 game controller mappings to this file
+1900889d010000000100000000010000,MyMinUI Miyoo Mini (+),platform:Linux,dpup:b11,dpdown:b14,dpleft:b12,dpright:b13,a:b9,b:b6,x:b7,y:b8,back:b10,start:b5,leftshoulder:b3,rightshoulder:b4,lefttrigger:b2,righttrigger:b1,guide:b0,

@@ -316,13 +316,12 @@ int PLAT_shouldWake(void) {
 	static struct input_event event;
 	if (inputs[0] >= 0) {
 		while (read(inputs[0], &event, sizeof(event))==sizeof(event)) {
-		if (event.type==EV_KEY && (event.code==USER_BTN_MENU || ( ism22 && event.code==USER_BTN_SELECT)) && event.value==0) {
-			return 1;
-		}
-	}	
-	return 0;
+			if (event.type==EV_KEY && (event.code==USER_BTN_MENU || ( ism22 && event.code==USER_BTN_SELECT)) && event.value==0) {
+				return 1;
+			}
+		}	
 	}
-	
+	return 0;
 }
 
 static struct VID_Context {
